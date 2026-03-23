@@ -1,1 +1,0 @@
-import{j as a,ay as o}from"./index-Q7q6av4Y.js";function e({children:t,className:i}){return a.jsx(o.div,{initial:{opacity:0,y:6},animate:{opacity:1,y:0},exit:{opacity:0},transition:{duration:.2,ease:"easeOut"},style:{willChange:"opacity, transform"},className:i,children:t})}export{e as P};

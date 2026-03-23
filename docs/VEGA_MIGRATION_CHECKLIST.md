@@ -4,6 +4,7 @@ Use this checklist when adding or updating UI after moving to `radix-vega`.
 
 ## Theme Tokens
 
+- Canonical design tokens live in `src/styles/tailwind.css` only. To refresh the baseline from the **bIodPIO** preset (Vite), run `npx shadcn@latest init --preset bIodPIO --template vite -y -f --no-reinstall`, then re-apply app-only extensions the CLI does not generate (e.g. destructive/input/switch semantic vars, `@theme` color mappings, base typography, `animate-folder-flash`) in that same file.
 - Keep semantic token values in `src/styles/tailwind.css` only (`:root`, `.dark`, `@theme inline`, plus app typography/animations in the same file).
 - Do not duplicate `:root` / `.dark` token blocks elsewhere.
 - Prefer semantic utilities (`bg-background`, `text-foreground`, `border-border`) over raw color literals.
