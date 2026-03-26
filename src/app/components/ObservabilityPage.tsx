@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import { Clock, Pin, PinOff, Search, ChevronRight } from "lucide-react";
+import { Clock, Pin, PinOff, Search, ChevronRight, RotateCcw } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -13,10 +13,12 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
+import { PageContent, PageHeader } from "./PageChrome";
 import { useProjects } from "../contexts/ProjectContext";
 import { toast } from "sonner";
 import { BulkActionBar } from "./BulkActionBar";
 import { Input } from "./ui/input";
+import { PageTransition } from "./PageTransition";
 import {
   ootbCategories,
   allOotbDashboards,
@@ -111,16 +113,17 @@ export function ObservabilityPage() {
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <header className="shrink-0 sticky top-0 z-10 bg-background px-8 pt-6 pb-0">
+      <PageHeader>
         <div>
           <h1 className="text-3xl tracking-tight">Observability</h1>
           <p className="text-muted-foreground mt-2">
             Out-of-the-box dashboards providing comprehensive insights into your conversational analytics platform
           </p>
         </div>
-      </header>
+      </PageHeader>
       <div className="flex-1 min-h-0 overflow-auto">
-        <div className="space-y-6 p-8">
+        <PageContent className="space-y-6 p-8">
+      <PageTransition className="space-y-6">
       {/* Summary Cards */}
       <div className="flex flex-wrap gap-3">
         <Badge variant="secondary" className="text-sm px-3 py-1">
@@ -168,7 +171,7 @@ export function ObservabilityPage() {
 
       {/* All Dashboards Table */}
       {/* Search */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex w-full flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -182,9 +185,11 @@ export function ObservabilityPage() {
           <Button
             variant="ghost"
             size="sm"
+            className="shrink-0"
             onClick={() => setSearchQuery("")}
           >
-            Clear
+            <RotateCcw className="mr-2 h-4 w-4" />
+            Reset Filters
           </Button>
         )}
       </div>
@@ -290,7 +295,8 @@ export function ObservabilityPage() {
             </TableBody>
           </Table>
       </div>
-        </div>
+      </PageTransition>
+        </PageContent>
       </div>
     </div>
   );

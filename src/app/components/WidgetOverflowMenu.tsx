@@ -22,11 +22,18 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import {
+  DATE_RANGE_CUSTOM_OPTION,
+  DATE_RANGE_LABELS,
+  DATE_RANGE_PRIMARY_OPTIONS,
+  DATE_RANGE_SECONDARY_OPTIONS,
+} from "../data/date-ranges";
 
 interface WidgetOverflowMenuProps {
   widgetTitle: string;
@@ -101,7 +108,7 @@ export function WidgetOverflowMenu({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground opacity-0 group-hover/widget:opacity-100 data-[state=open]:opacity-100 transition-opacity"
+                  className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <MoreVertical className="h-3.5 w-3.5" />
                 </Button>
@@ -197,9 +204,22 @@ export function WidgetOverflowMenu({
                   <SelectItem value="1h">Last 1 hour</SelectItem>
                   <SelectItem value="6h">Last 6 hours</SelectItem>
                   <SelectItem value="24h">Last 24 hours</SelectItem>
-                  <SelectItem value="7d">Last 7 days</SelectItem>
-                  <SelectItem value="30d">Last 30 days</SelectItem>
-                  <SelectItem value="90d">Last 90 days</SelectItem>
+                  <SelectSeparator />
+                  {DATE_RANGE_PRIMARY_OPTIONS.map((opt) => (
+                    <SelectItem key={opt} value={opt}>
+                      {DATE_RANGE_LABELS[opt]}
+                    </SelectItem>
+                  ))}
+                  <SelectSeparator />
+                  {DATE_RANGE_SECONDARY_OPTIONS.map((opt) => (
+                    <SelectItem key={opt} value={opt}>
+                      {DATE_RANGE_LABELS[opt]}
+                    </SelectItem>
+                  ))}
+                  <SelectSeparator />
+                  <SelectItem value={DATE_RANGE_CUSTOM_OPTION}>
+                    {DATE_RANGE_LABELS[DATE_RANGE_CUSTOM_OPTION]}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>

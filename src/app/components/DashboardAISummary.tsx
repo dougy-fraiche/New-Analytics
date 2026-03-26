@@ -3,15 +3,17 @@ import {
   Zap,
   BellOff,
   Sparkles,
+  List,
   Clock,
   MoreVertical,
   RefreshCw,
   Copy,
+  ArrowRight,
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Link } from "react-router";
 import { Button } from "./ui/button";
-import { Separator } from "./ui/separator";
 import { Badge } from "./ui/badge";
+import { Checkbox } from "./ui/checkbox";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -23,11 +25,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import {
   recommendedActionsData,
   highPriorityRecommendedActions,
-  actionIconMap,
-  actionIconColors,
-  defaultActionIcon,
-  defaultActionIconColors,
-  typeColors,
   type RecommendedAction,
 } from "../data/recommended-actions";
 import { RecommendedActionSheet } from "./RecommendedActionSheet";
@@ -300,6 +297,49 @@ const dashboardSummaries: Record<string, AISummaryData> = {
     actionText:
       "Deploy an account verification AI agent to automate identity checks and add 23% containment to the biggest gap.",
   },
+  // ── Standalone OOTB: AI Agent vs Agent ───────────────────────────────────
+  "ai-agent-vs-agent": {
+    summary:
+      "End-to-end AI resolution is 74.2% vs 88.6% for human agents overall — but humans primarily receive escalations, so overlap-intent comparisons tell a tighter story. Highlights:",
+    bullets: [
+      { label: "AI resolution (E2E): 74.2%", detail: "For conversations fully handled by the AI agent without human takeover" },
+      { label: "Human resolution (all routed): 88.6%", detail: "Includes complex and escalated work — not a like-for-like cohort" },
+      { label: "Overlap intents — AI: 81.3% vs human: 86.9%", detail: "Where both handle similar intents, the gap narrows to 5.6 points" },
+      { label: "Hybrid model: ~94% resolved", detail: "AI first-line plus human escalation still clears most volume" },
+    ],
+    linkedActionId: 3,
+    opportunity:
+      "On comparable intents, AI trails human resolution by ~5.6 points — the biggest lever is equipping AI with the same knowledge and tool access humans use on escalations.",
+    actionText:
+      "Enable AI co-pilot-style tooling and knowledge surfacing for the AI agent on overlap intents to close the resolution gap while preserving fast containment.",
+  },
+  // ── Automation Opportunities (standalone page) ─────────────────────────
+  "automation-opportunities": {
+    summary:
+      "I analyzed 143,000 interactions across 3 major categories and identified opportunities to automate 3% of your workload, saving $39K annually. Here's what I found:",
+    bullets: [
+      {
+        label: "Billing & Payment Inquiries leads automation potential",
+        detail:
+          "This category accounts for 68% of total automatable volume with $33K in annual savings. The category includes high-volume topics like Bill Explanation, Payment Arrangement, and Refund Requests.",
+      },
+      {
+        label: "Card Services & Management shows high efficiency",
+        detail:
+          "With a 90% automation rate and 4.2/5 sentiment score, this category demonstrates that card-related inquiries are well-suited for AI automation with positive customer experiences.",
+      },
+      {
+        label: "Account Management & Support offers steady opportunity",
+        detail:
+          "While smaller in volume, this category maintains consistent automation rates and handles critical account operations with 6m average handle times.",
+      },
+    ],
+    linkedActionId: 7,
+    opportunity:
+      "Billing & Payment Inquiries accounts for 68% of automatable volume with $33K in annual savings — the highest-impact lever in this analysis window.",
+    actionText:
+      "Prioritize Billing & Payment Inquiries automation to capture the majority of high-volume customer inquiries across billing topics.",
+  },
   // ── Conversation-generated dashboards ──────────────────────────────────
   "mock-dash-escalation": {
     summary:
@@ -476,24 +516,37 @@ function AISummarySkeleton() {
       </div>
 
       {/* Recommended actions section */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <div className="h-3.5 w-3.5 rounded bg-muted" />
-          <div className="h-3 bg-muted rounded w-28" />
-        </div>
-
-        <div className="rounded-lg border border-border bg-muted/30 p-4">
-          <div className="flex items-start gap-3">
-            <div className="h-8 w-8 rounded-lg bg-muted shrink-0" />
-            <div className="min-w-0 flex-1 space-y-2">
-              <div className="h-3.5 bg-muted rounded w-[72%]" />
-              <div className="flex items-center gap-2">
-                <div className="h-5 bg-muted rounded w-24" />
-                <div className="h-5 bg-muted rounded w-16" />
-              </div>
-              <div className="h-3.5 bg-muted rounded w-[92%]" />
-            </div>
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-4 rounded bg-muted" />
+            <div className="h-3.5 bg-muted rounded w-36" />
           </div>
+          <div className="flex items-center gap-2">
+            <div className="h-8 bg-muted rounded-md w-20" />
+            <div className="h-8 bg-muted rounded-md w-24" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="flex min-h-[150px] flex-col gap-2 rounded-xl border border-primary/20 bg-primary/[0.03] p-4"
+            >
+              <div className="flex gap-2">
+                <div className="mt-0.5 size-4 shrink-0 rounded bg-muted" />
+                <div className="min-w-0 flex-1 space-y-2.5">
+                  <div className="h-4 bg-muted rounded w-[88%]" />
+                  <div className="h-5 bg-muted rounded w-28" />
+                  <div className="h-3.5 bg-muted rounded w-full" />
+                  <div className="h-3.5 bg-muted rounded w-[94%]" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="flex justify-end pt-1">
+          <div className="h-4 w-48 rounded bg-muted" />
         </div>
       </div>
     </div>
@@ -506,15 +559,18 @@ interface DashboardAISummaryProps {
   dashboardId: string;
   /** Optional dashboard data used to generate a contextual fallback when dashboardId is not in the static map */
   dashboardData?: DashboardData;
+  /** Hide the top "AI Insights" row when used inside another section header */
+  hideSectionHeader?: boolean;
 }
 
-export function DashboardAISummary({ dashboardId, dashboardData }: DashboardAISummaryProps) {
+export function DashboardAISummary({ dashboardId, dashboardData, hideSectionHeader = false }: DashboardAISummaryProps) {
   const data = dashboardSummaries[dashboardId] ?? (dashboardData ? generateFallbackSummary(dashboardData) : null);
   const [sheetAction, setSheetAction] = useState<RecommendedAction | null>(null);
   const [actionDismissed, setActionDismissed] = useState(() => isActionDismissed(dashboardId));
   const [dismissedActionIds, setDismissedActionIds] = useState<Set<number>>(() =>
     getDismissedActionIdsForDashboard(dashboardId)
   );
+  const [selectedRecommendedIds, setSelectedRecommendedIds] = useState<Set<number>>(() => new Set());
   const [relativeTime, setRelativeTime] = useState("");
 
   // Simulated AI generation loading
@@ -554,11 +610,13 @@ export function DashboardAISummary({ dashboardId, dashboardData }: DashboardAISu
   useEffect(() => {
     setActionDismissed(isActionDismissed(dashboardId));
     setDismissedActionIds(getDismissedActionIdsForDashboard(dashboardId));
+    setSelectedRecommendedIds(new Set());
   }, [dashboardId]);
 
   const handleDismissAction = useCallback(() => {
     dismissAction(dashboardId);
     setActionDismissed(true);
+    setSelectedRecommendedIds(new Set());
     const linkedAction = recommendedActionsData.find(
       (a) => a.id === data?.linkedActionId
     );
@@ -580,6 +638,11 @@ export function DashboardAISummary({ dashboardId, dashboardData }: DashboardAISu
     (action: RecommendedAction) => {
       dismissSingleActionId(dashboardId, action.id);
       setDismissedActionIds((prev) => new Set([...prev, action.id]));
+      setSelectedRecommendedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(action.id);
+        return next;
+      });
       toast.success("Action dismissed", {
         description: `"${action.title}" has been dismissed.`,
         action: {
@@ -646,96 +709,110 @@ export function DashboardAISummary({ dashboardId, dashboardData }: DashboardAISu
   return (
     <>
       <div className="space-y-3">
-        <div className="flex items-center gap-3">
-          <h2 className="tracking-tight flex-1">AI Insights</h2>
-          <div className="flex items-center gap-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={handleRegenerate}
-                >
-                  <RefreshCw className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Refresh summary</TooltipContent>
-            </Tooltip>
-            <DropdownMenu>
+        {!hideSectionHeader && (
+          <div className="flex items-center gap-3">
+            <h2 className="tracking-tight flex-1">AI Insights</h2>
+            <div className="flex items-center gap-2">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="inline-flex">
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="icon" className="h-8 w-8">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                  </span>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={handleRegenerate}
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom">Summary options</TooltipContent>
+                <TooltipContent side="bottom">Refresh summary</TooltipContent>
               </Tooltip>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onSelect={handleCopyInsights}>
-                  <Copy className="h-4 w-4" />
-                  Copy insights
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              <DropdownMenu>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex">
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="icon" className="h-8 w-8">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">Summary options</TooltipContent>
+                </Tooltip>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onSelect={handleCopyInsights}>
+                    <Copy className="h-4 w-4" />
+                    Copy insights
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
-        </div>
+        )}
 
-        <Card className="group/ai-insights-card overflow-hidden relative transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
+        <div className="space-y-5 px-1 pb-1">
           {relativeTime && (
-            <div className="absolute top-4 right-4 z-10">
+            <div className="flex items-center justify-between gap-3">
+              <div className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
+                <List className="h-4 w-4 text-primary" />
+                Generated Summary
+              </div>
               <Badge variant="secondary" className="text-muted-foreground gap-1">
                 <Clock className="h-3 w-3" />
                 Generated {relativeTime}
               </Badge>
             </div>
           )}
-          <CardContent className="py-6 space-y-5">
-            {generating ? (
-              <AISummarySkeleton />
-            ) : (
-              <>
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  <div className="text-sm" style={{ fontWeight: 500 }}>
-                    Generated Summary
-                  </div>
-                </div>
+          {generating ? (
+            <AISummarySkeleton />
+          ) : (
+            <>
+              {/* Summary paragraph */}
+              <p className="text-sm text-foreground leading-relaxed">{data.summary}</p>
 
-                {/* Summary paragraph */}
-                <p className="text-sm text-foreground leading-relaxed">{data.summary}</p>
+              {/* Bullet points */}
+              <ul className="space-y-2.5">
+                {data.bullets.map((bullet) => (
+                  <li key={bullet.label} className="flex items-start gap-2.5 text-sm">
+                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                    <span>
+                      <span style={{ fontWeight: 500 }}>{bullet.label}</span>
+                      <span className="text-muted-foreground"> — {bullet.detail}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
 
-                {/* Bullet points */}
-                <ul className="space-y-2.5">
-                  {data.bullets.map((bullet) => (
-                    <li key={bullet.label} className="flex items-start gap-2.5 text-sm">
-                      <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                      <span>
-                        <span style={{ fontWeight: 500 }}>{bullet.label}</span>
-                        <span className="text-muted-foreground"> — {bullet.detail}</span>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-
-                {/* Recommended Action — hidden when dismissed */}
-                {!actionDismissed && visibleSuggestedActions.length > 0 && (
-                  <div className="space-y-3">
-                    <div className="flex items-end justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <Zap className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                          <span className="text-xs text-muted-foreground">Recommended actions</span>
-                        </div>
-                      </div>
+              {/* Recommended Action — hidden when dismissed */}
+              {!actionDismissed && visibleSuggestedActions.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex min-w-0 flex-1 items-center gap-2">
+                      <Zap className="h-4 w-4 shrink-0 text-amber-500" aria-hidden />
+                      <span className="text-sm font-medium text-foreground">Recommended actions</span>
+                    </div>
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
                       <Button
-                        variant="ghost"
+                        type="button"
+                        variant="secondary"
                         size="sm"
-                        className="text-xs gap-1.5 text-muted-foreground hover:text-foreground shrink-0 opacity-0 pointer-events-none group-hover/ai-insights-card:opacity-100 group-hover/ai-insights-card:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto transition-opacity"
+                        className="h-8 rounded-md px-3 text-xs"
+                        onClick={() => {
+                          const ids = visibleSuggestedActions.map((a) => a.id);
+                          setSelectedRecommendedIds((prev) => {
+                            const all =
+                              ids.length > 0 && ids.every((id) => prev.has(id));
+                            return all ? new Set() : new Set(ids);
+                          });
+                        }}
+                      >
+                        Select All
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 gap-1.5 rounded-md border-primary/15 bg-muted/40 px-3 text-xs text-foreground hover:bg-muted/60"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDismissAction();
@@ -745,96 +822,98 @@ export function DashboardAISummary({ dashboardId, dashboardData }: DashboardAISu
                         Dismiss all
                       </Button>
                     </div>
-
-                    <div className="grid grid-cols-1 gap-2">
-                      {visibleSuggestedActions.map((action) => {
-                        const ActionIcon = actionIconMap[action.id] ?? defaultActionIcon;
-                        const colors = actionIconColors[action.id] ?? defaultActionIconColors;
-                        return (
-                          <div
-                            key={action.id}
-                            id={`ai-summary-action-${dashboardId}-${action.id}`}
-                            role="button"
-                            tabIndex={0}
-                            className="group/action-row w-full text-left rounded-lg border border-border bg-muted/30 p-4 transition-colors hover:bg-muted/50"
-                            onClick={() => setSheetAction(action)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" || e.key === " ") {
-                                e.preventDefault();
-                                setSheetAction(action);
-                              }
-                            }}
-                          >
-                            <div className="flex items-start gap-3">
-                              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${colors.bg}`}>
-                                <ActionIcon className={`h-4 w-4 ${colors.text}`} />
-                              </div>
-                              <div className="min-w-0 flex-1 space-y-1">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="text-sm" style={{ fontWeight: 600 }}>
-                                    {action.title}
-                                  </span>
-                                  <Badge
-                                    variant="outline"
-                                    className="text-green-700 dark:text-green-400 border-green-200 dark:border-green-800"
-                                  >
-                                    {action.impactValue}
-                                  </Badge>
-                                  <Badge variant="outline" className={typeColors[action.type]}>
-                                    {action.type}
-                                  </Badge>
-                                </div>
-                                <p className="text-sm text-muted-foreground">{action.description}</p>
-                              </div>
-
-                              <div
-                                className="flex items-center gap-0.5 shrink-0 -mr-1 opacity-0 group-hover/action-row:opacity-100 transition-opacity"
-                                onClick={(e) => e.stopPropagation()}
-                                onPointerDown={(e) => e.stopPropagation()}
-                              >
-                                <WidgetAIPromptButton
-                                  widgetTitle={`Action: ${action.title}`}
-                                  chartType="action"
-                                  widgetAnchorId={`ai-summary-action-${dashboardId}-${action.id}`}
-                                  tooltipLabel="Ask AI about this action"
-                                  tooltipSide="bottom"
-                                  triggerClassName="h-8 w-8 group-hover/action-row:opacity-100"
-                                />
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDismissSingleAction(action);
-                                      }}
-                                      aria-label="Dismiss"
-                                    >
-                                      <BellOff className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="bottom">Dismiss</TooltipContent>
-                                </Tooltip>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
                   </div>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
+
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
+                    {visibleSuggestedActions.map((action) => (
+                      <div
+                        key={action.id}
+                        id={`ai-summary-action-${dashboardId}-${action.id}`}
+                        className="flex min-h-[150px] min-w-0 flex-col gap-2 rounded-xl border border-primary/40 bg-primary/[0.03] p-4 transition-colors hover:border-primary/55 hover:bg-primary/[0.05]"
+                      >
+                        <div className="flex min-h-0 flex-1 gap-2">
+                          <div
+                            className="pt-0.5"
+                            onClick={(e) => e.stopPropagation()}
+                            onPointerDown={(e) => e.stopPropagation()}
+                          >
+                            <Checkbox
+                              checked={selectedRecommendedIds.has(action.id)}
+                              onCheckedChange={() => {
+                                setSelectedRecommendedIds((prev) => {
+                                  const next = new Set(prev);
+                                  if (next.has(action.id)) next.delete(action.id);
+                                  else next.add(action.id);
+                                  return next;
+                                });
+                              }}
+                              aria-label={`Select ${action.title}`}
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            className="min-w-0 flex-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
+                            onClick={() => setSheetAction(action)}
+                          >
+                            <div className="flex flex-col gap-2.5">
+                              <span className="line-clamp-2 text-base font-normal leading-6 text-foreground">
+                                {action.title}
+                              </span>
+                              <Badge
+                                variant="outline"
+                                className="w-fit border-green-500/50 bg-emerald-50 px-2 py-0.5 text-xs font-normal text-emerald-800 dark:border-green-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+                              >
+                                {action.impactValue}
+                              </Badge>
+                              <p className="text-sm leading-5 text-muted-foreground">{action.description}</p>
+                            </div>
+                          </button>
+                        </div>
+                        <div
+                          className="flex justify-end border-t border-transparent pt-1"
+                          onClick={(e) => e.stopPropagation()}
+                          onPointerDown={(e) => e.stopPropagation()}
+                        >
+                          <WidgetAIPromptButton
+                            widgetTitle={`Action: ${action.title}`}
+                            chartType="action"
+                            widgetAnchorId={`ai-summary-action-${dashboardId}-${action.id}`}
+                            tooltipLabel="Ask AI about this action"
+                            tooltipSide="bottom"
+                            triggerClassName="h-8 w-8"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex justify-end pt-1">
+                    <Link
+                      to="/recommended-actions"
+                      className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-xs font-normal text-primary underline-offset-4 hover:underline"
+                    >
+                      See All Recommended actions
+                      <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       <RecommendedActionSheet
         action={sheetAction}
         open={!!sheetAction}
         onOpenChange={(open) => { if (!open) setSheetAction(null); }}
+        onDismiss={(id) => {
+          const action = sheetAction && sheetAction.id === id ? sheetAction : null;
+          if (action) {
+            handleDismissSingleAction(action);
+          }
+          setSheetAction(null);
+        }}
       />
     </>
   );

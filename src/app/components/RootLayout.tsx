@@ -220,7 +220,9 @@ function RootLayoutInner() {
               <div data-panel-container className="flex flex-1 min-w-0 min-h-0">
                 <div className="flex-1 flex flex-col min-w-0" style={{ minWidth: "min(420px, 100%)" }}>
                   <main className={`flex-1 ${isFullHeightPage ? 'flex flex-col min-h-0 overflow-hidden' : 'overflow-auto'}`}>
-                    <div className={`mx-auto w-full max-w-[1440px] ${isFullHeightPage ? 'flex flex-1 min-h-0 flex-col' : ''}`}>
+                    <div
+                      className={`w-full min-h-0 ${isFullHeightPage ? 'flex flex-1 min-h-0 flex-col' : ''}`}
+                    >
                       <Outlet />
                     </div>
                   </main>

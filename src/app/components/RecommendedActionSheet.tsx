@@ -157,23 +157,19 @@ export function RecommendedActionSheet({
           >
             Preview Configuration
           </Button>
-          <Button
-            variant="ghost"
-            className="w-full text-muted-foreground"
-            onClick={() => {
-              onOpenChange(false);
-              if (onDismiss) {
+          {onDismiss && (
+            <Button
+              variant="ghost"
+              className="w-full text-muted-foreground"
+              onClick={() => {
+                onOpenChange(false);
                 onDismiss(action.id);
-              } else {
-                toast.success("Action dismissed", {
-                  description: `"${action.title}" has been dismissed.`,
-                });
-              }
-            }}
-          >
-            <BellOff className="h-4 w-4 mr-2" />
-            Dismiss Action
-          </Button>
+              }}
+            >
+              <BellOff className="h-4 w-4 mr-2" />
+              Dismiss Action
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>

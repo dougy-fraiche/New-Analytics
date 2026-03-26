@@ -9,7 +9,7 @@ import {
   Clock,
   X,
   Activity,
-  Lightbulb,
+  Bot,
   Pin,
   Sparkles,
   Settings,
@@ -179,7 +179,7 @@ export function SearchOverlay({ open, onOpenChange }: SearchOverlayProps) {
                 value="Automation Opportunities"
                 onSelect={() => handleSelect(ROUTES.AUTOMATION_OPPORTUNITIES, "Automation Opportunities")}
               >
-                <Lightbulb className="mr-2 h-4 w-4" />
+                <Bot className="mr-2 h-4 w-4" />
                 <span>Automation Opportunities</span>
               </CommandItem>
               <CommandItem value="Pinned" onSelect={() => handleSelect(ROUTES.PINNED, "Pinned")}>

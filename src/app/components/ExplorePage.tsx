@@ -216,6 +216,7 @@ export function ExplorePage() {
             onForcedSuggestionsChange={setForcedSuggestions}
             onActionClick={handleActionClick}
             onSend={handleSend}
+            shouldSkipAnimation={shouldSkipAnimation}
           />
         )}
 

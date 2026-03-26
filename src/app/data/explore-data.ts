@@ -114,6 +114,56 @@ export const insights = [
   },
 ];
 
+// ── Top Automation Opportunities ───────────────────────────────────────
+
+export type AutomationOpportunity = {
+  id: number;
+  title: string;
+  description: string;
+  priority: "Critical" | "High" | "Medium";
+  weeklyVolume: string;
+  impactValue: string;
+};
+
+export const topAutomationOpportunities: AutomationOpportunity[] = [
+  {
+    id: 1,
+    title: "Unlock 45 Agent-Hours a Week",
+    description:
+      "You're handling 847 card clearance requests every week and 94% of them follow the same 3-step pattern.",
+    priority: "Critical",
+    weeklyVolume: "847/wk",
+    impactValue: "$213K/yr",
+  },
+  {
+    id: 2,
+    title: "Your #1 Ticket Type Can Basically Run Itself",
+    description:
+      "Over 1,200 \"Where is my order?\" questions every week. Most are just copying tracking numbers.",
+    priority: "Critical",
+    weeklyVolume: "1,243/wk",
+    impactValue: "$319K/yr",
+  },
+  {
+    id: 3,
+    title: "Cut Returns Time from 8 Minutes to Under 1",
+    description:
+      "534 return cases a week, averaging nearly 8 minutes each. Most are policy checks.",
+    priority: "High",
+    weeklyVolume: "534/wk",
+    impactValue: "$189K/yr",
+  },
+  {
+    id: 4,
+    title: "Turn 5-Minute Calls Into 30-Second Wins",
+    description:
+      "312 scheduling requests a week. Most follow the same pattern: check availability, pick a time, confirm.",
+    priority: "Medium",
+    weeklyVolume: "312/wk",
+    impactValue: "$99K/yr",
+  },
+];
+
 // ── Title generation rules ────────────────────────────────────────────
 
 const titleRules: Array<{ keywords: string[]; titles: string[] }> = [

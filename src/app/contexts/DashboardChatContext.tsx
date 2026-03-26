@@ -17,27 +17,14 @@ export interface ChatMessage {
   widgetAnchorId?: string;
 }
 
-export interface ChatThread {
-  id: string;
-  title: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 type Listener = () => void;
 
 /**
  * Lightweight external store for dashboard chat messages.
- * Allows per-key subscriptions so that only the consumers of a specific
- * dashboard key re-render when that key's messages change.
- *
- * Supports multi-thread conversations per dashboard. Messages for a thread
- * are stored under the composite key `${dashboardKey}::thread::${threadId}`.
- * Thread metadata is stored separately per dashboard key.
+ * One conversation per dashboard key (persistKey).
  */
 class ChatStore {
   private data: Record<string, ChatMessage[]> = {};
-  private threads: Record<string, ChatThread[]> = {};
   private listeners = new Set<Listener>();
   private keyListeners = new Map<string, Set<Listener>>();
 
@@ -59,8 +46,6 @@ class ChatStore {
     };
   };
 
-  // ── Message operations ───────────────────────────────────────────────
-
   getMessages = (key: string): ChatMessage[] => this.data[key] ?? EMPTY;
 
   setMessages = (key: string, messages: ChatMessage[]) => {
@@ -78,61 +63,6 @@ class ChatStore {
     this.notify(key);
   };
 
-  // ── Thread operations ────────────────────────────────────────────────
-
-  static threadKey(dashboardKey: string, threadId: string) {
-    return `${dashboardKey}::thread::${threadId}`;
-  }
-
-  /** Key used for subscribing to thread-list changes for a dashboard */
-  static threadsListKey(dashboardKey: string) {
-    return `${dashboardKey}::__threads__`;
-  }
-
-  getThreads = (dashboardKey: string): ChatThread[] =>
-    this.threads[dashboardKey] ?? EMPTY_THREADS;
-
-  createThread = (dashboardKey: string, title: string, id?: string): ChatThread => {
-    const thread: ChatThread = {
-      id: id ?? crypto.randomUUID(),
-      title,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    this.threads[dashboardKey] = [...(this.threads[dashboardKey] ?? []), thread];
-    this.notify(ChatStore.threadsListKey(dashboardKey));
-    return thread;
-  };
-
-  updateThreadTimestamp = (dashboardKey: string, threadId: string) => {
-    const list = this.threads[dashboardKey];
-    if (!list) return;
-    this.threads[dashboardKey] = list.map((t) =>
-      t.id === threadId ? { ...t, updatedAt: new Date() } : t,
-    );
-    this.notify(ChatStore.threadsListKey(dashboardKey));
-  };
-
-  renameThread = (dashboardKey: string, threadId: string, title: string): void => {
-    const list = this.threads[dashboardKey];
-    if (!list) return;
-    this.threads[dashboardKey] = list.map((t) =>
-      t.id === threadId ? { ...t, title, updatedAt: new Date() } : t,
-    );
-    this.notify(ChatStore.threadsListKey(dashboardKey));
-  };
-
-  deleteThread = (dashboardKey: string, threadId: string) => {
-    const list = this.threads[dashboardKey];
-    if (!list) return;
-    this.threads[dashboardKey] = list.filter((t) => t.id !== threadId);
-    // Also clean up thread messages
-    const msgKey = ChatStore.threadKey(dashboardKey, threadId);
-    delete this.data[msgKey];
-    this.notify(ChatStore.threadsListKey(dashboardKey));
-    this.notify(msgKey);
-  };
-
   private notify(key: string) {
     this.listeners.forEach((l) => l());
     this.keyListeners.get(key)?.forEach((l) => l());
@@ -140,62 +70,44 @@ class ChatStore {
 }
 
 const EMPTY: ChatMessage[] = [];
-const EMPTY_THREADS: ChatThread[] = [];
 
 interface DashboardChatContextType {
-  /** Get persisted messages for a given dashboard key */
   getMessages: (dashboardKey: string) => ChatMessage[];
-  /** Replace the full message list for a dashboard key */
   setMessages: (dashboardKey: string, messages: ChatMessage[]) => void;
-  /** Append a single message to a dashboard's history */
   appendMessage: (dashboardKey: string, message: ChatMessage) => void;
-  /** Clear conversation for a specific dashboard */
   clearMessages: (dashboardKey: string) => void;
-  /** Get all threads for a dashboard */
-  getThreads: (dashboardKey: string) => ChatThread[];
-  /** Create a new thread */
-  createThread: (dashboardKey: string, title: string, id?: string) => ChatThread;
-  /** Update a thread's timestamp */
-  updateThreadTimestamp: (dashboardKey: string, threadId: string) => void;
-  /** Rename a thread */
-  renameThread: (dashboardKey: string, threadId: string, title: string) => void;
-  /** Delete a thread and its messages */
-  deleteThread: (dashboardKey: string, threadId: string) => void;
-  /** Access the underlying store for per-key subscriptions */
   _store: ChatStore;
 }
 
 const DashboardChatContext = createContext<DashboardChatContextType | undefined>(undefined);
 
+function mergeSeedThreadsToMessages(
+  seedThreads: { messages: ChatMessage[] }[],
+): ChatMessage[] {
+  const merged: ChatMessage[] = [];
+  for (const { messages } of seedThreads) {
+    merged.push(...messages);
+  }
+  return merged;
+}
+
 export function DashboardChatProvider({ children }: { children: ReactNode }) {
-  // Store is stable for the lifetime of the provider
   const storeRef = useRef<ChatStore>(null);
   if (!storeRef.current) {
     storeRef.current = new ChatStore();
-    // Seed with placeholder threads for OOTB dashboards
     const store = storeRef.current;
     for (const [dashboardKey, seedThreads] of Object.entries(SEED_DASHBOARD_THREADS)) {
-      for (const { thread, messages } of seedThreads) {
-        store.createThread(dashboardKey, thread.title, thread.id);
-        const msgKey = ChatStore.threadKey(dashboardKey, thread.id);
-        store.setMessages(msgKey, messages);
-      }
+      store.setMessages(dashboardKey, mergeSeedThreadsToMessages(seedThreads));
     }
   }
   const store = storeRef.current;
 
-  // Memoize context value so consumers don't re-render when the provider re-renders
   const value = useMemo<DashboardChatContextType>(
     () => ({
       getMessages: store.getMessages,
       setMessages: store.setMessages,
       appendMessage: store.appendMessage,
       clearMessages: store.clearMessages,
-      getThreads: store.getThreads,
-      createThread: store.createThread,
-      updateThreadTimestamp: store.updateThreadTimestamp,
-      renameThread: store.renameThread,
-      deleteThread: store.deleteThread,
       _store: store,
     }),
     [store],
@@ -216,10 +128,6 @@ export function useDashboardChat() {
   return context;
 }
 
-/**
- * Per-key selector hook — only re-renders when THIS dashboard's
- * messages change, not when any other dashboard's messages change.
- */
 export function useDashboardMessages(dashboardKey: string): ChatMessage[] {
   const { _store: store } = useDashboardChat();
 
@@ -231,28 +139,6 @@ export function useDashboardMessages(dashboardKey: string): ChatMessage[] {
   const getSnapshot = useCallback(
     () => store.getMessages(dashboardKey),
     [store, dashboardKey],
-  );
-
-  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
-}
-
-/**
- * Per-dashboard thread list hook — only re-renders when the thread list
- * for THIS dashboard changes.
- */
-export function useDashboardThreads(dashboardKey: string): ChatThread[] {
-  const ctx = useDashboardChat();
-  const store = ctx._store;
-
-  const subscribe = useCallback(
-    (onStoreChange: () => void) =>
-      store.subscribeKey(ChatStore.threadsListKey(dashboardKey), onStoreChange),
-    [store, dashboardKey],
-  );
-
-  const getSnapshot = useCallback(
-    () => ctx.getThreads(dashboardKey),
-    [ctx, dashboardKey],
   );
 
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);

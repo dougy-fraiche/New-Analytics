@@ -44,7 +44,7 @@ export function TopNavBar({ onSearchClick, breadcrumbs = [], onActionsSlotRef }:
   const hasBreadcrumbs = breadcrumbs.length > 0;
 
   return (
-    <header className="flex h-16 w-full items-center border-b border-border bg-card shrink-0 z-50 px-4">
+    <header className="flex h-16 w-full items-center border-b border-border bg-background shrink-0 z-50 px-4">
       {/* Sidebar toggle */}
       <div className="flex items-center h-full">
         <Tooltip>

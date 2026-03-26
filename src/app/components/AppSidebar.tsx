@@ -27,7 +27,7 @@ import {
   CalendarClock,
   ClipboardCheck,
   Target,
-  Lightbulb,
+  Bot,
   GraduationCap,
   MessageSquare,
   Diamond,
@@ -289,23 +289,29 @@ export function AppSidebar() {
   return (
     <>
       <Sidebar collapsible="icon">
-        <SidebarHeader className="px-2 pt-2 pb-2">
+        <SidebarHeader className="pt-4 pb-0">
           {/* App switcher dropdown */}
-          <SidebarMenu>
+          <SidebarMenu className="mb-4">
             <SidebarMenuItem>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground" tooltip="Switch application">
+                  <SidebarMenuButton
+                    size="lg"
+                    className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground group-data-[collapsible=icon]:justify-center"
+                    tooltip="Switch application"
+                  >
                     <img
                       src="/app-icon.svg"
                       alt="New Analytics"
-                      className="size-8 shrink-0"
+                      className="size-6 shrink-0 object-contain"
                     />
-                    <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate" style={{ fontWeight: 600 }}>New Analytics</span>
-                      <span className="truncate text-xs text-muted-foreground">Analytics Platform</span>
-                    </div>
-                    <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span
+                      className="truncate flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden"
+                      style={{ fontWeight: 600 }}
+                    >
+                      New Analytics
+                    </span>
+                    <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 text-muted-foreground group-data-[collapsible=icon]:hidden" />
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
@@ -426,7 +432,7 @@ export function AppSidebar() {
           </SidebarMenu>
 
           {/* Actions label + menu (kept as one header child to avoid SidebarHeader gap) */}
-          <div className="mt-2 flex flex-col gap-0">
+          <div className="mt-1 group-data-[collapsible=icon]:mt-0 flex flex-col gap-0">
             <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">Actions</SidebarGroupLabel>
             <SidebarMenu>
               <SidebarMenuItem>
@@ -455,9 +461,9 @@ export function AppSidebar() {
           </div>
         </SidebarHeader>
 
-        <SidebarContent className="gap-0">
+        <SidebarContent className="gap-1 pt-0 group-data-[collapsible=icon]:pt-0">
           {/* Dashboards heading */}
-          <div className="px-2 pt-2">
+          <div className="pt-2 group-data-[collapsible=icon]:pt-0">
             <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">Dashboards</SidebarGroupLabel>
           </div>
 
@@ -477,8 +483,6 @@ export function AppSidebar() {
               <>
                 {(favorites.length > 5 ? favorites.slice(0, 5) : favorites).map((fav) => {
                   const isActive = location.pathname === fav.path;
-                  const oobMatch = allOotbDashboards.find((d) => d.id === fav.id);
-                  const FavIcon = oobMatch ? oobMatch.icon : LayoutDashboard;
                   const isProjectDashboard = fav.id.includes("/");
                   const folderPath = isProjectDashboard ? `/saved/${fav.id.split("/")[0]}` : null;
                   return (
@@ -486,7 +490,6 @@ export function AppSidebar() {
                       <div className="relative group/subitem">
                         <SidebarMenuSubButton asChild isActive={isActive} className="group-hover/subitem:pr-8 group-focus-within/subitem:pr-8">
                           <Link to={fav.path}>
-                            <FavIcon className="h-4 w-4" />
                             <span className="truncate">{fav.name}</span>
                           </Link>
                         </SidebarMenuSubButton>
@@ -537,12 +540,12 @@ export function AppSidebar() {
             )}
           </CollapsibleSidebarSection>
 
-          <div className="px-2 py-0.5">
+          <div className="py-0">
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={location.pathname === "/automation-opportunities"} tooltip="Automation Opportunities">
                   <Link to="/automation-opportunities">
-                    <Lightbulb />
+                    <Bot />
                     <span>Automation Opportunities</span>
                   </Link>
                 </SidebarMenuButton>
@@ -564,7 +567,6 @@ export function AppSidebar() {
               </SidebarMenuSubItem>
             ) : (
               ootbCategories.map((category) => {
-                const CatIcon = category.icon;
                 const categoryPath =
                   category.dashboards.length === 0
                     ? `/dashboard/${category.id}`
@@ -577,7 +579,6 @@ export function AppSidebar() {
                   <SidebarMenuSubItem key={category.id}>
                     <SidebarMenuSubButton asChild isActive={isActive}>
                       <Link to={categoryPath}>
-                        <CatIcon className="h-4 w-4" />
                         <span className="truncate">{category.name}</span>
                       </Link>
                     </SidebarMenuSubButton>
@@ -680,7 +681,6 @@ export function AppSidebar() {
                                     className="group-hover/subitem:pr-8 group-focus-within/subitem:pr-8"
                                   >
                                     <Link to={`/project/${project.id}/dashboard/${dashboard.id}`}>
-                                      <LayoutDashboard className="h-4 w-4" />
                                       <span className="truncate">{dashboard.name}</span>
                                     </Link>
                                   </SidebarMenuSubButton>
@@ -758,7 +758,6 @@ export function AppSidebar() {
                       className="group-hover/subitem:pr-8 group-focus-within/subitem:pr-8"
                     >
                       <Link to={`/saved/dashboard/${dashboard.id}`}>
-                        <LayoutDashboard className="h-4 w-4" />
                         <span className="truncate">{dashboard.name}</span>
                       </Link>
                     </SidebarMenuSubButton>

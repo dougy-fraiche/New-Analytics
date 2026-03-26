@@ -1,11 +1,10 @@
 import { useState } from "react";
 import {
-  ChevronUp,
-  ChevronDown,
   Trash2,
   Rocket as RocketIcon,
   Search,
   MoreHorizontal,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -44,12 +43,13 @@ import {
   defaultActionIcon,
   defaultActionIconColors,
   type RecommendedAction,
-  type PriorityLevel,
 } from "../data/recommended-actions";
+import { PageContent, PageHeader } from "./PageChrome";
 import { RecommendedActionSheet } from "./RecommendedActionSheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { useNavigate } from "react-router";
 import { useProjects } from "../contexts/ProjectContext";
+import { PageTransition } from "./PageTransition";
 
 const LINKED_DASHBOARD_IDS_BY_ACTION_ID: Record<number, string[]> = {
   1: ["dash-2", "dash-13"],
@@ -66,7 +66,6 @@ export function RecommendedActionsPage() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [dismissedActions, setDismissedActions] = useState<number[]>([]);
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [sheetAction, setSheetAction] = useState<RecommendedAction | null>(null);
@@ -104,12 +103,8 @@ export function RecommendedActionsPage() {
     return true;
   });
 
-  const sortedActions = [...filteredActions].sort((a, b) => {
-    const priorityOrder: Record<PriorityLevel, number> = { High: 3, Medium: 2, Low: 1 };
-    return sortDirection === "desc"
-      ? priorityOrder[b.priority] - priorityOrder[a.priority]
-      : priorityOrder[a.priority] - priorityOrder[b.priority];
-  });
+  /** Row order comes from data until the user sorts via the shared Table (header click). */
+  const sortedActions = filteredActions;
 
   const pendingCount = recommendedActionsData.filter(
     (a) => !dismissedActions.includes(a.id)
@@ -141,6 +136,13 @@ export function RecommendedActionsPage() {
       description: action
         ? `"${action.title}" has been dismissed.`
         : "Action dismissed.",
+      action: {
+        label: "Undo",
+        onClick: () => {
+          setDismissedActions((prev) => prev.filter((x) => x !== id));
+          toast.success("Action restored");
+        },
+      },
     });
   };
 
@@ -190,16 +192,17 @@ export function RecommendedActionsPage() {
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <header className="shrink-0 sticky top-0 z-10 bg-background px-8 pt-6 pb-0">
+      <PageHeader>
         <div>
           <h1 className="text-3xl tracking-tight">Recommended Actions</h1>
           <p className="text-muted-foreground mt-2">
             AI-generated recommendations to improve your customer experience
           </p>
         </div>
-      </header>
+      </PageHeader>
       <div className="flex-1 min-h-0 overflow-auto">
-        <div className="space-y-6 p-8">
+        <PageContent className="space-y-6 p-8">
+      <PageTransition className="space-y-6">
       {/* Summary Cards */}
       <div className="flex flex-wrap gap-3">
         <Badge variant="secondary" className="text-sm px-3 py-1">
@@ -219,7 +222,7 @@ export function RecommendedActionsPage() {
       {pendingCount > 0 ? (
         <>
       {/* Filters */}
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex w-full flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -263,12 +266,13 @@ export function RecommendedActionsPage() {
         </Select>
         {hasActiveFilters && (
           <Button
-            variant="link"
+            variant="ghost"
             size="sm"
             onClick={clearFilters}
-            className="text-primary ml-auto"
+            className="shrink-0"
           >
-            Clear Filters
+            <RotateCcw className="mr-2 h-4 w-4" />
+            Reset Filters
           </Button>
         )}
       </div>
@@ -309,28 +313,16 @@ export function RecommendedActionsPage() {
                     aria-label="Select all"
                   />
                 </TableHead>
-                <TableHead className="min-w-[280px]">
+                <TableHead className="w-[520px]">
                   Recommended Action
                 </TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>
-                  <button
-                    className="flex items-center gap-1 hover:text-foreground"
-                    onClick={() =>
-                      setSortDirection((d) => (d === "desc" ? "asc" : "desc"))
-                    }
-                  >
-                    Priority
-                    {sortDirection === "desc" ? (
-                      <ChevronDown className="h-3.5 w-3.5" />
-                    ) : (
-                      <ChevronUp className="h-3.5 w-3.5" />
-                    )}
-                  </button>
+                <TableHead className="w-[132px]">Type</TableHead>
+                <TableHead className="w-[120px]">Priority</TableHead>
+                <TableHead className="w-[220px]">Projected Impact</TableHead>
+                <TableHead className="w-[120px] text-right">Projected ROI</TableHead>
+                <TableHead className="w-[200px] text-right">
+                  <span className="sr-only">Actions</span>
                 </TableHead>
-                <TableHead>Projected Impact</TableHead>
-                <TableHead className="text-right">Projected ROI</TableHead>
-                <TableHead className="w-[50px]"><span className="sr-only">Actions</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -348,7 +340,7 @@ export function RecommendedActionsPage() {
                         aria-label={`Select ${action.title}`}
                       />
                     </TableCell>
-                    <TableCell className="py-4">
+                    <TableCell className="w-[520px] py-4 whitespace-normal">
                       {(() => {
                         const IconComp = actionIconMap[action.id] ?? defaultActionIcon;
                         const colors = actionIconColors[action.id] ?? defaultActionIconColors;
@@ -370,32 +362,32 @@ export function RecommendedActionsPage() {
                         );
                       })()}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="w-[132px]">
                       <span
                         className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs ${typeColors[action.type]}`}
                       >
                         {action.type}
                       </span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="w-[120px]">
                       <span
                         className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs ${priorityColors[action.priority]}`}
                       >
                         {action.priority}
                       </span>
                     </TableCell>
-                    <TableCell>
-                      <p className="text-sm font-medium text-primary">
+                    <TableCell className="w-[220px]">
+                      <p className="text-sm font-medium text-green-700">
                         {action.impactValue}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {action.impactLabel}
                       </p>
                     </TableCell>
-                    <TableCell className="text-right font-medium">
+                    <TableCell className="w-[120px] text-right font-medium tabular-nums">
                       {action.projectedROI}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="w-[200px] text-right whitespace-normal">
                       <div className="flex items-center justify-end gap-2">
                         {(() => {
                           const linkedPath = getLinkedDashboardPathForAction(action.id);
@@ -476,7 +468,8 @@ export function RecommendedActionsPage() {
           setSheetAction(null);
         }}
       />
-        </div>
+      </PageTransition>
+        </PageContent>
       </div>
     </div>
   );

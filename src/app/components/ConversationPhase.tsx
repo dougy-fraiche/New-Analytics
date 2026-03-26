@@ -53,6 +53,12 @@ import { useHeaderActionsSlot } from "../contexts/HeaderActionsSlotContext";
 import { generateAIResponse } from "../data/explore-data";
 import { useKeyboardShortcut } from "../hooks/useKeyboardShortcuts";
 import type { ChatMessage } from "../contexts/DashboardChatContext";
+import {
+  PAGE_ENTER_ANIMATE,
+  PAGE_ENTER_INITIAL,
+  PAGE_EXIT,
+  PAGE_TRANSITION,
+} from "./page-transition-presets";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -321,10 +327,10 @@ export function ConversationPhase({
       {/* ─── Main content area (left): Dashboard / empty state ─── */}
       <motion.div
         key="conversation"
-        initial={shouldSkipAnimation ? false : { opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={shouldSkipAnimation ? { duration: 0 } : { duration: 0.35 }}
+        initial={shouldSkipAnimation ? false : PAGE_ENTER_INITIAL}
+        animate={PAGE_ENTER_ANIMATE}
+        exit={shouldSkipAnimation ? { opacity: 1 } : PAGE_EXIT}
+        transition={shouldSkipAnimation ? { duration: 0 } : PAGE_TRANSITION}
         className="h-full overflow-auto"
       >
         <ConversationDashboardArea

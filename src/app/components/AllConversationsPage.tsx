@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router";
-import { MoreHorizontal, Pencil, Trash2, Archive, Search, ArchiveRestore, MessageSquare } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, Archive, Search, ArchiveRestore, MessageSquare, RotateCcw } from "lucide-react";
 import { Button } from "./ui/button";
 import { Checkbox } from "./ui/checkbox";
 import { Badge } from "./ui/badge";
@@ -40,6 +40,7 @@ import {
   EmptyTitle,
   EmptyDescription,
 } from "./ui/empty";
+import { PageContent, PageHeader } from "./PageChrome";
 import { PageTransition } from "./PageTransition";
 import { SkeletonCard } from "./SkeletonCard";
 // @tanstack/react-virtual is installed and ready for virtualization
@@ -131,16 +132,16 @@ export function AllConversationsPage() {
   if (isLoading) {
     return (
       <div className="flex flex-col flex-1 min-h-0">
-        <header className="shrink-0 sticky top-0 z-10 bg-background px-8 pt-6 pb-0">
+        <PageHeader>
           <div className="space-y-2">
             <div className="h-8 w-48 bg-accent animate-pulse rounded-md" />
             <div className="h-4 w-72 bg-accent animate-pulse rounded-md" />
           </div>
-        </header>
+        </PageHeader>
         <div className="flex-1 min-h-0 overflow-auto">
-          <div className="p-8">
+          <PageContent className="p-8">
             <SkeletonCard />
-          </div>
+          </PageContent>
         </div>
       </div>
     );
@@ -148,16 +149,17 @@ export function AllConversationsPage() {
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <header className="shrink-0 sticky top-0 z-10 bg-background px-8 pt-6 pb-0">
+      <PageHeader>
         <div>
           <h1 className="text-3xl tracking-tight">All Conversations</h1>
           <p className="text-muted-foreground mt-2">
             Browse and manage your conversations
           </p>
         </div>
-      </header>
+      </PageHeader>
       <div className="flex-1 min-h-0 overflow-auto">
-        <PageTransition className="space-y-6 p-8">
+        <PageContent className="p-8">
+        <PageTransition className="space-y-6">
       {/* Summary badges */}
       <div className="flex flex-wrap gap-3">
         <Badge variant="secondary" className="text-sm px-3 py-1">
@@ -215,7 +217,7 @@ export function AllConversationsPage() {
       ) : (
         <>
         {/* Search */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex w-full flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[200px] max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -229,9 +231,11 @@ export function AllConversationsPage() {
             <Button
               variant="ghost"
               size="sm"
+              className="shrink-0"
               onClick={() => setSearchQuery("")}
             >
-              Clear
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Reset Filters
             </Button>
           )}
         </div>
@@ -506,6 +510,7 @@ export function AllConversationsPage() {
         </DialogContent>
       </Dialog>
         </PageTransition>
+        </PageContent>
       </div>
     </div>
   );

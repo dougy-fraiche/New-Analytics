@@ -69,6 +69,28 @@ export type ChartDataSelectInfo = {
   clientY?: number;
 };
 
+/** Resolve viewport coordinates for AI popover anchoring (ECharts wraps events inconsistently). */
+function resolveChartClickClientXY(
+  params: { event?: any },
+  container: HTMLElement | null,
+): { clientX?: number; clientY?: number } {
+  const raw = params?.event;
+  if (!raw) return {};
+
+  const native =
+    typeof raw.clientX === "number" && typeof raw.clientY === "number" ? raw : raw.event;
+  if (native && typeof native.clientX === "number" && typeof native.clientY === "number") {
+    return { clientX: native.clientX, clientY: native.clientY };
+  }
+
+  if (!container) return {};
+  const ox = raw.offsetX ?? raw.zrX;
+  const oy = raw.offsetY ?? raw.zrY;
+  if (typeof ox !== "number" || typeof oy !== "number") return {};
+  const r = container.getBoundingClientRect();
+  return { clientX: r.left + ox, clientY: r.top + oy };
+}
+
 export function EChartsCanvas({
   option,
   className,
@@ -101,6 +123,11 @@ export function EChartsCanvas({
     return { backgroundColor: "transparent", ...option };
   }, [isDark, option]);
 
+  // Avoid disposing/re-init on every parent render when `onDataSelect` identity changes
+  // (e.g. inline handlers from the dashboard grid) — that causes visible chart flicker.
+  const onDataSelectRef = useRef(onDataSelect);
+  onDataSelectRef.current = onDataSelect;
+
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -109,10 +136,8 @@ export function EChartsCanvas({
     chart.setOption(resolveCssVars(optionForTheme, el), { notMerge: true });
 
     const handleClick = (params: any) => {
-      const evt = params?.event?.event;
-      const clientX = typeof evt?.clientX === "number" ? evt.clientX : undefined;
-      const clientY = typeof evt?.clientY === "number" ? evt.clientY : undefined;
-      onDataSelect?.({
+      const { clientX, clientY } = resolveChartClickClientXY(params, el);
+      onDataSelectRef.current?.({
         name: params.name,
         value: params.value,
         seriesName: params.seriesName,
@@ -132,7 +157,7 @@ export function EChartsCanvas({
       ro.disconnect();
       chart.dispose();
     };
-  }, [theme, optionForTheme, onDataSelect]);
+  }, [theme, optionForTheme]);
 
   useEffect(() => {
     const el = containerRef.current;

@@ -11,6 +11,9 @@ const badgeVariants = cva(
       variant: {
         default:
           "border-transparent bg-primary text-primary-foreground [a&]:hover:bg-primary/90",
+        /** C26 soft primary: tags, filters, chips (lavender fill + deep purple text) */
+        primarySoft:
+          "border-transparent bg-primary-soft text-primary-soft-foreground [a&]:hover:bg-primary-soft/90",
         secondary:
           "border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90",
         destructive:

@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useParams, Link } from "react-router";
-import { Folder, FileText, Plus, MoreHorizontal, Trash2, FolderOpen, Search, FolderInput, LayoutDashboard, ChevronRight, Filter, Pencil, GripVertical, FolderOutput, Copy } from "lucide-react";
+import { Folder, FileText, Plus, MoreHorizontal, Trash2, FolderOpen, Search, FolderInput, LayoutDashboard, ChevronRight, Filter, Pencil, GripVertical, FolderOutput, Copy, RotateCcw } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import {
@@ -26,6 +26,9 @@ import { DeleteDashboardDialog } from "./DeleteDashboardDialog";
 import { DeleteFolderDialog } from "./DeleteFolderDialog";
 import { DuplicateDashboardDialog } from "./DuplicateDashboardDialog";
 import { useDrag, useDrop } from "react-dnd";
+
+import { PageContent, PageHeader } from "./PageChrome";
+import { PageTransition } from "./PageTransition";
 
 const DRAG_TYPE_DASHBOARD = "CUSTOM_DASHBOARD";
 
@@ -360,7 +363,7 @@ export function SavedFoldersPage() {
 
     return (
       <div className="flex flex-col flex-1 min-h-0">
-        <header className="shrink-0 sticky top-0 z-10 bg-background px-8 pt-6 pb-0">
+        <PageHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
@@ -374,14 +377,15 @@ export function SavedFoldersPage() {
               </div>
             </div>
           </div>
-        </header>
+        </PageHeader>
         <div className="flex-1 min-h-0 overflow-auto">
-          <div className="space-y-6 p-8">
+          <PageContent className="space-y-6 p-8">
+        <PageTransition className="space-y-6">
         {/* Dashboards in Folder */}
         {selectedFolder.dashboards.length > 0 ? (
           <>
           {/* Search */}
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex w-full flex-wrap items-center gap-3">
             <div className="relative flex-1 min-w-[200px] max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -395,9 +399,11 @@ export function SavedFoldersPage() {
               <Button
                 variant="ghost"
                 size="sm"
+                className="shrink-0"
                 onClick={() => setSearchQuery("")}
               >
-                Clear
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Reset Filters
               </Button>
             )}
           </div>
@@ -674,7 +680,8 @@ export function SavedFoldersPage() {
           dashboardName={duplicateDashboardDialog?.dashboardName || ""}
           sourceOotbId={duplicateDashboardDialog?.sourceOotbId}
         />
-          </div>
+        </PageTransition>
+          </PageContent>
         </div>
       </div>
     );
@@ -749,7 +756,7 @@ export function SavedFoldersPage() {
   return (
     <>
       <div className="flex flex-col flex-1 min-h-0">
-        <header className="shrink-0 sticky top-0 z-10 bg-background px-8 pt-6 pb-0">
+        <PageHeader>
           <div
             ref={standaloneDropRef as unknown as React.Ref<HTMLDivElement>}
             className={`flex items-center justify-between rounded-lg p-2 -m-2 transition-[box-shadow,background-color] ${isOverStandalone ? "ring-2 ring-primary ring-offset-2 bg-primary/5" : ""}`}
@@ -768,9 +775,10 @@ export function SavedFoldersPage() {
               New Folder
             </Button>
           </div>
-        </header>
+        </PageHeader>
         <div className="flex-1 min-h-0 overflow-auto">
-          <div className="space-y-6 p-8">
+          <PageContent className="space-y-6 p-8">
+        <PageTransition className="space-y-6">
         {/* Summary badges */}
         <div className="flex flex-wrap gap-3">
           <Badge variant="secondary" className="text-sm px-3 py-1">
@@ -846,7 +854,7 @@ export function SavedFoldersPage() {
         {allCustomDashboards.length > 0 ? (
           <>
         {/* Search + Filter */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex w-full flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[200px] max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -873,9 +881,11 @@ export function SavedFoldersPage() {
             <Button
               variant="ghost"
               size="sm"
+              className="shrink-0"
               onClick={() => { setSearchQuery(""); setFolderFilter("all"); }}
             >
-              Clear
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Reset Filters
             </Button>
           )}
         </div>
@@ -1086,7 +1096,8 @@ export function SavedFoldersPage() {
             </Link>
           </Empty>
         )}
-          </div>
+        </PageTransition>
+          </PageContent>
         </div>
       </div>
 

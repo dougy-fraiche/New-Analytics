@@ -1,7 +1,8 @@
 import { createContext, useContext, ReactNode, useCallback, useRef } from "react";
-import { useDashboardChat, ChatStore, type ChatMessage } from "./DashboardChatContext";
+import { useDashboardChat, type ChatMessage } from "./DashboardChatContext";
 
-const WIDGET_THREAD_CREATED_EVENT = "widget-ai-thread-created";
+/** Dispatched after a widget prompt is appended so the assistant panel can react (e.g. focus). */
+const WIDGET_AI_MESSAGE_SENT_EVENT = "widget-ai-message-sent";
 
 interface WidgetAIContextType {
   /** Send a prompt from a widget to the AI chat panel */
@@ -91,16 +92,9 @@ export function WidgetAIProvider({
         return;
       }
 
-      const kpiSuffix = selectedKpiLabel?.trim() ? ` · ${selectedKpiLabel.trim()}` : "";
-      // Create a new thread for this widget prompt
-      const threadTitle = `${widgetTitle}${kpiSuffix}: ${message.length > 40 ? message.slice(0, 40) + "\u2026" : message}`;
-      const thread = dashboardChat.createThread(persistKey, threadTitle);
-      const threadMsgKey = ChatStore.threadKey(persistKey, thread.id);
-
-      // Tell the assistant panel to open the newly created thread (if present on the page)
       window.dispatchEvent(
-        new CustomEvent(WIDGET_THREAD_CREATED_EVENT, {
-          detail: { persistKey, threadId: thread.id },
+        new CustomEvent(WIDGET_AI_MESSAGE_SENT_EVENT, {
+          detail: { persistKey },
         }),
       );
 
@@ -117,7 +111,7 @@ export function WidgetAIProvider({
         widgetAnchorId,
       };
 
-      dashboardChat.appendMessage(threadMsgKey, userMessage);
+      dashboardChat.appendMessage(persistKey, userMessage);
 
       // Generate AI response after delay
       setTimeout(() => {
@@ -136,8 +130,7 @@ export function WidgetAIProvider({
           timestamp: new Date(),
         };
 
-        dashboardChat.appendMessage(threadMsgKey, assistantMessage);
-        dashboardChat.updateThreadTimestamp(persistKey, thread.id);
+        dashboardChat.appendMessage(persistKey, assistantMessage);
       }, 1500);
     },
     [persistKey, dashboardChat, generateResponse, onWidgetPrompt],

@@ -119,7 +119,7 @@ export function ArtifactPanel({
       <ResizeHandle side="left" onResize={handleResize} onReset={handleReset} />
 
       {/* Header bar */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b bg-muted/30 shrink-0">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-background shrink-0">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <span className="text-sm truncate" style={{ fontWeight: 500 }}>
             {dashboard.title}

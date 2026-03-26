@@ -1,8 +1,15 @@
-import type { ChatThread } from "../contexts/DashboardChatContext";
 import type { ChatMessage } from "../contexts/DashboardChatContext";
 
+/** Metadata for a seed segment (merged into one conversation per dashboard at runtime). */
+export interface SeedThreadMeta {
+  id: string;
+  title: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface SeedThread {
-  thread: ChatThread;
+  thread: SeedThreadMeta;
   messages: ChatMessage[];
 }
 

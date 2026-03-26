@@ -37,6 +37,10 @@ function getNodeText(node: React.ReactNode): string {
 
 function parseSortableValue(value: string): string | number {
   const trimmed = value.trim();
+  const lower = trimmed.toLowerCase();
+  if (lower === "high") return 3;
+  if (lower === "medium") return 2;
+  if (lower === "low") return 1;
   const numeric = Number(trimmed.replace(/[,%$]/g, ""));
   if (!Number.isNaN(numeric) && trimmed !== "") return numeric;
   const date = Date.parse(trimmed);

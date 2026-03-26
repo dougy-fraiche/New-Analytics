@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
-import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
+import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +26,13 @@ import { TypeaheadSuggestions } from "./TypeaheadSuggestions";
 import { toast } from "sonner";
 import { useTypingPlaceholder } from "../hooks/useTypingPlaceholder";
 import { placeholderSuffixes } from "../data/explore-data";
+import {
+  DATE_RANGE_CUSTOM_OPTION,
+  DATE_RANGE_LABELS,
+  DATE_RANGE_PRIMARY_OPTIONS,
+  DATE_RANGE_SECONDARY_OPTIONS,
+  type DateRangeOption,
+} from "../data/date-ranges";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { Calendar } from "./ui/calendar";
 import type { DateRange } from "react-day-picker";
@@ -50,22 +57,7 @@ interface ChatInputBarProps {
   onForcedSuggestionsChange?: (s: string[]) => void;
 }
 
-type DateRangeOption =
-  | "last-7-days"
-  | "last-30-days"
-  | "last-90-days"
-  | "this-quarter"
-  | "this-year"
-  | "custom-range";
-
-const DATE_RANGE_LABELS: Record<DateRangeOption, string> = {
-  "last-7-days": "Last 7 days",
-  "last-30-days": "Last 30 days",
-  "last-90-days": "Last 90 days",
-  "this-quarter": "This quarter",
-  "this-year": "This year",
-  "custom-range": "Custom range",
-};
+// Date range options are shared across the app (see `src/app/data/date-ranges.ts`).
 
 export function ChatInputBar({
   variant,
@@ -171,31 +163,29 @@ export function ChatInputBar({
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <Tabs
+              <ToggleGroup
+                type="single"
                 value={researchMode}
                 onValueChange={(value) => {
                   if (value === "fast" || value === "deep") setResearchMode(value);
                 }}
+                variant="outline"
+                className="w-auto shrink-0 data-[variant=outline]:shadow-none"
+                aria-label="Explore mode"
               >
-                <TabsList className="w-auto shrink-0 border-b-0">
-                  <TabsTrigger
-                    value="fast"
-                    aria-label="Fast mode"
-                    className="h-9 border-b-0 px-3 py-1"
-                  >
-                    <Zap className="h-3.5 w-3.5" />
-                    Fast
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="deep"
-                    aria-label="Deep research mode"
-                    className="h-9 border-b-0 px-3 py-1"
-                  >
-                    <Telescope className="h-3.5 w-3.5" />
-                    Deep Research
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
+                <ToggleGroupItem value="fast" aria-label="Fast mode" className="h-9 !flex-none gap-1.5 px-3 py-1">
+                  <Zap className="h-3.5 w-3.5" />
+                  Fast
+                </ToggleGroupItem>
+                <ToggleGroupItem
+                  value="deep"
+                  aria-label="Deep research mode"
+                  className="h-9 !flex-none gap-1.5 px-3 py-1"
+                >
+                  <Telescope className="h-3.5 w-3.5" />
+                  Deep Research
+                </ToggleGroupItem>
+              </ToggleGroup>
 
               <DropdownMenu
                 open={isDateMenuOpen}
@@ -226,7 +216,7 @@ export function ChatInputBar({
                   side={isHero ? "bottom" : "top"}
                   className={
                     showCustomRangeCalendar
-                      ? "w-[20rem] min-w-0 overflow-visible p-0"
+                      ? "w-auto max-w-[calc(100vw-2rem)] min-w-0 overflow-visible p-0"
                       : "w-72"
                   }
                 >
@@ -243,65 +233,49 @@ export function ChatInputBar({
                       <Calendar
                         mode="range"
                         selected={customRange}
+                        defaultMonth={customRange?.from}
                         onSelect={(range) => {
                           setCustomRange(range);
                           setDateRange("custom-range");
                         }}
-                        numberOfMonths={1}
+                        numberOfMonths={2}
+                        className="[--cell-size:2.25rem]"
                       />
                     </div>
                   ) : (
                     <>
-                      <DropdownMenuItem
-                        onClick={() => {
-                          setDateRange("last-7-days");
-                          setIsDateMenuOpen(false);
-                        }}
-                      >
-                        Last 7 days
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => {
-                          setDateRange("last-30-days");
-                          setIsDateMenuOpen(false);
-                        }}
-                      >
-                        Last 30 days
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => {
-                          setDateRange("last-90-days");
-                          setIsDateMenuOpen(false);
-                        }}
-                      >
-                        Last 90 days
-                      </DropdownMenuItem>
+                      {DATE_RANGE_PRIMARY_OPTIONS.map((opt) => (
+                        <DropdownMenuItem
+                          key={opt}
+                          onClick={() => {
+                            setDateRange(opt);
+                            setIsDateMenuOpen(false);
+                          }}
+                        >
+                          {DATE_RANGE_LABELS[opt]}
+                        </DropdownMenuItem>
+                      ))}
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => {
-                          setDateRange("this-quarter");
-                          setIsDateMenuOpen(false);
-                        }}
-                      >
-                        This quarter
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => {
-                          setDateRange("this-year");
-                          setIsDateMenuOpen(false);
-                        }}
-                      >
-                        This year
-                      </DropdownMenuItem>
+                      {DATE_RANGE_SECONDARY_OPTIONS.map((opt) => (
+                        <DropdownMenuItem
+                          key={opt}
+                          onClick={() => {
+                            setDateRange(opt);
+                            setIsDateMenuOpen(false);
+                          }}
+                        >
+                          {DATE_RANGE_LABELS[opt]}
+                        </DropdownMenuItem>
+                      ))}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         onSelect={(event) => {
                           event.preventDefault();
-                          setDateRange("custom-range");
+                          setDateRange(DATE_RANGE_CUSTOM_OPTION);
                           setShowCustomRangeCalendar(true);
                         }}
                       >
-                        Custom range
+                        {DATE_RANGE_LABELS[DATE_RANGE_CUSTOM_OPTION]}
                       </DropdownMenuItem>
                     </>
                   )}

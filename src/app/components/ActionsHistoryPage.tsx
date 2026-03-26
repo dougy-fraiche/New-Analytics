@@ -12,6 +12,7 @@ import {
   Trash2,
   MoreHorizontal,
 } from "lucide-react";
+import { PageContent, PageHeader } from "./PageChrome";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import {
@@ -41,6 +42,7 @@ import {
 import { toast } from "sonner";
 import { BulkActionBar } from "./BulkActionBar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { PageTransition } from "./PageTransition";
 
 type ActionStatus = "completed" | "failed" | "in_progress" | "pending";
 
@@ -280,7 +282,7 @@ export function ActionsHistoryPage() {
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <header className="shrink-0 sticky top-0 z-10 bg-background px-8 pt-6 pb-0">
+      <PageHeader>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl tracking-tight">Deployed Actions</h1>
@@ -293,9 +295,10 @@ export function ActionsHistoryPage() {
             Export Log
           </Button>
         </div>
-      </header>
+      </PageHeader>
       <div className="flex-1 min-h-0 overflow-auto">
-        <div className="space-y-6 p-8">
+        <PageContent className="space-y-6 p-8">
+      <PageTransition className="space-y-6">
       {/* Summary Cards */}
       <div className="flex flex-wrap gap-3">
         <Badge variant="secondary" className="text-sm px-3 py-1">
@@ -312,7 +315,7 @@ export function ActionsHistoryPage() {
       {actions.length > 0 ? (
         <>
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex w-full flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -352,13 +355,15 @@ export function ActionsHistoryPage() {
           <Button
             variant="ghost"
             size="sm"
+            className="shrink-0"
             onClick={() => {
               setSearchQuery("");
               setStatusFilter("all");
               setTypeFilter("all");
             }}
           >
-            Clear filters
+            <RotateCcw className="mr-2 h-4 w-4" />
+            Reset Filters
           </Button>
         )}
       </div>
@@ -523,7 +528,8 @@ export function ActionsHistoryPage() {
           </Link>
         </Empty>
       )}
-        </div>
+      </PageTransition>
+        </PageContent>
       </div>
     </div>
   );

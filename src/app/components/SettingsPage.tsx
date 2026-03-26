@@ -21,6 +21,9 @@ import { Separator } from "./ui/separator";
 import { Badge } from "./ui/badge";
 import { toast } from "sonner";
 
+import { PageContent, PageHeader } from "./PageChrome";
+import { PageTransition } from "./PageTransition";
+
 export function SettingsPage() {
   const [displayName, setDisplayName] = useState("John Doe");
   const [email, setEmail] = useState("john.doe@acme.com");
@@ -54,16 +57,17 @@ export function SettingsPage() {
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <header className="shrink-0 sticky top-0 z-10 bg-background px-8 pt-6 pb-0">
+      <PageHeader>
         <div>
           <h1 className="text-3xl tracking-tight">Settings</h1>
           <p className="text-muted-foreground mt-2">
             Manage your account preferences and application configuration
           </p>
         </div>
-      </header>
+      </PageHeader>
       <div className="flex-1 min-h-0 overflow-auto">
-        <div className="space-y-6 p-8">
+        <PageContent className="space-y-6 p-8">
+      <PageTransition className="space-y-6">
       {/* Profile Settings */}
       <Card>
         <CardHeader>
@@ -291,7 +295,8 @@ export function SettingsPage() {
           </div>
         </CardContent>
       </Card>
-        </div>
+      </PageTransition>
+        </PageContent>
       </div>
     </div>
   );

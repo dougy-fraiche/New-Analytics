@@ -13,7 +13,7 @@ import { DashboardData } from "../contexts/ConversationContext";
 import { DashboardChartGrid } from "./ChartVariants";
 import { WidgetAIProvider } from "../contexts/WidgetAIContext";
 import { SkeletonChartCard, SkeletonMetricCard } from "./SkeletonCard";
-import { DashboardAISummary } from "./DashboardAISummary";
+import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { useContainerBreakpoint } from "../hooks/useContainerBreakpoint";
 
@@ -255,13 +255,13 @@ function DashboardContent({
           )}
         </motion.div>
 
-        {/* AI Summary + Recommended Action */}
+        {/* AI Insights row */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15, duration: 0.4 }}
         >
-          <DashboardAISummary dashboardId={dashboard.id} dashboardData={dashboard} />
+          <HeaderAIInsightsRow dashboardId={dashboard.id} dashboardData={dashboard} className="mt-0" />
         </motion.div>
 
         {/* Key Metrics with stagger animation */}

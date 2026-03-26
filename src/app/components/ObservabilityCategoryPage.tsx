@@ -1,5 +1,6 @@
+import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router";
-import { Calendar, Filter, Download, Share2, MoreVertical, Pin, Settings, Clock } from "lucide-react";
+import { Calendar, Download, Share2, MoreVertical, Pin, Settings, Clock, RotateCcw } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -7,6 +8,7 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
@@ -23,7 +25,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 import { useProjects } from "../contexts/ProjectContext";
 import { ootbCategories } from "../data/ootb-dashboards";
 import { DashboardChartGrid } from "./ChartVariants";
-import { DashboardAISummary } from "./DashboardAISummary";
+import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
 import { DashboardChatPanel } from "./DashboardChatPanel";
 import { useChatPanelSlot } from "../contexts/ChatPanelSlotContext";
 import { WidgetAIProvider } from "../contexts/WidgetAIContext";
@@ -39,6 +41,17 @@ import {
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { useContainerBreakpoint } from "../hooks/useContainerBreakpoint";
+import { PageContent, PageHeader } from "./PageChrome";
+import { PageTransition } from "./PageTransition";
+import { KpiSparkline, KPI_SPARKLINE_SERIES } from "./KpiSparkline";
+import { LabeledSelectValue } from "./HeaderFilters";
+import {
+  DATE_RANGE_CUSTOM_OPTION,
+  DATE_RANGE_LABELS,
+  DATE_RANGE_PRIMARY_OPTIONS,
+  DATE_RANGE_SECONDARY_OPTIONS,
+  type DateRangeOption,
+} from "../data/date-ranges";
 
 // Mock data for dashboard content (same as DashboardPage)
 const trendData = [
@@ -80,6 +93,12 @@ const tableData = [
   { agent: "David Kim", escalations: 15, resolved: 215, avgTime: "3.5h", satisfaction: "97%" },
   { agent: "Lisa Wang", escalations: 27, resolved: 192, avgTime: "4.6h", satisfaction: "93%" },
 ];
+
+const DEFAULT_FILTERS = {
+  dateRange: "last-30-days" as DateRangeOption,
+  team: "all-teams",
+  product: "all-products",
+} as const;
 
 export function ObservabilityCategoryPage() {
   const { categoryId, dashboardId: urlDashboardId } = useParams();
@@ -131,12 +150,23 @@ export function ObservabilityCategoryPage() {
   const currentlyPinned = isFavorite(favoriteId);
   const { ref: dashboardContentRef, isBelowBreakpoint: isCompactDashboard } =
     useContainerBreakpoint<HTMLDivElement>(768);
+  const [dateRange, setDateRange] = useState<DateRangeOption>(DEFAULT_FILTERS.dateRange);
+  const [team, setTeam] = useState(DEFAULT_FILTERS.team);
+  const [product, setProduct] = useState(DEFAULT_FILTERS.product);
+
+  const hasFilterChanges = useMemo(() => {
+    return (
+      dateRange !== DEFAULT_FILTERS.dateRange ||
+      team !== DEFAULT_FILTERS.team ||
+      product !== DEFAULT_FILTERS.product
+    );
+  }, [dateRange, team, product]);
 
   return (
     <WidgetAIProvider persistKey={activeDashboardId} ootbTypeId={activeDashboardId}>
       <Tabs value={activeDashboardId} onValueChange={handleTabChange} className="flex flex-col h-full min-h-0">
         <div className="flex flex-col h-full min-h-0">
-          <header className="shrink-0 sticky top-0 z-10 bg-background px-4 md:px-8 pt-6 pb-0">
+          <PageHeader>
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-3xl tracking-tight">{category.name}</h1>
@@ -195,75 +225,97 @@ export function ObservabilityCategoryPage() {
                 {activeDashboard.description}
               </p>
             </div>
+            <div className="mt-4 flex flex-nowrap items-center gap-2 overflow-x-auto whitespace-nowrap pb-1">
+              <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRangeOption)}>
+                <SelectTrigger className="h-8 w-auto shrink-0">
+                  <span className="flex min-w-0 items-center gap-1">
+                    <span className="shrink-0 text-muted-foreground">Date range:</span>
+                    <span className="min-w-0 truncate">{DATE_RANGE_LABELS[dateRange]}</span>
+                  </span>
+                </SelectTrigger>
+                <SelectContent>
+                  {DATE_RANGE_PRIMARY_OPTIONS.map((opt) => (
+                    <SelectItem key={opt} value={opt}>
+                      {DATE_RANGE_LABELS[opt]}
+                    </SelectItem>
+                  ))}
+                  <SelectSeparator />
+                  {DATE_RANGE_SECONDARY_OPTIONS.map((opt) => (
+                    <SelectItem key={opt} value={opt}>
+                      {DATE_RANGE_LABELS[opt]}
+                    </SelectItem>
+                  ))}
+                  <SelectSeparator />
+                  <SelectItem value={DATE_RANGE_CUSTOM_OPTION}>
+                    {DATE_RANGE_LABELS[DATE_RANGE_CUSTOM_OPTION]}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={team} onValueChange={setTeam}>
+                <SelectTrigger className="h-8 w-auto shrink-0">
+                  <LabeledSelectValue label="Team" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all-teams">All Teams</SelectItem>
+                  <SelectItem value="tier-1">Tier 1 Support</SelectItem>
+                  <SelectItem value="tier-2">Tier 2 Support</SelectItem>
+                  <SelectItem value="technical">Technical Team</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={product} onValueChange={setProduct}>
+                <SelectTrigger className="h-8 w-auto shrink-0">
+                  <LabeledSelectValue label="Product" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all-products">All Products</SelectItem>
+                  <SelectItem value="product-a">Product A</SelectItem>
+                  <SelectItem value="product-b">Product B</SelectItem>
+                  <SelectItem value="product-c">Product C</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {hasFilterChanges && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 shrink-0"
+                  onClick={() => {
+                    setDateRange(DEFAULT_FILTERS.dateRange);
+                    setTeam(DEFAULT_FILTERS.team);
+                    setProduct(DEFAULT_FILTERS.product);
+                  }}
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Reset Filters
+                </Button>
+              )}
+            </div>
             <TabsList className="w-full justify-start mt-4">
-              {category.dashboards.map((dashboard) => {
-                const DashIcon = dashboard.icon;
-                return (
+              {category.dashboards.map((dashboard) => (
                   <TabsTrigger key={dashboard.id} value={dashboard.id}>
-                    <DashIcon className="h-4 w-4" />
                     {dashboard.name}
                   </TabsTrigger>
-                );
-              })}
+                ))}
             </TabsList>
-          </header>
+            <HeaderAIInsightsRow
+              dashboardId={activeDashboard.id}
+              dashboardData={{
+                id: activeDashboard.id,
+                title: activeDashboard.name,
+                description: activeDashboard.description,
+              }}
+            />
+          </PageHeader>
           <div className="flex-1 min-h-0 overflow-auto">
-            <div ref={dashboardContentRef} className="space-y-6 p-4 md:p-8">
+            <PageContent className="p-4 md:p-8">
+            <PageTransition>
+            <div ref={dashboardContentRef} className="space-y-6">
             {category.dashboards.map((dashboard) => (
               <TabsContent key={dashboard.id} value={dashboard.id} className="space-y-6 mt-2">
-                {/* AI Summary */}
-                <DashboardAISummary
-                  dashboardId={dashboard.id}
-                  dashboardData={{
-                    id: dashboard.id,
-                    title: dashboard.name,
-                    description: dashboard.description,
-                  }}
-                />
-
                 {/* KPI Section Header */}
                 <h2 className="tracking-tight">Key Performance Indicators</h2>
-
-                {/* Filters */}
-                <div className="flex items-center gap-3 flex-wrap">
-                  <Select defaultValue="30d">
-                    <SelectTrigger className="w-full sm:w-[180px]">
-                      <Calendar className="mr-2 h-4 w-4" />
-                      <SelectValue placeholder="Select period" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="7d">Last 7 days</SelectItem>
-                      <SelectItem value="30d">Last 30 days</SelectItem>
-                      <SelectItem value="90d">Last 90 days</SelectItem>
-                      <SelectItem value="12m">Last 12 months</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Select defaultValue="all-teams">
-                    <SelectTrigger className="w-full sm:w-[180px]">
-                      <Filter className="mr-2 h-4 w-4" />
-                      <SelectValue placeholder="Filter by team" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all-teams">All Teams</SelectItem>
-                      <SelectItem value="tier-1">Tier 1 Support</SelectItem>
-                      <SelectItem value="tier-2">Tier 2 Support</SelectItem>
-                      <SelectItem value="technical">Technical Team</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Select defaultValue="all-products">
-                    <SelectTrigger className="w-full sm:w-[180px]">
-                      <SelectValue placeholder="Filter by product" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all-products">All Products</SelectItem>
-                      <SelectItem value="product-a">Product A</SelectItem>
-                      <SelectItem value="product-b">Product B</SelectItem>
-                      <SelectItem value="product-c">Product C</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
 
                 {/* Metric Cards */}
                 <div
@@ -273,67 +325,107 @@ export function ObservabilityCategoryPage() {
                       : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
                   }`}
                 >
-                  <Card className="group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
-                    <CardHeader className="pb-2">
+                  <Card className="group/widget gap-2 transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
+                    <CardHeader className="pb-0">
                       <div className="flex items-center gap-2">
                         <CardDescription className="flex-1">Total Escalations</CardDescription>
                         <WidgetAIPromptButton widgetTitle="Total Escalations" chartType="metric" />
                         <WidgetOverflowMenu widgetTitle="Total Escalations" chartType="metric" />
                       </div>
-                      <CardTitle className="text-3xl">260</CardTitle>
+                      <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
+                        <CardTitle className="text-3xl tabular-nums leading-none">
+                          260
+                        </CardTitle>
+                        <Badge variant="destructive" className="shrink-0 text-xs">
+                          +12% from last period
+                        </Badge>
+                      </div>
                     </CardHeader>
-                    <CardContent>
-                      <Badge variant="destructive" className="text-xs">
-                        +12% from last period
-                      </Badge>
+                    <CardContent className="pt-0">
+                      <KpiSparkline
+                        values={[...KPI_SPARKLINE_SERIES.totalEscalations]}
+                        lineColor="var(--destructive)"
+                        seriesName="Escalations"
+                        formatValue={(v) => v.toLocaleString()}
+                      />
                     </CardContent>
                   </Card>
 
-                  <Card className="group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
-                    <CardHeader className="pb-2">
+                  <Card className="group/widget gap-2 transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
+                    <CardHeader className="pb-0">
                       <div className="flex items-center gap-2">
                         <CardDescription className="flex-1">Avg Resolution Time</CardDescription>
                         <WidgetAIPromptButton widgetTitle="Avg Resolution Time" chartType="metric" />
                         <WidgetOverflowMenu widgetTitle="Avg Resolution Time" chartType="metric" />
                       </div>
-                      <CardTitle className="text-3xl">4.3h</CardTitle>
+                      <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
+                        <CardTitle className="text-3xl tabular-nums leading-none">
+                          4.3h
+                        </CardTitle>
+                        <Badge variant="default" className="shrink-0 text-xs">
+                          -8% from last period
+                        </Badge>
+                      </div>
                     </CardHeader>
-                    <CardContent>
-                      <Badge variant="default" className="text-xs">
-                        -8% from last period
-                      </Badge>
+                    <CardContent className="pt-0">
+                      <KpiSparkline
+                        values={[...KPI_SPARKLINE_SERIES.avgResolutionHours]}
+                        lineColor="var(--primary)"
+                        seriesName="Avg. resolution"
+                        formatValue={(v) => `${v.toFixed(1)} h`}
+                      />
                     </CardContent>
                   </Card>
 
-                  <Card className="group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
-                    <CardHeader className="pb-2">
+                  <Card className="group/widget gap-2 transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
+                    <CardHeader className="pb-0">
                       <div className="flex items-center gap-2">
                         <CardDescription className="flex-1">Customer Satisfaction</CardDescription>
                         <WidgetAIPromptButton widgetTitle="Customer Satisfaction" chartType="metric" />
                         <WidgetOverflowMenu widgetTitle="Customer Satisfaction" chartType="metric" />
                       </div>
-                      <CardTitle className="text-3xl">94%</CardTitle>
+                      <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
+                        <CardTitle className="text-3xl tabular-nums leading-none">
+                          94%
+                        </CardTitle>
+                        <Badge variant="default" className="shrink-0 text-xs">
+                          +2% from last period
+                        </Badge>
+                      </div>
                     </CardHeader>
-                    <CardContent>
-                      <Badge variant="default" className="text-xs">
-                        +2% from last period
-                      </Badge>
+                    <CardContent className="pt-0">
+                      <KpiSparkline
+                        values={[...KPI_SPARKLINE_SERIES.customerSatisfactionPct]}
+                        lineColor="var(--primary)"
+                        seriesName="Satisfaction"
+                        formatValue={(v) => `${v.toFixed(1)}%`}
+                      />
                     </CardContent>
                   </Card>
 
-                  <Card className="group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
-                    <CardHeader className="pb-2">
+                  <Card className="group/widget gap-2 transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
+                    <CardHeader className="pb-0">
                       <div className="flex items-center gap-2">
                         <CardDescription className="flex-1">Resolution Rate</CardDescription>
                         <WidgetAIPromptButton widgetTitle="Resolution Rate" chartType="metric" />
                         <WidgetOverflowMenu widgetTitle="Resolution Rate" chartType="metric" />
                       </div>
-                      <CardTitle className="text-3xl">87%</CardTitle>
+                      <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
+                        <CardTitle className="text-3xl tabular-nums leading-none">
+                          87%
+                        </CardTitle>
+                        <Badge variant="secondary" className="shrink-0 text-xs">
+                          No change
+                        </Badge>
+                      </div>
                     </CardHeader>
-                    <CardContent>
-                      <Badge variant="secondary" className="text-xs">
-                        No change
-                      </Badge>
+                    <CardContent className="pt-0">
+                      <KpiSparkline
+                        values={[...KPI_SPARKLINE_SERIES.resolutionRatePct]}
+                        lineColor="var(--muted-foreground)"
+                        seriesName="Resolution rate"
+                        formatValue={(v) => `${v.toFixed(1)}%`}
+                      />
                     </CardContent>
                   </Card>
                 </div>
@@ -379,6 +471,8 @@ export function ObservabilityCategoryPage() {
               </TabsContent>
             ))}
           </div>
+            </PageTransition>
+            </PageContent>
         </div>
       </div>
       </Tabs>

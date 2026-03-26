@@ -1,6 +1,8 @@
 import { useMemo, useState, useRef, useLayoutEffect, useCallback } from "react";
 import { Link } from "react-router";
-import { Search, LayoutGrid, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
+import { Search, LayoutGrid, ExternalLink, ChevronDown, ChevronUp, RotateCcw } from "lucide-react";
+
+import { PageContent, PageHeader } from "./PageChrome";
 import { Input } from "./ui/input";
 import { Badge } from "./ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
@@ -42,6 +44,7 @@ import { WidgetAIProvider } from "../contexts/WidgetAIContext";
 import { WidgetAIPromptButton } from "./WidgetAIPromptButton";
 import { WidgetOverflowMenu } from "./WidgetOverflowMenu";
 import { WidgetAIExplanation } from "./WidgetAIExplanation";
+import { PageTransition } from "./PageTransition";
 
 // ─── Shared data sets (same as DashboardPage) ──────────────────────────────
 
@@ -266,7 +269,7 @@ export function AllInsightsPage() {
   return (
     <WidgetAIProvider persistKey="all-insights" ootbTypeId="all-insights">
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-        <header className="shrink-0 sticky top-0 z-10 bg-background px-8 pt-6 pb-0">
+        <PageHeader>
           <div>
             <div className="flex items-center gap-3 mb-2">
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
@@ -280,9 +283,10 @@ export function AllInsightsPage() {
               </div>
             </div>
           </div>
-        </header>
+        </PageHeader>
         <div className="flex-1 overflow-auto min-h-0">
-          <div className="space-y-6 p-8">
+          <PageContent className="space-y-6 p-8">
+            <PageTransition className="space-y-6">
             {/* Summary badges */}
             <div className="flex flex-wrap gap-3">
               <Badge variant="secondary" className="text-sm px-3 py-1">
@@ -299,7 +303,7 @@ export function AllInsightsPage() {
             {allWidgets.length > 0 ? (
               <>
                 {/* Search + Filters */}
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex w-full flex-wrap items-center gap-3">
                   <div className="relative flex-1 min-w-[200px] max-w-sm">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -326,15 +330,17 @@ export function AllInsightsPage() {
                     <Button
                       variant="ghost"
                       size="sm"
+                      className="shrink-0"
                       onClick={() => {
                         setSearchQuery("");
                         setChartTypeFilter("all");
                       }}
                     >
-                      Clear
+                      <RotateCcw className="mr-2 h-4 w-4" />
+                      Reset Filters
                     </Button>
                   )}
-                  <span className="text-sm text-muted-foreground ml-auto">
+                  <span className="text-sm text-muted-foreground ml-auto shrink-0">
                     {filteredWidgets.length} of {allWidgets.length} widgets
                   </span>
                 </div>
@@ -373,7 +379,8 @@ export function AllInsightsPage() {
                 </EmptyHeader>
               </Empty>
             )}
-          </div>
+            </PageTransition>
+          </PageContent>
         </div>
 
         {/* AI Assistant Panel — portaled to layout-level slot */}

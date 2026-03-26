@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { Plus, ArrowRight, Mic, Square, Loader2, Sparkles, X, Upload, Image, Paperclip, ChevronLeft, MessageSquare, Trash2, SquarePen, MoreVertical, Pencil } from "lucide-react";
+import { Plus, ArrowRight, Mic, Square, Loader2, Upload, Image, Paperclip, MoreVertical, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
-import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { ResizeHandle } from "./ResizeHandle";
 import { useVoiceInput } from "../hooks/useVoiceInput";
@@ -12,13 +11,6 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "./ui/dialog";
-import {
   Empty,
   EmptyContent,
   EmptyDescription,
@@ -27,11 +19,9 @@ import {
   EmptyTitle,
 } from "./ui/empty";
 import { toast } from "sonner";
-import { useDashboardChat, useDashboardMessages, useDashboardThreads, ChatStore, type ChatMessage, type ChatThread } from "../contexts/DashboardChatContext";
+import { useDashboardChat, useDashboardMessages, type ChatMessage } from "../contexts/DashboardChatContext";
 import { getChartIcon } from "./ChartVariants";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
-
-const WIDGET_THREAD_CREATED_EVENT = "widget-ai-thread-created";
 
 interface DashboardChatPanelProps {
   /** Dashboard ID used for persistence key (e.g. route dashboardId or composite key) */
@@ -47,6 +37,52 @@ interface DashboardChatPanelProps {
   onSendMessage?: (message: string) => void;
   externalIsThinking?: boolean;
   placeholder?: string;
+}
+
+// Inner “AI” mark from Figma (provided as an asset by the Figma MCP server).
+const FIGMA_AI_ASSISTANT_MARK_URL =
+  "https://www.figma.com/api/mcp/asset/11b15c37-c124-4e44-8c72-ba17066b5223";
+
+function AiAssistantHeaderIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      width="36"
+      height="36"
+      viewBox="0 0 36 36"
+      className={className}
+      aria-hidden="true"
+      focusable="false"
+    >
+      <defs>
+        <clipPath id="aiAssistantMarkClip">
+          <rect x="5" y="5" width="26" height="26" rx="13" />
+        </clipPath>
+      </defs>
+
+      <rect x="0" y="0" width="36" height="36" rx="18" fill="white" />
+      <rect
+        x="-2"
+        y="-2"
+        width="40"
+        height="40"
+        rx="20"
+        fill="none"
+        stroke="#6e56cf"
+        strokeWidth="2"
+        opacity="0.49"
+      />
+      <g clipPath="url(#aiAssistantMarkClip)">
+        <image
+          href={FIGMA_AI_ASSISTANT_MARK_URL}
+          x="5"
+          y="5"
+          width="26"
+          height="26"
+          preserveAspectRatio="xMidYMid slice"
+        />
+      </g>
+    </svg>
+  );
 }
 
 // ─── Dashboard-specific suggested questions ──────────────────────────────────
@@ -105,6 +141,12 @@ const dashboardSuggestedQuestions: Record<string, string[]> = {
     "Show model improvement trends",
     "What feedback was most impactful?",
     "Compare agent performance before vs after learning",
+  ],
+  "automation-opportunities": [
+    "Which category has the highest automation ROI this period?",
+    "What topics should we automate first under Billing & Payment?",
+    "How much could we save if we fully automated bill explanation?",
+    "Compare containment for card services vs billing inquiries",
   ],
   "ai-agent-vs-agent": [
     "How does AI agent resolution compare to human agents?",
@@ -279,7 +321,7 @@ function generateAIResponse(userMessage: string, ootbTypeId?: string): string {
   }
 
   if (lowerMessage.includes("filter") || lowerMessage.includes("show")) {
-    return "I can help you filter this dashboard. You can view data by team (Tier 1, Tier 2, Technical), by time period (7d, 30d, 90d, 12m), or by product. What specific view would you like to see?";
+    return "I can help you filter this dashboard. You can view data by team (Tier 1, Tier 2, Technical), by date range (Last 7 days, Last 30 days, Last 90 days, This quarter, This year), or by product. What specific view would you like to see?";
   }
 
   if (lowerMessage.includes("export") || lowerMessage.includes("download")) {
@@ -303,107 +345,14 @@ function generateAIResponse(userMessage: string, ootbTypeId?: string): string {
 
 // ─── Panel dimensions ────────────────────────────────────────────────────────
 
-const CHAT_PANEL_DEFAULT_WIDTH = 320;
-const CHAT_PANEL_MIN_WIDTH = 280;
-const CHAT_PANEL_MAX_WIDTH = 600;
-
-// ─── Helper: relative time label ────────────────────────────────────────────
-
-function relativeTime(date: Date): string {
-  const now = Date.now();
-  const diff = now - date.getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "Just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
+const REM_PX = 16;
+const CHAT_PANEL_DEFAULT_WIDTH_REM = 400 / REM_PX; // 25rem
+const CHAT_PANEL_MIN_WIDTH_REM = 280 / REM_PX; // 17.5rem
+const CHAT_PANEL_MAX_WIDTH_REM = 600 / REM_PX; // 37.5rem
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-/** Home view: thread list */
-function HomeView({
-  threads,
-  onSelectThread,
-  onDeleteThread,
-  onNewThread,
-}: {
-  threads: ChatThread[];
-  onSelectThread: (threadId: string) => void;
-  onDeleteThread: (threadId: string) => void;
-  onNewThread: () => void;
-}) {
-  const sortedThreads = useMemo(
-    () => [...threads].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()),
-    [threads],
-  );
-
-  if (sortedThreads.length === 0) {
-    return (
-      <Empty className="h-full min-h-0 border-none rounded-none bg-transparent">
-        <EmptyHeader>
-          <EmptyMedia className="bg-primary/10 [&>svg]:text-primary">
-            <Sparkles />
-          </EmptyMedia>
-          <EmptyTitle>AI Assistant</EmptyTitle>
-          <EmptyDescription className="max-w-[280px]">
-            Ask questions about this dashboard, explore trends, or request specific insights.
-          </EmptyDescription>
-        </EmptyHeader>
-        <EmptyContent>
-          <Button size="sm" onClick={onNewThread}>
-            <SquarePen className="h-4 w-4 mr-2" />
-            Start a new thread
-          </Button>
-        </EmptyContent>
-      </Empty>
-    );
-  }
-
-  return (
-    <div className="space-y-1">
-      <p className="text-xs font-medium text-muted-foreground mb-2">Threads</p>
-      {sortedThreads.map((thread) => (
-        <div
-          key={thread.id}
-          className="group relative flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 transition-colors hover:bg-accent cursor-pointer has-[button.thread-delete-btn:focus-visible]:[&_.thread-title-wrap]:pr-8"
-          onClick={() => onSelectThread(thread.id)}
-        >
-          <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <div className="min-w-0 flex-1">
-            <div className="thread-title-wrap min-w-0 pr-0 transition-[padding] duration-150 ease-out group-hover:pr-8">
-              <p className="truncate whitespace-nowrap text-sm text-foreground">
-                {thread.title}
-              </p>
-            </div>
-            <p className="text-xs text-muted-foreground">{relativeTime(thread.updatedAt)}</p>
-          </div>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="thread-delete-btn pointer-events-none absolute right-2 top-1/2 z-10 h-6 w-6 -translate-y-1/2 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100"
-                aria-label={`Delete thread ${thread.title}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteThread(thread.id);
-                }}
-              >
-                <Trash2 className="h-3 w-3 text-muted-foreground" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="left">Delete thread</TooltipContent>
-          </Tooltip>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/** Thread view: message list */
+/** Conversation view: message list (single thread per dashboard) */
 function ThreadView({
   messages,
   isThinking,
@@ -417,10 +366,6 @@ function ThreadView({
 }) {
   const displayMessages = messages.filter((msg) => !msg.dashboardData);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const sourceContext = useMemo(
-    () => displayMessages.find((msg) => msg.role === "user" && !!msg.widgetRef),
-    [displayMessages],
-  );
   const jumpToSourceCard = useCallback((widgetRef: string, anchorId?: string) => {
     const resolveTargetElement = (): HTMLElement | null => {
       if (anchorId) {
@@ -468,12 +413,14 @@ function ThreadView({
   // Empty thread state with suggested prompts
   if (displayMessages.length === 0 && !isThinking) {
     return (
-      <div className="space-y-4">
-        <div className="text-sm text-muted-foreground mb-4">
+      <div className="h-full min-h-0 flex flex-col items-center justify-center text-center">
+        <AiAssistantHeaderIcon className="w-[12.5rem] h-[12.5rem] shrink-0 overflow-visible" />
+        <div className="mt-6 text-sm text-muted-foreground max-w-[28rem]">
           Ask questions about this dashboard or request specific insights.
         </div>
+
         {suggestedQuestions && suggestedQuestions.length > 0 && (
-          <div className="space-y-2">
+          <div className="mt-6 w-full max-w-[28rem] space-y-2 text-left">
             <p className="text-xs font-medium text-muted-foreground mb-2">Suggested Questions</p>
             {suggestedQuestions.map((question, index) => (
               <Button
@@ -494,38 +441,6 @@ function ThreadView({
 
   return (
     <div className="space-y-4">
-      {sourceContext && (
-        <div className="rounded-lg border border-border bg-white dark:bg-background p-3">
-          <div className="flex items-center justify-between gap-3 mb-1">
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-              Source action
-            </p>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2 text-[10px] shrink-0"
-              onClick={() => {
-                jumpToSourceCard(sourceContext.widgetRef!, sourceContext.widgetAnchorId);
-              }}
-            >
-              View source
-            </Button>
-          </div>
-          <div className="min-w-0">
-              <p className="text-sm font-medium truncate">{sourceContext.widgetRef}</p>
-              {sourceContext.widgetKpiLabel ? (
-                <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                  Selected:{" "}
-                  <span className="font-medium text-foreground">{sourceContext.widgetKpiLabel}</span>
-                </p>
-              ) : null}
-              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                {sourceContext.content}
-              </p>
-          </div>
-        </div>
-      )}
-
       {displayMessages.map((msg) => (
         <div
           key={msg.id}
@@ -533,48 +448,47 @@ function ThreadView({
         >
           {msg.role === "user" ? (
             <div className="max-w-[85%] bg-primary text-primary-foreground rounded-lg px-3 py-2">
-              {msg.widgetRef && !sourceContext && (
-                <button
-                  type="button"
-                  className="inline-flex flex-col items-start gap-0.5 text-left text-xs px-1.5 py-0.5 rounded-md mb-1.5 bg-primary-foreground/15 text-primary-foreground/85 hover:bg-primary-foreground/25 transition-colors max-w-full"
-                  onClick={() => {
-                    jumpToSourceCard(msg.widgetRef!, msg.widgetAnchorId);
-                  }}
-                >
-                  <span className="inline-flex items-center gap-1 min-w-0">
-                    {(() => { const IconComp = msg.widgetIconType ? getChartIcon(msg.widgetIconType as any) : null; return IconComp ? <IconComp className="h-3 w-3 shrink-0" /> : null; })()}
-                    <span className="truncate font-medium">{msg.widgetRef}</span>
-                  </span>
-                  {msg.widgetKpiLabel ? (
-                    <span className="pl-0 text-[10px] opacity-90 truncate w-full">
-                      Selected: {msg.widgetKpiLabel}
-                    </span>
-                  ) : null}
-                </button>
-              )}
+              {msg.widgetRef ? (
+                <div className="rounded-md border border-primary-foreground/20 bg-primary-foreground/10 px-2 py-1.5 mb-2 text-left">
+                  <div className="flex items-start justify-between gap-2 min-w-0">
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      <p className="text-[10px] uppercase tracking-wide text-primary-foreground/70">
+                        Source
+                      </p>
+                      <div className="flex items-start gap-1.5 min-w-0">
+                        {(() => {
+                          const IconComp = msg.widgetIconType
+                            ? getChartIcon(msg.widgetIconType as any)
+                            : null;
+                          return IconComp ? <IconComp className="h-3.5 w-3.5 shrink-0 mt-0.5" /> : null;
+                        })()}
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium truncate">{msg.widgetRef}</p>
+                          {msg.widgetKpiLabel ? (
+                            <p className="text-[11px] text-primary-foreground/80 truncate mt-0.5">
+                              Selected:{" "}
+                              <span className="font-medium text-primary-foreground">
+                                {msg.widgetKpiLabel}
+                              </span>
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="shrink-0 text-[10px] font-medium underline-offset-2 hover:underline text-primary-foreground/90"
+                      onClick={() => jumpToSourceCard(msg.widgetRef!, msg.widgetAnchorId)}
+                    >
+                      View
+                    </button>
+                  </div>
+                </div>
+              ) : null}
               <p className="text-sm">{msg.content}</p>
             </div>
           ) : (
             <div className="w-full">
-              {msg.widgetRef && !sourceContext && (
-                <button
-                  type="button"
-                  className="inline-flex flex-col items-start gap-0.5 text-left text-xs px-1.5 py-0.5 rounded-md mb-1.5 bg-muted text-muted-foreground hover:bg-muted/80 transition-colors max-w-full"
-                  onClick={() => {
-                    jumpToSourceCard(msg.widgetRef!, msg.widgetAnchorId);
-                  }}
-                >
-                  <span className="inline-flex items-center gap-1 min-w-0">
-                    {(() => { const IconComp = msg.widgetIconType ? getChartIcon(msg.widgetIconType as any) : null; return IconComp ? <IconComp className="h-3 w-3 shrink-0" /> : null; })()}
-                    <span className="truncate font-medium">{msg.widgetRef}</span>
-                  </span>
-                  {msg.widgetKpiLabel ? (
-                    <span className="text-[10px] opacity-90 truncate w-full">
-                      Selected: {msg.widgetKpiLabel}
-                    </span>
-                  ) : null}
-                </button>
-              )}
               <p className="text-sm">{msg.content}</p>
             </div>
           )}
@@ -604,7 +518,6 @@ export function DashboardChatPanel({
   placeholder,
 }: DashboardChatPanelProps) {
   const dashboardChat = useDashboardChat();
-  const store = dashboardChat._store;
 
   // The persistence key combines route context for uniqueness
   const persistKey = dashboardId ?? "__no_dashboard__";
@@ -615,51 +528,23 @@ export function DashboardChatPanel({
   // For external-control mode (Explore page), we skip persistence entirely
   const isExternalMode = !!externalMessages;
 
-  // Thread support (internal mode only)
-  const threads = useDashboardThreads(persistKey);
-  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
-  const [draftThreadId, setDraftThreadId] = useState<string | null>(null);
-
-  // Compose the message key for the active thread
-  const activeMessageKey = activeThreadId
-    ? ChatStore.threadKey(persistKey, activeThreadId)
-    : persistKey;
-
-  // Persisted messages from context (only used in internal mode)
-  const storedMessages = useDashboardMessages(activeMessageKey);
+  const storedMessages = useDashboardMessages(persistKey);
   const persistedMessages = isExternalMode ? [] : storedMessages;
 
   const [query, setQuery] = useState("");
   const [internalIsThinking, setInternalIsThinking] = useState(false);
-  const [panelWidth, setPanelWidth] = useState(CHAT_PANEL_DEFAULT_WIDTH);
+  const [panelWidthRem, setPanelWidthRem] = useState(CHAT_PANEL_DEFAULT_WIDTH_REM);
   const [isResizing, setIsResizing] = useState(false);
-  const [renameThreadOpen, setRenameThreadOpen] = useState(false);
-  const [renameThreadValue, setRenameThreadValue] = useState("");
 
-  // When dashboardId changes, reset to home view
+  // When dashboardId changes, reset local input state
   const prevDashboardIdRef = useRef(dashboardId);
   useEffect(() => {
     if (prevDashboardIdRef.current !== dashboardId) {
       prevDashboardIdRef.current = dashboardId;
       setQuery("");
       setInternalIsThinking(false);
-      setActiveThreadId(null);
     }
   }, [dashboardId]);
-
-  // Open the newly created widget thread automatically (widget ask / OOTB prompt chips)
-  useEffect(() => {
-    if (isExternalMode) return;
-    const onThreadCreated = (evt: Event) => {
-      const e = evt as CustomEvent<{ persistKey?: string; threadId?: string }>;
-      if (!e.detail?.persistKey || !e.detail?.threadId) return;
-      if (e.detail.persistKey !== persistKey) return;
-      setDraftThreadId(null);
-      setActiveThreadId(e.detail.threadId);
-    };
-    window.addEventListener(WIDGET_THREAD_CREATED_EVENT, onThreadCreated as EventListener);
-    return () => window.removeEventListener(WIDGET_THREAD_CREATED_EVENT, onThreadCreated as EventListener);
-  }, [isExternalMode, persistKey]);
 
   const chatVoice = useVoiceInput({
     onTranscript: (text) => {
@@ -694,47 +579,24 @@ export function DashboardChatPanel({
     return defaultSuggestedQuestions;
   }, [ootbTypeId]);
 
-  const handleResize = useCallback((delta: number) => {
-    setPanelWidth((prev) =>
-      Math.min(CHAT_PANEL_MAX_WIDTH, Math.max(CHAT_PANEL_MIN_WIDTH, prev + delta)),
+  const handleResize = useCallback((deltaPx: number) => {
+    const deltaRem = deltaPx / REM_PX;
+    setPanelWidthRem((prev) =>
+      Math.min(CHAT_PANEL_MAX_WIDTH_REM, Math.max(CHAT_PANEL_MIN_WIDTH_REM, prev + deltaRem)),
     );
   }, []);
 
   const handleResizeReset = useCallback(() => {
-    setPanelWidth(CHAT_PANEL_DEFAULT_WIDTH);
+    setPanelWidthRem(CHAT_PANEL_DEFAULT_WIDTH_REM);
   }, []);
 
   const handleResizeStart = useCallback(() => setIsResizing(true), []);
   const handleResizeEnd = useCallback(() => setIsResizing(false), []);
 
-  /** Create a blank "New thread" and navigate to it (draft only — not persisted until first message) */
-  const createBlankThread = useCallback(() => {
-    const draftId = crypto.randomUUID();
-    setActiveThreadId(draftId);
-    setDraftThreadId(draftId);
-    setQuery("");
-    return { id: draftId };
-  }, []);
-
-  /** Send a message into the active thread, renaming it if it's the first message */
-  const sendMessageToThread = useCallback(
-    (threadId: string, message: string) => {
-      const threadMsgKey = ChatStore.threadKey(persistKey, threadId);
-      const existingMessages = dashboardChat.getMessages(threadMsgKey);
-
-      // If this is a draft thread (not yet persisted), create it now in the store
-      if (existingMessages.length === 0) {
-        const title = message.length > 60 ? message.slice(0, 60) + "\u2026" : message;
-
-        // Check if thread already exists in the store (non-draft case)
-        const existing = dashboardChat.getThreads(persistKey).find((t) => t.id === threadId);
-        if (!existing) {
-          dashboardChat.createThread(persistKey, title, threadId);
-        } else {
-          dashboardChat.renameThread(persistKey, threadId, title);
-        }
-        setDraftThreadId(null);
-      }
+  const appendUserMessageWithReply = useCallback(
+    (rawMessage: string) => {
+      const message = rawMessage.trim();
+      if (!message) return;
 
       const userMessage: ChatMessage = {
         id: crypto.randomUUID(),
@@ -742,7 +604,7 @@ export function DashboardChatPanel({
         content: message,
         timestamp: new Date(),
       };
-      dashboardChat.appendMessage(threadMsgKey, userMessage);
+      dashboardChat.appendMessage(persistKey, userMessage);
       setInternalIsThinking(true);
 
       setTimeout(() => {
@@ -753,12 +615,11 @@ export function DashboardChatPanel({
           content: aiResponse,
           timestamp: new Date(),
         };
-        dashboardChat.appendMessage(threadMsgKey, assistantMessage);
-        dashboardChat.updateThreadTimestamp(persistKey, threadId);
+        dashboardChat.appendMessage(persistKey, assistantMessage);
         setInternalIsThinking(false);
       }, 1500);
     },
-    [dashboardChat, persistKey, ootbTypeId, store],
+    [dashboardChat, persistKey, ootbTypeId],
   );
 
   const handleSend = (message: string = query) => {
@@ -766,52 +627,35 @@ export function DashboardChatPanel({
 
     setQuery("");
 
-    // If using external control, just call the callback
     if (onSendMessage) {
       onSendMessage(message);
       return;
     }
 
-    // If no active thread, create one then send into it
-    if (!activeThreadId) {
-      const thread = createBlankThread();
-      sendMessageToThread(thread.id, message);
-      return;
-    }
-
-    // Otherwise, continue the active thread
-    sendMessageToThread(activeThreadId, message);
+    appendUserMessageWithReply(message);
   };
 
-  const handleDeleteThread = (threadId: string) => {
-    dashboardChat.deleteThread(persistKey, threadId);
-    // If the deleted thread is active, go back to home
-    if (activeThreadId === threadId) {
-      setActiveThreadId(null);
-    }
-  };
-
-  const handleBackToHome = () => {
-    setActiveThreadId(null);
-    setDraftThreadId(null);
-    setQuery("");
-  };
-
-  const handlePanelBack = () => {
-    handleBackToHome();
-  };
-
-  // Determine if we're showing external mode, home, or thread view
-  const isHomeView = !isExternalMode && !activeThreadId;
-  const isThreadView = !isExternalMode && !!activeThreadId;
-
-  const activeThread = activeThreadId ? threads.find((t) => t.id === activeThreadId) : null;
+  const handleClearConversation = useCallback(() => {
+    const snapshot = dashboardChat.getMessages(persistKey);
+    dashboardChat.clearMessages(persistKey);
+    toast.success("Conversation cleared", {
+      action: {
+        label: "Undo",
+        onClick: () => {
+          if (snapshot.length > 0) {
+            dashboardChat.setMessages(persistKey, snapshot);
+          }
+          toast.success("Conversation restored");
+        },
+      },
+    });
+  }, [dashboardChat, persistKey]);
 
   return (
     <div
       data-chat-panel-root="true"
-      className="h-full flex flex-col bg-background relative shrink-0 border-l border-border"
-      style={{ width: `${panelWidth}px`, transition: isResizing ? 'none' : 'width 200ms ease' }}
+      className="h-full flex flex-col bg-page relative shrink-0 border-l border-border"
+      style={{ width: `${panelWidthRem}rem`, transition: isResizing ? 'none' : 'width 200ms ease' }}
     >
       {/* Resize handle on left edge */}
       <ResizeHandle
@@ -823,117 +667,51 @@ export function DashboardChatPanel({
       />
 
       {/* Header */}
-      <div className="px-4 flex items-center justify-between shrink-0 h-[60px] border-b border-border">
+      <div className="px-4 flex items-center justify-between shrink-0 h-[60px] border-b border-border bg-background">
         <div className="flex items-center gap-2 min-w-0">
-          {isThreadView && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 shrink-0"
-                  onClick={handlePanelBack}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Back</TooltipContent>
-            </Tooltip>
-          )}
-          {!isThreadView && (
-            <Sparkles className="h-5 w-5 text-primary shrink-0" />
-          )}
-          {isThreadView && activeThread ? (
-            <h2 className="text-sm font-semibold truncate">{activeThread.title}</h2>
-          ) : isThreadView && draftThreadId ? (
-            <h2 className="text-sm font-semibold truncate">New thread</h2>
-          ) : (
-            <h2 className="font-semibold">AI Assistant</h2>
-          )}
+          <AiAssistantHeaderIcon className="h-9 w-9 shrink-0" />
+          <h2 className="font-semibold">AI Assistant</h2>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          {/* Thread overflow menu (thread view) / New thread icon (elsewhere) */}
-          {!isExternalMode && isThreadView ? (
+          {!isExternalMode && messages.length > 0 && (
             <DropdownMenu>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="inline-flex">
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-7 w-7">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Conversation options">
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                   </span>
                 </TooltipTrigger>
-                <TooltipContent side="bottom">Thread options</TooltipContent>
+                <TooltipContent side="bottom">Options</TooltipContent>
               </Tooltip>
               <DropdownMenuContent align="end" className="w-52">
                 <DropdownMenuItem
-                  onSelect={() => {
-                    createBlankThread();
-                  }}
-                >
-                  <SquarePen className="h-4 w-4" />
-                  New thread
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={() => {
-                    if (!activeThreadId) return;
-                    setRenameThreadValue(activeThread?.title ?? "");
-                    setRenameThreadOpen(true);
-                  }}
-                >
-                  <Pencil className="h-4 w-4" />
-                  Rename
-                </DropdownMenuItem>
-                <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
-                  onSelect={() => {
-                    if (!activeThreadId) return;
-                    handleDeleteThread(activeThreadId);
-                  }}
+                  onSelect={() => handleClearConversation()}
                 >
                   <Trash2 className="h-4 w-4" />
-                  Delete
+                  Clear conversation
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          ) : (
-            !isExternalMode && threads.length > 0 && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => createBlankThread()}
-                  >
-                    <SquarePen className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">New thread</TooltipContent>
-              </Tooltip>
-            )
           )}
         </div>
       </div>
 
-      {/* Messages / Home Area — scrolls only when content overflows */}
-      <div
-        className={
-          isHomeView
-            ? "flex-1 overflow-y-auto min-h-0 bg-background p-4"
-            : "flex-1 overflow-y-auto p-4 min-h-0"
-        }
-      >
+      {/* Messages — single conversation; scrolls when content overflows */}
+      <div className="flex-1 overflow-y-auto min-h-0 p-4">
         {isExternalMode ? (
-          // External mode: flat message list (Explore page conversations)
           messages.filter((m) => !m.dashboardData).length === 0 ? (
-            <div className="space-y-4">
-              <div className="text-sm text-muted-foreground mb-4">
+            <div className="h-full min-h-0 flex flex-col items-center justify-center text-center">
+              <AiAssistantHeaderIcon className="w-[12.5rem] h-[12.5rem] shrink-0" />
+              <div className="mt-6 text-sm text-muted-foreground max-w-[28rem]">
                 Ask questions about this dashboard or request specific insights.
               </div>
-              <div className="space-y-2">
+
+              <div className="mt-6 w-full max-w-[28rem] space-y-2 text-left">
                 <p className="text-xs font-medium text-muted-foreground mb-2">Suggested Questions</p>
                 {suggestedQuestions.map((question, index) => (
                   <Button
@@ -951,13 +729,6 @@ export function DashboardChatPanel({
           ) : (
             <ThreadView messages={messages} isThinking={isThinking} />
           )
-        ) : isHomeView ? (
-          <HomeView
-            threads={threads}
-            onSelectThread={(threadId) => setActiveThreadId(threadId)}
-            onDeleteThread={handleDeleteThread}
-            onNewThread={() => createBlankThread()}
-          />
         ) : (
           <ThreadView
             messages={messages}
@@ -969,17 +740,12 @@ export function DashboardChatPanel({
       </div>
 
       {/* Input Area — always visible at bottom */}
-      <div className="p-4 shrink-0">
-        <div className="rounded-3xl border bg-card text-card-foreground shadow-sm transition-shadow focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/20">
+      <div className="p-4 shrink-0 border-t border-border bg-background">
+        <div className="rounded-3xl border bg-background text-foreground transition-shadow focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/20">
           <div className="px-4 pt-3 pb-2">
             <div className="space-y-2">
               <Textarea
-                placeholder={
-                  placeholder ||
-                  (isHomeView
-                    ? "Start a new thread\u2026"
-                    : "Ask a follow up question\u2026")
-                }
+                placeholder={placeholder || "Ask a question\u2026"}
                 value={query + (chatVoice.isListening && chatVoice.interimText ? chatVoice.interimText : "")}
                 onChange={(e) => {
                   // If the user starts typing while voice is active, stop recording
@@ -1066,46 +832,6 @@ export function DashboardChatPanel({
           </div>
         </div>
       </div>
-
-      <Dialog
-        open={renameThreadOpen}
-        onOpenChange={(open) => {
-          setRenameThreadOpen(open);
-          if (!open) setRenameThreadValue("");
-        }}
-      >
-        <DialogContent className="sm:max-w-[420px]">
-          <DialogHeader>
-            <DialogTitle>Rename thread</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2">
-            <Input
-              value={renameThreadValue}
-              onChange={(e) => setRenameThreadValue(e.target.value)}
-              placeholder="Thread name"
-              autoFocus
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRenameThreadOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                if (!activeThreadId) return;
-                const next = renameThreadValue.trim();
-                if (!next) return;
-                dashboardChat.renameThread(persistKey, activeThreadId, next);
-                setRenameThreadOpen(false);
-                toast.success("Thread renamed", { description: `Renamed to "${next}".` });
-              }}
-              disabled={!renameThreadValue.trim()}
-            >
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
     </div>
   );

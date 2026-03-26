@@ -38,7 +38,7 @@ export function CollapsibleSidebarSection({
   onToggle,
   tooltip,
   children,
-  className = "px-2 py-0.5",
+  className = "py-0",
 }: CollapsibleSidebarSectionProps) {
   const location = useLocation();
   const isActive = location.pathname === path;
@@ -55,7 +55,11 @@ export function CollapsibleSidebarSection({
                   <span>{label}</span>
                   <CollapsibleTrigger asChild>
                     <button
-                      className="ml-auto p-1 hover:bg-accent rounded-sm transition-colors group-data-[collapsible=icon]:hidden"
+                      className={`ml-auto flex h-5 w-5 items-center justify-center rounded-sm text-sidebar-foreground transition-opacity hover:bg-sidebar-accent hover:text-sidebar-accent-foreground outline-hidden group-data-[collapsible=icon]:hidden ${
+                        open
+                          ? "opacity-100"
+                          : "opacity-0 group-hover/menu-item:opacity-100 group-focus-within/menu-item:opacity-100"
+                      }`}
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
