@@ -58,6 +58,10 @@ const lazyRoute = (importFn: () => Promise<{ [key: string]: React.ComponentType 
 
 const router = createBrowserRouter([
   {
+    path: "/interaction-playback",
+    ...lazyRoute(() => import("./components/InteractionPlaybackPage"), "InteractionPlaybackPage"),
+  },
+  {
     path: "/",
     Component: RootLayout,
     ErrorBoundary: ErrorBoundary,

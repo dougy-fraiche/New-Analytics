@@ -308,27 +308,69 @@
 
 @layer components {
   /**
-   * Explore hero: brighter soft glow centered behind the chat input, fading smoothly to the page canvas.
+   * Explore page surface — circular radial from ChatInputBar center (Figma 19:930 / 19:960).
+   * Origin set in pixels → % via --explore-gradient-x / --explore-gradient-y on the surface node.
    */
-  .explore-hero-gradient {
+  .explore-page-gradient {
+    --explore-gradient-x: 50%;
+    --explore-gradient-y: 30%;
     background-color: var(--page-background);
     background-image: radial-gradient(
-      ellipse 78% 56% at 50% 44%,
-      color-mix(in oklch, var(--primary-50) 55%, var(--page-background)) 0%,
-      color-mix(in oklch, var(--primary) 12%, var(--page-background)) 36%,
-      color-mix(in oklch, var(--primary-50) 0%, var(--page-background)) 58%,
-      var(--page-background) 82%
+      circle farthest-corner at var(--explore-gradient-x) var(--explore-gradient-y),
+      rgb(223 231 255) 0%,
+      color-mix(in srgb, rgb(223 231 255) 28%, var(--page-background)) 40%,
+      var(--page-background) 100%
+    );
+    background-repeat: no-repeat;
+  }
+
+  .dark .explore-page-gradient {
+    background-image: radial-gradient(
+      circle farthest-corner at var(--explore-gradient-x) var(--explore-gradient-y),
+      color-mix(in oklch, var(--primary-400) 34%, var(--page-background)) 0%,
+      color-mix(in oklch, var(--primary-600) 12%, var(--page-background)) 48%,
+      var(--page-background) 100%
     );
   }
 
-  .dark .explore-hero-gradient {
-    background-image: radial-gradient(
-      ellipse 78% 56% at 50% 44%,
-      color-mix(in oklch, var(--primary-50) 45%, var(--page-background)) 0%,
-      color-mix(in oklch, var(--primary) 12%, var(--page-background)) 34%,
-      color-mix(in oklch, var(--primary-50) 0%, var(--page-background)) 56%,
-      var(--page-background) 80%
-    );
+  /**
+   * Chat input (hero) — Figma 15:20: vivid purple stroke + layered indigo/purple glow.
+   */
+  .explore-chat-input-elevated {
+    box-shadow:
+      0 0 0 0 rgb(121 0 255 / 0.2),
+      0 1px 3px 0 rgb(0 0 0 / 0.1),
+      0 1px 2px 0 rgb(0 0 0 / 0.1),
+      0 2px 8px 0 rgb(143 115 227 / 0.2),
+      0 8px 32px 0 rgb(143 115 227 / 0.3);
+  }
+
+  /**
+   * `focus-within:ring-*` utilities replace `box-shadow`; keep glow + add ring as first layer.
+   */
+  .explore-chat-input-elevated:focus-within {
+    box-shadow:
+      0 0 0 3px color-mix(in oklch, var(--ring) 20%, transparent),
+      0 0 0 0 rgb(121 0 255 / 0.2),
+      0 1px 3px 0 rgb(0 0 0 / 0.1),
+      0 1px 2px 0 rgb(0 0 0 / 0.1),
+      0 2px 8px 0 rgb(143 115 227 / 0.2),
+      0 8px 32px 0 rgb(143 115 227 / 0.3);
+  }
+
+  .dark .explore-chat-input-elevated {
+    box-shadow:
+      0 1px 3px 0 rgb(0 0 0 / 0.4),
+      0 2px 12px 0 color-mix(in oklch, var(--primary-400) 35%, transparent),
+      0 8px 28px 0 color-mix(in oklch, var(--primary-500) 25%, transparent);
+  }
+
+  .dark .explore-chat-input-elevated:focus-within {
+    box-shadow:
+      0 0 0 3px color-mix(in oklch, var(--ring) 25%, transparent),
+      0 1px 3px 0 rgb(0 0 0 / 0.4),
+      0 2px 12px 0 color-mix(in oklch, var(--primary-400) 35%, transparent),
+      0 8px 28px 0 color-mix(in oklch, var(--primary-500) 25%, transparent);
   }
 }
 

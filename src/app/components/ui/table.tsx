@@ -5,6 +5,10 @@ import { ChevronsUpDown } from "lucide-react";
 
 import { cn } from "./utils";
 
+/** 56px at 16px root — default width for table columns that only contain a kebab/overflow control. */
+export const tableOverflowMenuColumnClassName =
+  "w-[3.5rem] min-w-[3.5rem] max-w-[3.5rem] box-border px-1 text-right align-middle";
+
 type SortDirection = "asc" | "desc";
 
 interface TableContextValue {

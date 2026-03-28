@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams } from "react-router";
-import { AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 
 import { useConversations, type Message } from "../contexts/ConversationContext";
+import { useDashboardChat } from "../contexts/DashboardChatContext";
+import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
+import { conversationMessageToGlobalChat } from "../lib/conversation-message-to-global-chat";
 import { useVoiceInput } from "../hooks/useVoiceInput";
 import { generateConversationName, generateAIResponse } from "../data/explore-data";
 
@@ -41,11 +43,9 @@ export function ExplorePage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const heroInputBarRef = useRef<HTMLDivElement>(null);
 
-  // When true, phase transitions skip animation (e.g. direct URL navigation)
-  const skipAnimationRef = useRef(false);
-
   // ── Context hooks ─────────────────────────────────────────────────
   const { addConversation, conversations, addMessageToConversation } = useConversations();
+  const { appendMessage } = useDashboardChat();
   const navigate = useNavigate();
   const params = useParams();
 
@@ -115,7 +115,6 @@ export function ExplorePage() {
     lastSyncedIdRef.current = conversationId;
 
     if (conversationId) {
-      skipAnimationRef.current = true;
       const conversation = conversationsRef.current.find((c) => c.id === conversationId);
       if (conversation) {
         setConversationName(conversation.name);
@@ -128,14 +127,6 @@ export function ExplorePage() {
       setMessages([]);
     }
   }, [params.conversationId]);
-
-  // Clear skip-animation flag after a frame
-  useEffect(() => {
-    if (skipAnimationRef.current) {
-      const id = requestAnimationFrame(() => { skipAnimationRef.current = false; });
-      return () => cancelAnimationFrame(id);
-    }
-  }, [phase]);
 
   // ── Explore phase handlers ────────────────────────────────────────
   const handleActionClick = useCallback((label: string, prompts: string[]) => {
@@ -163,6 +154,7 @@ export function ExplorePage() {
       timestamp: new Date(),
     };
     addMessageToConversation(newConversation.id, userMessage);
+    appendMessage(GLOBAL_AI_ASSISTANT_KEY, conversationMessageToGlobalChat(userMessage));
     setMessages([userMessage]);
     const messageToSend = query;
     setQuery("");
@@ -189,61 +181,55 @@ export function ExplorePage() {
       };
       // Always persist to the correct conversation
       addMessageToConversation(targetConversationId, assistantMessage);
+      appendMessage(GLOBAL_AI_ASSISTANT_KEY, conversationMessageToGlobalChat(assistantMessage));
       setMessages([userMessage, assistantMessage]);
       setIsThinking(false);
     }, 2000);
-  }, [query, addConversation, addMessageToConversation, navigate]);
-
-  // Capture skip-animation flag at render time
-  const shouldSkipAnimation = skipAnimationRef.current;
+  }, [query, addConversation, addMessageToConversation, appendMessage, navigate]);
 
   // ── Render ────────────────────────────────────────────────────────
   return (
     <div ref={containerRef} className="h-full flex flex-col overflow-hidden relative">
-      <AnimatePresence mode="wait">
-        {/* ─── PHASE 1: EXPLORE ────────────────────────────── */}
-        {phase === "explore" && !currentConversationId && (
-          <ExplorePhase
-            query={query}
-            onQueryChange={setQuery}
-            voice={voice}
-            inputRef={inputRef}
-            heroInputBarRef={heroInputBarRef}
-            isInputAnimating={isInputAnimating}
-            showTypeahead={showTypeahead}
-            onShowTypeahead={setShowTypeahead}
-            forcedSuggestions={forcedSuggestions}
-            onForcedSuggestionsChange={setForcedSuggestions}
-            onActionClick={handleActionClick}
-            onSend={handleSend}
-            shouldSkipAnimation={shouldSkipAnimation}
-          />
-        )}
+      {/* ─── PHASE 1: EXPLORE ────────────────────────────── */}
+      {phase === "explore" && !currentConversationId && (
+        <ExplorePhase
+          query={query}
+          onQueryChange={setQuery}
+          voice={voice}
+          inputRef={inputRef}
+          heroInputBarRef={heroInputBarRef}
+          isInputAnimating={isInputAnimating}
+          showTypeahead={showTypeahead}
+          onShowTypeahead={setShowTypeahead}
+          forcedSuggestions={forcedSuggestions}
+          onForcedSuggestionsChange={setForcedSuggestions}
+          onActionClick={handleActionClick}
+          onSend={handleSend}
+        />
+      )}
 
-        {/* ─── PHASE 2: CONVERSATION ──────────────────────── */}
-        {phase === "conversation" && (
-          <ConversationPhase
-            query={query}
-            onQueryChange={setQuery}
-            voice={voice}
-            chatInputRef={chatInputRef}
-            currentConversationId={currentConversationId}
-            conversationName={conversationName}
-            setConversationName={setConversationName}
-            messages={messages}
-            setMessages={setMessages}
-            isThinking={isThinking}
-            setIsThinking={setIsThinking}
-            shouldSkipAnimation={shouldSkipAnimation}
-            isInputAnimating={isInputAnimating}
-            setIsInputAnimating={setIsInputAnimating}
-            inputAnimStartTop={inputAnimStartTop}
-            inputAnimStartLeft={inputAnimStartLeft}
-            inputAnimStartWidth={inputAnimStartWidth}
-            containerRef={containerRef}
-          />
-        )}
-      </AnimatePresence>
+      {/* ─── PHASE 2: CONVERSATION ──────────────────────── */}
+      {phase === "conversation" && (
+        <ConversationPhase
+          query={query}
+          onQueryChange={setQuery}
+          voice={voice}
+          chatInputRef={chatInputRef}
+          currentConversationId={currentConversationId}
+          conversationName={conversationName}
+          setConversationName={setConversationName}
+          messages={messages}
+          setMessages={setMessages}
+          isThinking={isThinking}
+          setIsThinking={setIsThinking}
+          isInputAnimating={isInputAnimating}
+          setIsInputAnimating={setIsInputAnimating}
+          inputAnimStartTop={inputAnimStartTop}
+          inputAnimStartLeft={inputAnimStartLeft}
+          inputAnimStartWidth={inputAnimStartWidth}
+          containerRef={containerRef}
+        />
+      )}
     </div>
   );
 }

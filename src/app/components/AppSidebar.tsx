@@ -326,13 +326,11 @@ export function AppSidebar() {
                         {category.label}
                       </DropdownMenuLabel>
                       {category.items.map((app) => {
-                        const Icon = app.icon;
                         return (
                           <DropdownMenuItem
                             key={app.name}
                             className={app.active ? "bg-accent text-accent-foreground" : ""}
                           >
-                            <Icon className="mr-2 h-4 w-4 shrink-0" />
                             <span className="truncate">{app.name}</span>
                           </DropdownMenuItem>
                         );
@@ -357,7 +355,7 @@ export function AppSidebar() {
               <SidebarMenuSub>
                 {activeConversations.length === 0 ? (
                   <SidebarMenuSubItem>
-                    <span className="px-2 py-1.5 text-xs text-muted-foreground">No conversations yet</span>
+                    <span className="px-2 py-1.5 text-xs text-muted-foreground">No drafts yet</span>
                   </SidebarMenuSubItem>
                 ) : (
                   <>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "react-router";
 import { MoreHorizontal, Pencil, Trash2, Archive, Search, ArchiveRestore, MessageSquare, RotateCcw } from "lucide-react";
 import { Button } from "./ui/button";
@@ -11,6 +11,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  tableOverflowMenuColumnClassName,
 } from "./ui/table";
 import {
   DropdownMenu,
@@ -40,9 +41,9 @@ import {
   EmptyTitle,
   EmptyDescription,
 } from "./ui/empty";
-import { PageContent, PageHeader } from "./PageChrome";
+import { PageContent, PageHeader, pageHeaderTabsFooterClassName } from "./PageChrome";
 import { PageTransition } from "./PageTransition";
-import { SkeletonCard } from "./SkeletonCard";
+import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
 // @tanstack/react-virtual is installed and ready for virtualization
 // when conversation lists grow beyond ~50 items. Import useVirtualizer
 // from "@tanstack/react-virtual" and wrap the TableBody accordingly.
@@ -53,13 +54,6 @@ export function AllConversationsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [tab, setTab] = useState<"active" | "archived">("active");
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Simulate initial loading
-  useEffect(() => {
-    const t = setTimeout(() => setIsLoading(false), 400);
-    return () => clearTimeout(t);
-  }, []);
 
   const activeConversations = conversations.filter(c => !c.archived);
   const archivedConversations = conversations.filter(c => c.archived);
@@ -101,12 +95,12 @@ export function AllConversationsPage() {
     const snapshots = currentList.filter((c) => ids.includes(c.id));
     ids.forEach((id) => deleteConversation(id));
     clearSelection();
-    toast.success(`Deleted ${ids.length} conversation${ids.length > 1 ? "s" : ""}`, {
+    toast.success(`Deleted ${ids.length} draft${ids.length > 1 ? "s" : ""}`, {
       action: {
         label: "Undo",
         onClick: () => {
           snapshots.forEach((s) => restoreConversation(s));
-          toast.success("Conversations restored");
+          toast.success("Drafts restored");
         },
       },
     });
@@ -116,73 +110,74 @@ export function AllConversationsPage() {
     const ids = Array.from(selectedIds);
     ids.forEach((id) => archiveConversation(id));
     clearSelection();
-    toast.success(`Archived ${ids.length} conversation${ids.length > 1 ? "s" : ""}`);
+    toast.success(`Archived ${ids.length} draft${ids.length > 1 ? "s" : ""}`);
   };
 
   const handleBulkUnarchive = () => {
     const ids = Array.from(selectedIds);
     ids.forEach((id) => unarchiveConversation(id));
     clearSelection();
-    toast.success(`Restored ${ids.length} conversation${ids.length > 1 ? "s" : ""}`);
+    toast.success(`Restored ${ids.length} draft${ids.length > 1 ? "s" : ""}`);
   };
 
   const allChecked = filteredConversations.length > 0 && selectedIds.size === filteredConversations.length;
   const someChecked = selectedIds.size > 0 && selectedIds.size < filteredConversations.length;
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col flex-1 min-h-0">
-        <PageHeader>
-          <div className="space-y-2">
-            <div className="h-8 w-48 bg-accent animate-pulse rounded-md" />
-            <div className="h-4 w-72 bg-accent animate-pulse rounded-md" />
-          </div>
-        </PageHeader>
-        <div className="flex-1 min-h-0 overflow-auto">
-          <PageContent className="p-8">
-            <SkeletonCard />
-          </PageContent>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex flex-col flex-1 min-h-0">
-      <PageHeader>
+    <Tabs value={tab} onValueChange={handleTabChange} className="flex flex-col flex-1 min-h-0">
+      <PageHeader className={pageHeaderTabsFooterClassName}>
         <div>
-          <h1 className="text-3xl tracking-tight">All Conversations</h1>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-3xl tracking-tight">Draft Insights</h1>
+            <Badge variant="secondary" className="shrink-0 text-xs font-normal">
+              {activeConversations.length}{" "}
+              {activeConversations.length === 1 ? "draft" : "drafts"}
+            </Badge>
+          </div>
           <p className="text-muted-foreground mt-2">
-            Browse and manage your conversations
+            Browse and manage your drafts
           </p>
+          {currentList.length > 0 && (
+            <div className="mt-4 flex w-full flex-wrap items-center gap-3">
+              <div className="relative flex-1 min-w-[200px] max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search drafts..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => setSearchQuery("")}
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Reset Filters
+                </Button>
+              )}
+            </div>
+          )}
         </div>
+        <TabsList variant="line" className="mt-4">
+          <TabsTrigger value="active">Active ({activeConversations.length})</TabsTrigger>
+          <TabsTrigger value="archived">Archived ({archivedConversations.length})</TabsTrigger>
+        </TabsList>
       </PageHeader>
       <div className="flex-1 min-h-0 overflow-auto">
         <PageContent className="p-8">
         <PageTransition className="space-y-6">
-      {/* Summary badges */}
-      <div className="flex flex-wrap gap-3">
-        <Badge variant="secondary" className="text-sm px-3 py-1">
-          {activeConversations.length} {activeConversations.length === 1 ? "conversation" : "conversations"}
-        </Badge>
-        <Badge variant="secondary" className="text-sm px-3 py-1">
-          {activeConversations.reduce((sum, c) => sum + c.messages.length, 0)} total messages
-        </Badge>
-        {archivedConversations.length > 0 && (
-          <Badge variant="secondary" className="text-sm px-3 py-1">
-            {archivedConversations.length} archived
-          </Badge>
-        )}
-      </div>
-
-      {/* Tabs: Active / Archived */}
-      <Tabs value={tab} onValueChange={handleTabChange}>
-        <TabsList>
-          <TabsTrigger value="active">Active ({activeConversations.length})</TabsTrigger>
-          <TabsTrigger value="archived">Archived ({archivedConversations.length})</TabsTrigger>
-        </TabsList>
-      </Tabs>
-
+      <HeaderAIInsightsRow
+        dashboardId="draft-insights"
+        dashboardData={{
+          id: "draft-insights",
+          title: "Draft Insights",
+          description: "Browse and manage your drafts",
+        }}
+      />
       {currentList.length === 0 ? (
         tab === "active" ? (
           <Empty>
@@ -190,9 +185,9 @@ export function AllConversationsPage() {
               <EmptyMedia variant="icon">
                 <MessageSquare />
               </EmptyMedia>
-              <EmptyTitle>No conversations yet</EmptyTitle>
+              <EmptyTitle>No drafts yet</EmptyTitle>
               <EmptyDescription>
-                Start a conversation from the Explore page to get started
+                Start a draft from the Explore page to get started
               </EmptyDescription>
             </EmptyHeader>
             <Link to="/">
@@ -207,39 +202,15 @@ export function AllConversationsPage() {
               <EmptyMedia variant="icon">
                 <Archive />
               </EmptyMedia>
-              <EmptyTitle>No archived conversations</EmptyTitle>
+              <EmptyTitle>No archived drafts</EmptyTitle>
               <EmptyDescription>
-                Archived conversations will appear here
+                Archived drafts will appear here
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
         )
       ) : (
         <>
-        {/* Search */}
-        <div className="flex w-full flex-wrap items-center gap-3">
-          <div className="relative flex-1 min-w-[200px] max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search conversations..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          {searchQuery && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="shrink-0"
-              onClick={() => setSearchQuery("")}
-            >
-              <RotateCcw className="mr-2 h-4 w-4" />
-              Reset Filters
-            </Button>
-          )}
-        </div>
-
         {filteredConversations.length > 0 ? (
         <div className="space-y-3">
             <BulkActionBar
@@ -303,8 +274,9 @@ export function AllConversationsPage() {
                   </TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Created</TableHead>
-                  <TableHead>Messages</TableHead>
-                  <TableHead className="w-[50px]"><span className="sr-only">Actions</span></TableHead>
+                  <TableHead className={tableOverflowMenuColumnClassName}>
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -335,10 +307,7 @@ export function AllConversationsPage() {
                           year: "numeric",
                         })}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {conversation.messages.length}
-                      </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className={tableOverflowMenuColumnClassName}>
                         <DropdownMenu>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -373,13 +342,13 @@ export function AllConversationsPage() {
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => {
                                   archiveConversation(conversation.id);
-                                  toast.success("Conversation archived", {
+                                  toast.success("Draft archived", {
                                     description: `"${conversation.name}" has been archived.`,
                                     action: {
                                       label: "Undo",
                                       onClick: () => {
                                         unarchiveConversation(conversation.id);
-                                        toast.success("Conversation restored");
+                                        toast.success("Draft restored");
                                       },
                                     },
                                   });
@@ -391,13 +360,13 @@ export function AllConversationsPage() {
                                   onClick={() => {
                                     const snapshot = { ...conversation };
                                     deleteConversation(conversation.id);
-                                    toast.success("Conversation deleted", {
+                                    toast.success("Draft deleted", {
                                       description: `"${conversation.name}" has been deleted.`,
                                       action: {
                                         label: "Undo",
                                         onClick: () => {
                                           restoreConversation(snapshot);
-                                          toast.success("Conversation restored");
+                                          toast.success("Draft restored");
                                         },
                                       },
                                     });
@@ -412,7 +381,7 @@ export function AllConversationsPage() {
                               <>
                                 <DropdownMenuItem onClick={() => {
                                   unarchiveConversation(conversation.id);
-                                  toast.success("Conversation restored", {
+                                  toast.success("Draft restored", {
                                     description: `"${conversation.name}" has been restored.`,
                                   });
                                 }}>
@@ -423,13 +392,13 @@ export function AllConversationsPage() {
                                   onClick={() => {
                                     const snapshot = { ...conversation };
                                     deleteConversation(conversation.id);
-                                    toast.success("Conversation deleted", {
+                                    toast.success("Draft deleted", {
                                       description: `"${conversation.name}" has been permanently deleted.`,
                                       action: {
                                         label: "Undo",
                                         onClick: () => {
                                           restoreConversation(snapshot);
-                                          toast.success("Conversation restored");
+                                          toast.success("Draft restored");
                                         },
                                       },
                                     });
@@ -455,7 +424,7 @@ export function AllConversationsPage() {
               <EmptyMedia variant="icon">
                 <Search />
               </EmptyMedia>
-              <EmptyTitle>No conversations match your search</EmptyTitle>
+              <EmptyTitle>No drafts match your search</EmptyTitle>
               <EmptyDescription>
                 Try adjusting your search query
               </EmptyDescription>
@@ -469,12 +438,12 @@ export function AllConversationsPage() {
       <Dialog open={!!renameDialog} onOpenChange={() => setRenameDialog(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Rename Conversation</DialogTitle>
-            <DialogDescription>Enter a new name for your conversation.</DialogDescription>
+            <DialogTitle>Rename draft</DialogTitle>
+            <DialogDescription>Enter a new name for your draft.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="rename-conv">Conversation Name</Label>
+              <Label htmlFor="rename-conv">Draft name</Label>
               <Input
                 id="rename-conv"
                 value={renameDialog?.name || ""}
@@ -512,6 +481,6 @@ export function AllConversationsPage() {
         </PageTransition>
         </PageContent>
       </div>
-    </div>
+    </Tabs>
   );
 }

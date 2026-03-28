@@ -37,6 +37,36 @@ function defaultFormatValue(value: number): string {
   return Number.isInteger(value) ? value.toLocaleString() : value.toFixed(1);
 }
 
+function getTransparentColorStop(lineColor: string): string {
+  // Resolve the runtime color first (including CSS vars), then set alpha to 0.
+  if (typeof document === "undefined") return "rgba(0, 0, 0, 0)";
+
+  const span = document.createElement("span");
+  span.style.position = "absolute";
+  span.style.left = "-99999px";
+  span.style.top = "-99999px";
+  span.style.color = lineColor;
+  document.body.appendChild(span);
+  const resolved = getComputedStyle(span).color;
+  span.remove();
+
+  // rgb(r, g, b) -> rgba(r, g, b, 0)
+  const rgb = resolved.match(/^rgb\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)$/i);
+  if (rgb) {
+    return `rgba(${rgb[1]}, ${rgb[2]}, ${rgb[3]}, 0)`;
+  }
+
+  // rgba(r, g, b, a) -> rgba(r, g, b, 0)
+  const rgba = resolved.match(
+    /^rgba\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*[\d.]+\s*\)$/i,
+  );
+  if (rgba) {
+    return `rgba(${rgba[1]}, ${rgba[2]}, ${rgba[3]}, 0)`;
+  }
+
+  return "rgba(0, 0, 0, 0)";
+}
+
 /**
  * Compact area chart for KPI cards: filled area, axis hover tooltip (no grid or axis chrome).
  */
@@ -57,6 +87,8 @@ export function KpiSparkline({
     const vmax = Math.max(...values);
     const span = vmax - vmin;
     const pad = span > 0 ? span * 0.12 : Math.max(Math.abs(vmin) * 0.02, 1);
+
+    const transparentStop = getTransparentColorStop(lineColor);
 
     return {
       backgroundColor: "transparent",
@@ -119,10 +151,11 @@ export function KpiSparkline({
           type: "line",
           data: [...values],
           smooth: 0.35,
-          symbol: "circle",
-          symbolSize: 5,
-          showSymbol: true,
-          showAllSymbol: true,
+          // Keep hover/tooltips via axis pointer, but hide point markers.
+          symbol: "none",
+          symbolSize: 0,
+          showSymbol: false,
+          showAllSymbol: false,
           lineStyle: {
             width: 2,
             color: lineColor,
@@ -132,8 +165,18 @@ export function KpiSparkline({
             borderWidth: 0,
           },
           areaStyle: {
-            color: lineColor,
-            opacity: 0.22,
+            color: {
+              type: "linear",
+              x: 0,
+              y: 0,
+              x2: 0,
+              y2: 1,
+              colorStops: [
+                { offset: 0, color: lineColor },
+                { offset: 1, color: transparentStop },
+              ],
+            },
+            opacity: 0.3,
           },
           // `emphasis.focus: "series"` (and related blur) can incorrectly dim the only
           // series on hover; keep default emphasis so line + area stay visible.
@@ -141,7 +184,20 @@ export function KpiSparkline({
             focus: "none",
             scale: false,
             lineStyle: { width: 2, color: lineColor },
-            areaStyle: { color: lineColor, opacity: 0.22 },
+            areaStyle: {
+              color: {
+                type: "linear",
+                x: 0,
+                y: 0,
+                x2: 0,
+                y2: 1,
+                colorStops: [
+                  { offset: 0, color: lineColor },
+                  { offset: 1, color: transparentStop },
+                ],
+              },
+              opacity: 0.3,
+            },
             itemStyle: { color: lineColor, borderWidth: 0 },
           },
         },

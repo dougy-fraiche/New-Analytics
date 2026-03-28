@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import {
-  Clock,
   CheckCircle2,
+  Clock,
   XCircle,
   Loader2,
   ArrowUpRight,
-  Filter,
   Search,
   RotateCcw,
   Trash2,
@@ -29,8 +28,8 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "./ui/select";
+import { LabeledSelectValue } from "./HeaderFilters";
 import {
   Table,
   TableBody,
@@ -38,11 +37,16 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  tableOverflowMenuColumnClassName,
 } from "./ui/table";
 import { toast } from "sonner";
 import { BulkActionBar } from "./BulkActionBar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { PageTransition } from "./PageTransition";
+import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
+import { WidgetAIPromptButton } from "./WidgetAIPromptButton";
+import { WidgetAIProvider } from "../contexts/WidgetAIContext";
+import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 
 type ActionStatus = "completed" | "failed" | "in_progress" | "pending";
 
@@ -54,7 +58,6 @@ interface ActionRecord {
   triggeredBy: string;
   startedAt: string;
   completedAt: string | null;
-  duration: string | null;
   details: string;
 }
 
@@ -67,7 +70,6 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "John Doe",
     startedAt: "Feb 20, 2026 09:14 AM",
     completedAt: "Feb 20, 2026 09:16 AM",
-    duration: "2m 14s",
     details: "Deployed AI agent to handle account verification requests in Tier-1 queue.",
   },
   {
@@ -78,7 +80,6 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "Emily Rodriguez",
     startedAt: "Feb 20, 2026 08:45 AM",
     completedAt: "Feb 20, 2026 08:45 AM",
-    duration: "12s",
     details: "Updated article #KB-1042 with new 2FA reset flow instructions.",
   },
   {
@@ -89,7 +90,6 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "System (Scheduled)",
     startedAt: "Feb 20, 2026 08:00 AM",
     completedAt: null,
-    duration: null,
     details: "Retraining escalation prediction model with last 30 days of labeled data.",
   },
   {
@@ -100,7 +100,6 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "Sarah Johnson",
     startedAt: "Feb 19, 2026 04:30 PM",
     completedAt: "Feb 19, 2026 04:31 PM",
-    duration: "48s",
     details: "Exported PDF report for Q4 2025 customer support analytics.",
   },
   {
@@ -111,7 +110,6 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "Michael Chen",
     startedAt: "Feb 19, 2026 02:10 PM",
     completedAt: "Feb 19, 2026 02:10 PM",
-    duration: "3s",
     details: "Attempted to reassign 47 billing tickets to Tier-2. Failed: target queue at capacity.",
   },
   {
@@ -122,7 +120,6 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "John Doe",
     startedAt: "Feb 19, 2026 11:00 AM",
     completedAt: "Feb 19, 2026 11:00 AM",
-    duration: "5s",
     details: "Enabled AI Copilot suggestions for all agents in the Technical Support team.",
   },
   {
@@ -133,7 +130,6 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "System (Scheduled)",
     startedAt: "Feb 21, 2026 06:00 AM",
     completedAt: null,
-    duration: null,
     details: "Scheduled weekly digest email for all team leads.",
   },
   {
@@ -144,7 +140,6 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "System (Automated)",
     startedAt: "Feb 18, 2026 12:00 AM",
     completedAt: "Feb 18, 2026 12:02 AM",
-    duration: "2m 03s",
     details: "Archived 312 conversations older than 90 days with resolved status.",
   },
   {
@@ -155,7 +150,6 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "System (Scheduled)",
     startedAt: "Feb 18, 2026 03:00 AM",
     completedAt: "Feb 18, 2026 03:04 AM",
-    duration: "4m 22s",
     details: "Synced 1,847 contact records from Salesforce CRM.",
   },
   {
@@ -166,7 +160,6 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "David Kim",
     startedAt: "Feb 17, 2026 03:45 PM",
     completedAt: "Feb 17, 2026 03:45 PM",
-    duration: "1s",
     details: "Routing rule conflict detected. Rule overlaps with existing priority escalation rule.",
   },
 ];
@@ -281,93 +274,141 @@ export function ActionsHistoryPage() {
   });
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
+    <WidgetAIProvider persistKey={GLOBAL_AI_ASSISTANT_KEY} ootbTypeId="actions-history">
+      <div className="flex flex-col flex-1 min-h-0">
       <PageHeader>
-        <div className="flex items-center justify-between">
-          <div>
+        <div>
+          <div className="flex items-center gap-2">
             <h1 className="text-3xl tracking-tight">Deployed Actions</h1>
+            <Badge variant="secondary" className="text-xs px-2 py-0.5 shrink-0">
+              {counts.total} total actions
+            </Badge>
+            <Button variant="outline" size="sm" className="ml-auto">
+              <ArrowUpRight className="mr-2 h-4 w-4" />
+              Export Log
+            </Button>
+          </div>
             <p className="text-muted-foreground mt-2">
               Audit log of all automated and manual actions across the platform
             </p>
-          </div>
-          <Button variant="outline" size="sm">
-            <ArrowUpRight className="mr-2 h-4 w-4" />
-            Export Log
-          </Button>
+            {actions.length > 0 && (
+              <div className="mt-4 flex w-full flex-wrap items-center gap-3">
+                <div className="relative flex-1 min-w-[200px] max-w-sm">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search actions..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="h-8 w-auto shrink-0">
+                    <LabeledSelectValue label="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="failed">Failed</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger className="h-8 w-auto shrink-0">
+                    <LabeledSelectValue label="Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    {allTypes.map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {t}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {(statusFilter !== "all" || typeFilter !== "all" || searchQuery) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="shrink-0"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setStatusFilter("all");
+                      setTypeFilter("all");
+                    }}
+                  >
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Reset Filters
+                  </Button>
+                )}
+              </div>
+            )}
         </div>
       </PageHeader>
       <div className="flex-1 min-h-0 overflow-auto">
         <PageContent className="space-y-6 p-8">
       <PageTransition className="space-y-6">
-      {/* Summary Cards */}
-      <div className="flex flex-wrap gap-3">
-        <Badge variant="secondary" className="text-sm px-3 py-1">
-          {counts.total} total actions
-        </Badge>
-        <Badge variant="secondary" className="text-sm px-3 py-1">
-          {counts.completed} completed
-        </Badge>
-        <Badge variant="secondary" className="text-sm px-3 py-1">
-          {counts.failed + counts.active} failed / active
-        </Badge>
-      </div>
-
+      <HeaderAIInsightsRow
+        dashboardId="actions-history"
+        dashboardData={{
+          id: "actions-history",
+          title: "Deployed Actions",
+          description: "Audit log of all automated and manual actions across the platform",
+        }}
+        recommendedActionsTitle="Deployment insights"
+        hideDismissAll
+        recommendedActionsContent={
+          <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
+            <div
+              id="actions-history-insight-completed"
+              className="relative flex min-w-0 flex-col gap-2 rounded-xl border border-primary/40 bg-primary/[0.03] p-4 transition-[box-shadow,border-color,background-color] hover:border-primary/55 hover:bg-primary/[0.05] hover:shadow-md"
+            >
+              <div className="absolute right-3 top-3 z-10">
+                <WidgetAIPromptButton
+                  widgetTitle={`Deployment insight: Completed deployments (${counts.completed} in this log)`}
+                  chartType="metric"
+                  widgetAnchorId="actions-history-insight-completed"
+                  tooltipLabel="Ask AI about this insight"
+                />
+              </div>
+              <div className="flex min-w-0 flex-col gap-2.5 pr-10">
+                <p className="text-xs text-muted-foreground">Completed</p>
+                <p className="text-xl font-semibold leading-6 tracking-tight tabular-nums text-foreground">
+                  {counts.completed}
+                </p>
+                <p className="text-sm leading-snug text-foreground/80">
+                  Successfully finished deployments in this log
+                </p>
+              </div>
+            </div>
+            <div
+              id="actions-history-insight-failed-active"
+              className="relative flex min-w-0 flex-col gap-2 rounded-xl border border-primary/40 bg-primary/[0.03] p-4 transition-[box-shadow,border-color,background-color] hover:border-primary/55 hover:bg-primary/[0.05] hover:shadow-md"
+            >
+              <div className="absolute right-3 top-3 z-10">
+                <WidgetAIPromptButton
+                  widgetTitle={`Deployment insight: Failed or active actions (${counts.failed + counts.active} in this log)`}
+                  chartType="metric"
+                  widgetAnchorId="actions-history-insight-failed-active"
+                  tooltipLabel="Ask AI about this insight"
+                />
+              </div>
+              <div className="flex min-w-0 flex-col gap-2.5 pr-10">
+                <p className="text-xs text-muted-foreground">Failed / active</p>
+                <p className="text-xl font-semibold leading-6 tracking-tight tabular-nums text-foreground">
+                  {counts.failed + counts.active}
+                </p>
+                <p className="text-sm leading-snug text-foreground/80">
+                  Actions still running or that ended in failure
+                </p>
+              </div>
+            </div>
+          </div>
+        }
+      />
       {actions.length > 0 ? (
         <>
-      {/* Filters */}
-      <div className="flex w-full flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search actions..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[160px]">
-            <Filter className="mr-2 h-4 w-4" />
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="failed">Failed</SelectItem>
-            <SelectItem value="in_progress">In Progress</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            {allTypes.map((t) => (
-              <SelectItem key={t} value={t}>
-                {t}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {(statusFilter !== "all" || typeFilter !== "all" || searchQuery) && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="shrink-0"
-            onClick={() => {
-              setSearchQuery("");
-              setStatusFilter("all");
-              setTypeFilter("all");
-            }}
-          >
-            <RotateCcw className="mr-2 h-4 w-4" />
-            Reset Filters
-          </Button>
-        )}
-      </div>
-
       {/* Actions Table */}
       {filtered.length > 0 ? (
       <div className="space-y-3">
@@ -422,14 +463,14 @@ export function ActionsHistoryPage() {
                 <TableHead>Status</TableHead>
                 <TableHead>Triggered By</TableHead>
                 <TableHead>Started</TableHead>
-                <TableHead className="text-right">Duration</TableHead>
-                <TableHead className="w-[50px]"><span className="sr-only">Actions</span></TableHead>
+                <TableHead className={tableOverflowMenuColumnClassName}>
+                  <span className="sr-only">Actions</span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.map((action) => {
                   const statusInfo = statusConfig[action.status];
-                  const StatusIcon = statusInfo.icon;
                   return (
                     <TableRow
                       key={action.id}
@@ -455,26 +496,21 @@ export function ActionsHistoryPage() {
                         <Badge variant="secondary">{action.type}</Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={statusInfo.variant} className="gap-1">
-                          <StatusIcon
-                            className={`h-3 w-3 ${
-                              action.status === "in_progress" ? "animate-spin" : ""
-                            }`}
-                          />
+                        <Badge variant={statusInfo.variant}>
+                          {action.status === "in_progress" ? (
+                            <Loader2
+                              className="animate-spin"
+                              aria-hidden
+                            />
+                          ) : null}
                           {statusInfo.label}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm">{action.triggeredBy}</TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Clock className="h-4 w-4" />
-                          {action.startedAt}
-                        </div>
+                        <div className="text-sm text-muted-foreground">{action.startedAt}</div>
                       </TableCell>
-                      <TableCell className="text-right text-sm tabular-nums">
-                        {action.duration || "—"}
-                      </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className={tableOverflowMenuColumnClassName}>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
@@ -532,5 +568,6 @@ export function ActionsHistoryPage() {
         </PageContent>
       </div>
     </div>
+    </WidgetAIProvider>
   );
 }

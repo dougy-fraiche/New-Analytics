@@ -1,9 +1,7 @@
-import { useState } from "react";
-import { ChevronDown, Sparkles } from "lucide-react";
+import type { ReactNode } from "react";
 
 import type { DashboardData } from "../contexts/ConversationContext";
 import { DashboardAISummary } from "./DashboardAISummary";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
 import { cn } from "./ui/utils";
 
 interface HeaderAIInsightsRowProps {
@@ -11,6 +9,10 @@ interface HeaderAIInsightsRowProps {
   dashboardData?: DashboardData;
   className?: string;
   defaultOpen?: boolean;
+  children?: ReactNode;
+  recommendedActionsTitle?: string;
+  hideDismissAll?: boolean;
+  recommendedActionsContent?: ReactNode;
 }
 
 export function HeaderAIInsightsRow({
@@ -18,31 +20,24 @@ export function HeaderAIInsightsRow({
   dashboardData,
   className,
   defaultOpen = false,
+  children,
+  recommendedActionsTitle,
+  hideDismissAll,
+  recommendedActionsContent,
 }: HeaderAIInsightsRowProps) {
-  const [open, setOpen] = useState(defaultOpen);
-
   return (
-    <Collapsible open={open} onOpenChange={setOpen} className={cn("mt-4 pt-3", className)}>
-      <CollapsibleTrigger asChild>
-        <button
-          type="button"
-          className="flex w-full items-center justify-between rounded-md px-1 py-1 text-left transition-colors hover:bg-muted/40"
-          aria-label="Toggle AI Insights"
-        >
-          <span className="inline-flex items-center gap-2 text-sm font-medium">
-            <Sparkles className="h-4 w-4 text-primary" />
-            AI Insights
-          </span>
-          <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", open && "rotate-180")} />
-        </button>
-      </CollapsibleTrigger>
-      <CollapsibleContent className="pt-3">
+    <section aria-label="AI Insights" className={cn("w-full", className)}>
+      {children ?? (
         <DashboardAISummary
           dashboardId={dashboardId}
           dashboardData={dashboardData}
           hideSectionHeader
+          defaultInsightsOpen={defaultOpen}
+          recommendedActionsTitle={recommendedActionsTitle}
+          hideDismissAll={hideDismissAll}
+          recommendedActionsContent={recommendedActionsContent}
         />
-      </CollapsibleContent>
-    </Collapsible>
+      )}
+    </section>
   );
 }

@@ -21,8 +21,8 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "./ui/select";
+import { LabeledSelectValue } from "./HeaderFilters";
 import {
   Table,
   TableBody,
@@ -30,6 +30,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  tableOverflowMenuColumnClassName,
 } from "./ui/table";
 import { toast } from "sonner";
 import { Input } from "./ui/input";
@@ -38,10 +39,6 @@ import {
   recommendedActionsData,
   typeColors,
   priorityColors,
-  actionIconMap,
-  actionIconColors,
-  defaultActionIcon,
-  defaultActionIconColors,
   type RecommendedAction,
 } from "../data/recommended-actions";
 import { PageContent, PageHeader } from "./PageChrome";
@@ -50,6 +47,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { useNavigate } from "react-router";
 import { useProjects } from "../contexts/ProjectContext";
 import { PageTransition } from "./PageTransition";
+import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
+import { WidgetAIPromptButton } from "./WidgetAIPromptButton";
+import { WidgetAIProvider } from "../contexts/WidgetAIContext";
+import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 
 const LINKED_DASHBOARD_IDS_BY_ACTION_ID: Record<number, string[]> = {
   1: ["dash-2", "dash-13"],
@@ -191,92 +192,141 @@ export function RecommendedActionsPage() {
   const someChecked = selectedIds.size > 0 && selectedIds.size < sortedActions.length;
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
+    <WidgetAIProvider persistKey={GLOBAL_AI_ASSISTANT_KEY} ootbTypeId="recommended-actions">
+      <div className="flex flex-col flex-1 min-h-0">
       <PageHeader>
         <div>
-          <h1 className="text-3xl tracking-tight">Recommended Actions</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl tracking-tight">Recommended Actions</h1>
+            <Badge variant="secondary" className="text-xs px-2 py-0.5">
+              {pendingCount} pending actions
+            </Badge>
+            <Badge variant="secondary" className="text-xs px-2 py-0.5">
+              {highPriorityCount} high priority
+            </Badge>
+          </div>
           <p className="text-muted-foreground mt-2">
             AI-generated recommendations to improve your customer experience
           </p>
+          {pendingCount > 0 && (
+            <div className="mt-4 flex w-full flex-wrap items-center gap-3">
+              <div className="relative flex-1 min-w-[200px] max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search actions..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                <SelectTrigger className="h-8 w-auto shrink-0">
+                  <LabeledSelectValue label="Priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Priorities</SelectItem>
+                  <SelectItem value="High">High</SelectItem>
+                  <SelectItem value="Medium">Medium</SelectItem>
+                  <SelectItem value="Low">Low</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="h-8 w-auto shrink-0">
+                  <LabeledSelectValue label="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="Tool Build">Tool Build</SelectItem>
+                  <SelectItem value="AI Agent">AI Agent</SelectItem>
+                  <SelectItem value="Process Change">Process Change</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="h-8 w-auto shrink-0">
+                  <LabeledSelectValue label="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="containment">Containment</SelectItem>
+                  <SelectItem value="efficiency">Efficiency</SelectItem>
+                </SelectContent>
+              </Select>
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="shrink-0"
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Reset Filters
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </PageHeader>
       <div className="flex-1 min-h-0 overflow-auto">
         <PageContent className="space-y-6 p-8">
       <PageTransition className="space-y-6">
-      {/* Summary Cards */}
-      <div className="flex flex-wrap gap-3">
-        <Badge variant="secondary" className="text-sm px-3 py-1">
-          {pendingCount} pending actions
-        </Badge>
-        <Badge variant="secondary" className="text-sm px-3 py-1">
-          {highPriorityCount} high priority
-        </Badge>
-        <Badge variant="secondary" className="text-sm px-3 py-1">
-          142K potential customer impact
-        </Badge>
-        <Badge variant="secondary" className="text-sm px-3 py-1">
-          ${(totalROI / 1000).toFixed(0)}K/wk projected ROI
-        </Badge>
-      </div>
-
+      <HeaderAIInsightsRow
+        dashboardId="recommended-actions"
+        dashboardData={{
+          id: "recommended-actions",
+          title: "Recommended Actions",
+          description: "AI-generated recommendations to improve your customer experience",
+        }}
+        recommendedActionsTitle="Impact highlights"
+        hideDismissAll
+        recommendedActionsContent={
+          <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
+            <div
+              id="recommended-actions-highlight-reach"
+              className="relative flex min-w-0 flex-col gap-2 rounded-xl border border-primary/40 bg-primary/[0.03] p-4 transition-[box-shadow,border-color,background-color] hover:border-primary/55 hover:bg-primary/[0.05] hover:shadow-md"
+            >
+              <div className="absolute right-3 top-3 z-10">
+                <WidgetAIPromptButton
+                  widgetTitle="Impact highlight: Potential customer reach (142K estimated weekly)"
+                  chartType="metric"
+                  widgetAnchorId="recommended-actions-highlight-reach"
+                  tooltipLabel="Ask AI about this highlight"
+                />
+              </div>
+              <div className="flex min-w-0 flex-col gap-2.5 pr-10">
+                <p className="text-xs text-muted-foreground">Potential Customer Impact</p>
+                <p className="text-xl font-semibold leading-6 tracking-tight text-foreground">142K</p>
+                <p className="text-sm leading-snug text-foreground/80">
+                  Estimated weekly reach across affected conversations
+                </p>
+              </div>
+            </div>
+            <div
+              id="recommended-actions-highlight-roi"
+              className="relative flex min-w-0 flex-col gap-2 rounded-xl border border-primary/40 bg-primary/[0.03] p-4 transition-[box-shadow,border-color,background-color] hover:border-primary/55 hover:bg-primary/[0.05] hover:shadow-md"
+            >
+              <div className="absolute right-3 top-3 z-10">
+                <WidgetAIPromptButton
+                  widgetTitle={`Impact highlight: Projected ROI ($${(totalROI / 1000).toFixed(0)}K/wk from pending recommendations)`}
+                  chartType="metric"
+                  widgetAnchorId="recommended-actions-highlight-roi"
+                  tooltipLabel="Ask AI about this highlight"
+                />
+              </div>
+              <div className="flex min-w-0 flex-col gap-2.5 pr-10">
+                <p className="text-xs text-muted-foreground">Projected ROI</p>
+                <p className="text-xl font-semibold leading-6 tracking-tight text-foreground">
+                  ${(totalROI / 1000).toFixed(0)}K/wk
+                </p>
+                <p className="text-sm leading-snug text-foreground/80">
+                  Combined value from currently pending recommendations
+                </p>
+              </div>
+            </div>
+          </div>
+        }
+      />
       {pendingCount > 0 ? (
         <>
-      {/* Filters */}
-      <div className="flex w-full flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search actions..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-          <SelectTrigger className="w-[140px] h-8">
-            <SelectValue placeholder="All Priorities" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Priorities</SelectItem>
-            <SelectItem value="High">High</SelectItem>
-            <SelectItem value="Medium">Medium</SelectItem>
-            <SelectItem value="Low">Low</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-[140px] h-8">
-            <SelectValue placeholder="All Types" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="Tool Build">Tool Build</SelectItem>
-            <SelectItem value="AI Agent">AI Agent</SelectItem>
-            <SelectItem value="Process Change">Process Change</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-[150px] h-8">
-            <SelectValue placeholder="All Categories" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            <SelectItem value="containment">Containment</SelectItem>
-            <SelectItem value="efficiency">Efficiency</SelectItem>
-          </SelectContent>
-        </Select>
-        {hasActiveFilters && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clearFilters}
-            className="shrink-0"
-          >
-            <RotateCcw className="mr-2 h-4 w-4" />
-            Reset Filters
-          </Button>
-        )}
-      </div>
-
       {/* Actions Table */}
       {sortedActions.length > 0 ? (
       <div className="space-y-3">
@@ -320,8 +370,11 @@ export function RecommendedActionsPage() {
                 <TableHead className="w-[120px]">Priority</TableHead>
                 <TableHead className="w-[220px]">Projected Impact</TableHead>
                 <TableHead className="w-[120px] text-right">Projected ROI</TableHead>
-                <TableHead className="w-[200px] text-right">
-                  <span className="sr-only">Actions</span>
+                <TableHead className="text-right whitespace-nowrap">
+                  <span className="sr-only">View evidence</span>
+                </TableHead>
+                <TableHead className={tableOverflowMenuColumnClassName}>
+                  <span className="sr-only">More options</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -341,26 +394,15 @@ export function RecommendedActionsPage() {
                       />
                     </TableCell>
                     <TableCell className="w-[520px] py-4 whitespace-normal">
-                      {(() => {
-                        const IconComp = actionIconMap[action.id] ?? defaultActionIcon;
-                        const colors = actionIconColors[action.id] ?? defaultActionIconColors;
-                        return (
-                          <div className="flex items-start gap-3">
-                            <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${colors.bg} mt-0.5`}>
-                              <IconComp className={`h-4 w-4 ${colors.text}`} />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="font-medium">{action.title}</p>
-                              <p className="text-sm text-muted-foreground mt-0.5">
-                                {action.description}
-                              </p>
-                              <p className="text-xs text-amber-600 mt-1 italic">
-                                {action.note}
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      })()}
+                      <div className="min-w-0">
+                        <p className="font-medium">{action.title}</p>
+                        <p className="text-sm text-muted-foreground mt-0.5">
+                          {action.description}
+                        </p>
+                        <p className="text-xs text-amber-600 mt-1 italic">
+                          {action.note}
+                        </p>
+                      </div>
                     </TableCell>
                     <TableCell className="w-[132px]">
                       <span
@@ -387,45 +429,44 @@ export function RecommendedActionsPage() {
                     <TableCell className="w-[120px] text-right font-medium tabular-nums">
                       {action.projectedROI}
                     </TableCell>
-                    <TableCell className="w-[200px] text-right whitespace-normal">
-                      <div className="flex items-center justify-end gap-2">
-                        {(() => {
-                          const linkedPath = getLinkedDashboardPathForAction(action.id);
-                          if (!linkedPath) return null;
+                    <TableCell className="text-right whitespace-normal">
+                      {(() => {
+                        const linkedPath = getLinkedDashboardPathForAction(action.id);
+                        if (!linkedPath) return null;
 
-                          return (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 px-3 text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(linkedPath);
-                              }}
-                            >
-                              View Evidence
-                            </Button>
-                          );
-                        })()}
-
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSheetAction(action);
-                              }}
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">More options</span>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="left">View details</TooltipContent>
-                        </Tooltip>
-                      </div>
+                        return (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 px-3 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(linkedPath);
+                            }}
+                          >
+                            View Evidence
+                          </Button>
+                        );
+                      })()}
+                    </TableCell>
+                    <TableCell className={tableOverflowMenuColumnClassName}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSheetAction(action);
+                            }}
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">More options</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="left">View details</TooltipContent>
+                      </Tooltip>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -472,5 +513,6 @@ export function RecommendedActionsPage() {
         </PageContent>
       </div>
     </div>
+    </WidgetAIProvider>
   );
 }

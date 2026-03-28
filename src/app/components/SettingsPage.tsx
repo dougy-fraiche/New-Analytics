@@ -23,6 +23,7 @@ import { toast } from "sonner";
 
 import { PageContent, PageHeader } from "./PageChrome";
 import { PageTransition } from "./PageTransition";
+import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
 
 export function SettingsPage() {
   const [displayName, setDisplayName] = useState("John Doe");
@@ -68,6 +69,14 @@ export function SettingsPage() {
       <div className="flex-1 min-h-0 overflow-auto">
         <PageContent className="space-y-6 p-8">
       <PageTransition className="space-y-6">
+      <HeaderAIInsightsRow
+        dashboardId="settings"
+        dashboardData={{
+          id: "settings",
+          title: "Settings",
+          description: "Manage your account preferences and application configuration",
+        }}
+      />
       {/* Profile Settings */}
       <Card>
         <CardHeader>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import { Clock, Pin, PinOff, Search, ChevronRight, RotateCcw } from "lucide-react";
+import { Pin, PinOff, Search, RotateCcw } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -14,10 +14,18 @@ import {
   TableRow,
 } from "./ui/table";
 import { PageContent, PageHeader } from "./PageChrome";
+import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
 import { useProjects } from "../contexts/ProjectContext";
 import { toast } from "sonner";
 import { BulkActionBar } from "./BulkActionBar";
 import { Input } from "./ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "./ui/select";
+import { LabeledSelectValue } from "./HeaderFilters";
 import { PageTransition } from "./PageTransition";
 import {
   ootbCategories,
@@ -30,6 +38,7 @@ export function ObservabilityPage() {
   const { isFavorite, toggleFavorite } = useProjects();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
 
   // Build a flat list of displayable items: categories with their dashboards
   const allItems = ootbCategories.flatMap((cat) => {
@@ -46,6 +55,7 @@ export function ObservabilityPage() {
   });
 
   const filteredItems = allItems.filter((d) => {
+    if (categoryFilter !== "all" && d.categoryId !== categoryFilter) return false;
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -108,91 +118,74 @@ export function ObservabilityPage() {
   const selectedList = Array.from(selectedIds);
   const selectedFavCount = selectedList.filter((id) => isFavorite(id)).length;
   const selectedNonPinCount = selectedList.length - selectedFavCount;
-
-  const uniqueCategories = new Set(ootbCategories.map((c) => c.id));
+  const hasActiveFilters = searchQuery.length > 0 || categoryFilter !== "all";
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <PageHeader>
         <div>
-          <h1 className="text-3xl tracking-tight">Observability</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl tracking-tight">Observability</h1>
+            <Badge variant="secondary" className="text-xs px-2 py-0.5">
+              {totalOotbDashboardCount} total dashboards
+            </Badge>
+          </div>
           <p className="text-muted-foreground mt-2">
             Out-of-the-box dashboards providing comprehensive insights into your conversational analytics platform
           </p>
+          <div className="mt-4 flex w-full flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-[200px] max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search dashboards..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="h-8 w-auto shrink-0">
+                <LabeledSelectValue label="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All categories</SelectItem>
+                {ootbCategories.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="shrink-0"
+                onClick={() => {
+                  setSearchQuery("");
+                  setCategoryFilter("all");
+                }}
+              >
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Reset Filters
+              </Button>
+            )}
+          </div>
         </div>
       </PageHeader>
       <div className="flex-1 min-h-0 overflow-auto">
         <PageContent className="space-y-6 p-8">
       <PageTransition className="space-y-6">
-      {/* Summary Cards */}
-      <div className="flex flex-wrap gap-3">
-        <Badge variant="secondary" className="text-sm px-3 py-1">
-          {totalOotbDashboardCount} total dashboards
-        </Badge>
-        <Badge variant="secondary" className="text-sm px-3 py-1">
-          {uniqueCategories.size} categories
-        </Badge>
-        <Badge variant="secondary" className="text-sm px-3 py-1">
-          Updated 30m ago
-        </Badge>
-      </div>
-
-      {/* Category Cards Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {ootbCategories.map((category) => {
-          const CatIcon = category.icon;
-          const categoryPath = category.dashboards.length === 0
-            ? `/dashboard/${category.id}`
-            : `/observability/${category.id}`;
-          return (
-            <Link key={category.id} to={categoryPath} className="block">
-              <Card className="group hover:shadow-md transition-shadow h-full">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                      <CatIcon className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <CardTitle className="text-base">{category.name}</CardTitle>
-                      <CardDescription>
-                        {category.dashboards.length === 0
-                          ? "Standalone dashboard"
-                          : `${category.dashboards.length} dashboard${category.dashboards.length !== 1 ? "s" : ""}`}
-                      </CardDescription>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                </CardHeader>
-              </Card>
-            </Link>
-          );
-        })}
-      </div>
-
+      <HeaderAIInsightsRow
+        dashboardId="observability"
+        dashboardData={{
+          id: "observability",
+          title: "Observability",
+          description:
+            "Out-of-the-box dashboards providing comprehensive insights into your conversational analytics platform",
+        }}
+      />
       {/* All Dashboards Table */}
-      {/* Search */}
-      <div className="flex w-full flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search dashboards..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        {searchQuery && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="shrink-0"
-            onClick={() => setSearchQuery("")}
-          >
-            <RotateCcw className="mr-2 h-4 w-4" />
-            Reset Filters
-          </Button>
-        )}
-      </div>
       <div className="space-y-3">
           <BulkActionBar
             selectedCount={selectedIds.size}
@@ -247,11 +240,10 @@ export function ObservabilityPage() {
                 </TableRow>
               ) : (
                 filteredItems.map((item) => {
-                  const Icon = item.icon;
                   return (
                     <TableRow
                       key={item.id}
-                      className="group"
+                      className="group h-[3rem]"
                       data-state={selectedIds.has(item.id) ? "selected" : undefined}
                     >
                       <TableCell>
@@ -262,19 +254,12 @@ export function ObservabilityPage() {
                         />
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                            <Icon className="h-5 w-5 text-muted-foreground" />
-                          </div>
-                          <div>
-                            <Link
-                              to={item.path}
-                              className="font-medium hover:underline"
-                            >
-                              {item.name}
-                            </Link>
-                          </div>
-                        </div>
+                        <Link
+                          to={item.path}
+                          className="font-medium hover:underline"
+                        >
+                          {item.name}
+                        </Link>
                       </TableCell>
                       <TableCell className="max-w-md">
                         <p className="text-sm text-muted-foreground">{"description" in item ? item.description : ""}</p>
@@ -283,8 +268,7 @@ export function ObservabilityPage() {
                         <Badge variant="secondary">{item.categoryName}</Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Clock className="h-4 w-4" />
+                        <div className="text-sm text-muted-foreground">
                           {"lastUpdated" in item ? item.lastUpdated : "—"}
                         </div>
                       </TableCell>

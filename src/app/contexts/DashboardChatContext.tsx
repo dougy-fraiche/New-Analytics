@@ -1,5 +1,5 @@
 import { createContext, useContext, useCallback, useRef, useSyncExternalStore, useMemo, ReactNode } from "react";
-import { SEED_DASHBOARD_THREADS } from "../data/seed-dashboard-threads";
+import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 
 export interface ChatMessage {
   id: string;
@@ -81,24 +81,11 @@ interface DashboardChatContextType {
 
 const DashboardChatContext = createContext<DashboardChatContextType | undefined>(undefined);
 
-function mergeSeedThreadsToMessages(
-  seedThreads: { messages: ChatMessage[] }[],
-): ChatMessage[] {
-  const merged: ChatMessage[] = [];
-  for (const { messages } of seedThreads) {
-    merged.push(...messages);
-  }
-  return merged;
-}
-
 export function DashboardChatProvider({ children }: { children: ReactNode }) {
   const storeRef = useRef<ChatStore>(null);
   if (!storeRef.current) {
     storeRef.current = new ChatStore();
-    const store = storeRef.current;
-    for (const [dashboardKey, seedThreads] of Object.entries(SEED_DASHBOARD_THREADS)) {
-      store.setMessages(dashboardKey, mergeSeedThreadsToMessages(seedThreads));
-    }
+    // Single app-wide assistant thread — no per-dashboard seed data.
   }
   const store = storeRef.current;
 
@@ -142,6 +129,11 @@ export function useDashboardMessages(dashboardKey: string): ChatMessage[] {
   );
 
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+}
+
+/** Subscribe to the single global AI assistant conversation. */
+export function useGlobalAiMessages(): ChatMessage[] {
+  return useDashboardMessages(GLOBAL_AI_ASSISTANT_KEY);
 }
 
 export { ChatStore };

@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useParams, Link } from "react-router";
-import { Folder, FileText, Plus, MoreHorizontal, Trash2, FolderOpen, Search, FolderInput, LayoutDashboard, ChevronRight, Filter, Pencil, GripVertical, FolderOutput, Copy, RotateCcw } from "lucide-react";
+import { FileText, Plus, MoreHorizontal, Trash2, Search, FolderInput, LayoutDashboard, ChevronRight, Pencil, GripVertical, FolderOutput, Copy, RotateCcw } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import {
@@ -18,7 +18,16 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
+import { LabeledSelectValue } from "./HeaderFilters";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  tableOverflowMenuColumnClassName,
+} from "./ui/table";
 import { toast } from "sonner";
 import { useProjects } from "../contexts/ProjectContext";
 import { BulkActionBar } from "./BulkActionBar";
@@ -29,6 +38,7 @@ import { useDrag, useDrop } from "react-dnd";
 
 import { PageContent, PageHeader } from "./PageChrome";
 import { PageTransition } from "./PageTransition";
+import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
 
 const DRAG_TYPE_DASHBOARD = "CUSTOM_DASHBOARD";
 
@@ -58,7 +68,7 @@ function DraggableDashboardRow({
   return (
     <TableRow
       ref={previewRef as unknown as React.Ref<HTMLTableRowElement>}
-      className="group"
+      className="group h-[3rem]"
       data-state={isSelected ? "selected" : undefined}
       style={{ opacity: isDragging ? 0.4 : 1 }}
     >
@@ -365,49 +375,52 @@ export function SavedFoldersPage() {
       <div className="flex flex-col flex-1 min-h-0">
         <PageHeader>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
-                <FolderOpen className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <div>
-                <h1 className="text-3xl tracking-tight">{selectedFolder.name}</h1>
-                <p className="text-muted-foreground mt-1">
-                  {selectedFolder.dashboards.length} {selectedFolder.dashboards.length === 1 ? 'dashboard' : 'dashboards'}
-                </p>
-              </div>
+            <div>
+              <h1 className="text-3xl tracking-tight">{selectedFolder.name}</h1>
+              <p className="text-muted-foreground mt-1">
+                {selectedFolder.dashboards.length} {selectedFolder.dashboards.length === 1 ? 'dashboard' : 'dashboards'}
+              </p>
             </div>
           </div>
+          {selectedFolder.dashboards.length > 0 && (
+            <div className="mt-4 flex w-full flex-wrap items-center gap-3">
+              <div className="relative flex-1 min-w-[200px] max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search dashboards..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => setSearchQuery("")}
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Reset Filters
+                </Button>
+              )}
+            </div>
+          )}
         </PageHeader>
         <div className="flex-1 min-h-0 overflow-auto">
           <PageContent className="space-y-6 p-8">
         <PageTransition className="space-y-6">
+        <HeaderAIInsightsRow
+          dashboardId={`saved-folder-${selectedFolder.id}`}
+          dashboardData={{
+            id: `saved-folder-${selectedFolder.id}`,
+            title: selectedFolder.name,
+            description: `${selectedFolder.dashboards.length} ${selectedFolder.dashboards.length === 1 ? "dashboard" : "dashboards"}`,
+          }}
+        />
         {/* Dashboards in Folder */}
         {selectedFolder.dashboards.length > 0 ? (
           <>
-          {/* Search */}
-          <div className="flex w-full flex-wrap items-center gap-3">
-            <div className="relative flex-1 min-w-[200px] max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search dashboards..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            {searchQuery && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="shrink-0"
-                onClick={() => setSearchQuery("")}
-              >
-                <RotateCcw className="mr-2 h-4 w-4" />
-                Reset Filters
-              </Button>
-            )}
-          </div>
-
           {filteredDashboards.length > 0 ? (
           <div className="space-y-3">
               <BulkActionBar
@@ -439,14 +452,16 @@ export function SavedFoldersPage() {
                     <TableHead>Created</TableHead>
                     <TableHead>Created By</TableHead>
                     <TableHead>KPIs</TableHead>
-                    <TableHead className="w-[50px]"><span className="sr-only">Actions</span></TableHead>
+                    <TableHead className={tableOverflowMenuColumnClassName}>
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredDashboards.map((dashboard) => (
                       <TableRow
                         key={dashboard.id}
-                        className="group"
+                        className="group h-[3rem]"
                         data-state={selectedDashboardIds.has(dashboard.id) ? "selected" : undefined}
                       >
                         <TableCell>
@@ -461,7 +476,6 @@ export function SavedFoldersPage() {
                             to={`/project/${selectedFolder.id}/dashboard/${dashboard.id}`}
                             className="flex items-center gap-3 hover:underline"
                           >
-                            <FileText className="h-4 w-4 text-muted-foreground" />
                             <span className="font-medium">{dashboard.name}</span>
                           </Link>
                         </TableCell>
@@ -480,7 +494,7 @@ export function SavedFoldersPage() {
                             ))}
                           </div>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className={tableOverflowMenuColumnClassName}>
                           <DropdownMenu>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -762,7 +776,15 @@ export function SavedFoldersPage() {
             className={`flex items-center justify-between rounded-lg p-2 -m-2 transition-[box-shadow,background-color] ${isOverStandalone ? "ring-2 ring-primary ring-offset-2 bg-primary/5" : ""}`}
           >
             <div>
-              <h1 className="text-3xl tracking-tight">Saved</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-3xl tracking-tight">Saved</h1>
+                <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                  {projects.length} folders
+                </Badge>
+                <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                  {projects.reduce((sum, p) => sum + p.dashboards.length, 0) + standaloneDashboards.length} total dashboards
+                </Badge>
+              </div>
               <p className="text-muted-foreground mt-2">
                 Organize and manage your saved dashboards in folders
               </p>
@@ -775,23 +797,54 @@ export function SavedFoldersPage() {
               New Folder
             </Button>
           </div>
+          {allCustomDashboards.length > 0 && (
+            <div className="mt-4 flex w-full flex-wrap items-center gap-3">
+              <div className="relative flex-1 min-w-[200px] max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search dashboards..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <Select value={folderFilter} onValueChange={(val) => { setFolderFilter(val); clearDashboardSelection(); }}>
+                <SelectTrigger className="h-8 w-auto shrink-0">
+                  <LabeledSelectValue label="Folder" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Folders</SelectItem>
+                  <SelectItem value="standalone">Standalone</SelectItem>
+                  {projects.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {(searchQuery || folderFilter !== "all") && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => { setSearchQuery(""); setFolderFilter("all"); }}
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Reset Filters
+                </Button>
+              )}
+            </div>
+          )}
         </PageHeader>
         <div className="flex-1 min-h-0 overflow-auto">
           <PageContent className="space-y-6 p-8">
         <PageTransition className="space-y-6">
-        {/* Summary badges */}
-        <div className="flex flex-wrap gap-3">
-          <Badge variant="secondary" className="text-sm px-3 py-1">
-            {projects.length} folders
-          </Badge>
-          <Badge variant="secondary" className="text-sm px-3 py-1">
-            {projects.reduce((sum, p) => sum + p.dashboards.length, 0) + standaloneDashboards.length} total dashboards
-          </Badge>
-          <Badge variant="secondary" className="text-sm px-3 py-1">
-            {standaloneDashboards.length} standalone
-          </Badge>
-        </div>
-
+        <HeaderAIInsightsRow
+          dashboardId="saved"
+          dashboardData={{
+            id: "saved",
+            title: "Saved",
+            description: "Organize and manage your saved dashboards in folders",
+          }}
+        />
         {/* Folder Cards Overview — each is a drop target */}
         {projects.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -804,9 +857,6 @@ export function SavedFoldersPage() {
                 <Card className="group hover:shadow-md transition-shadow">
                   <CardHeader className="pb-3">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                        <Folder className="h-5 w-5 text-muted-foreground" />
-                      </div>
                       <div className="flex-1 min-w-0">
                         <CardTitle className="text-base">
                           <Link to={`/saved/${project.id}`} className="hover:underline">
@@ -853,42 +903,6 @@ export function SavedFoldersPage() {
         {/* All Custom Dashboards Table */}
         {allCustomDashboards.length > 0 ? (
           <>
-        {/* Search + Filter */}
-        <div className="flex w-full flex-wrap items-center gap-3">
-          <div className="relative flex-1 min-w-[200px] max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search dashboards..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          <Select value={folderFilter} onValueChange={(val) => { setFolderFilter(val); clearDashboardSelection(); }}>
-            <SelectTrigger className="w-[180px]">
-              <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
-              <SelectValue placeholder="All Folders" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Folders</SelectItem>
-              <SelectItem value="standalone">Standalone</SelectItem>
-              {projects.map((p) => (
-                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {(searchQuery || folderFilter !== "all") && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="shrink-0"
-              onClick={() => { setSearchQuery(""); setFolderFilter("all"); }}
-            >
-              <RotateCcw className="mr-2 h-4 w-4" />
-              Reset Filters
-            </Button>
-          )}
-        </div>
         {filteredCustomDashboards.length > 0 ? (
         <div className="space-y-3">
             <BulkActionBar
@@ -921,7 +935,9 @@ export function SavedFoldersPage() {
                   <TableHead>Folder</TableHead>
                   <TableHead>Created By</TableHead>
                   <TableHead>Last Modified</TableHead>
-                  <TableHead className="w-[50px]"><span className="sr-only">Actions</span></TableHead>
+                  <TableHead className={tableOverflowMenuColumnClassName}>
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -943,9 +959,6 @@ export function SavedFoldersPage() {
                           to={item.linkPath}
                           className="flex items-center gap-3 hover:underline"
                         >
-                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                            <LayoutDashboard className="h-5 w-5 text-muted-foreground" />
-                          </div>
                           <span className="font-medium">{item.dashboard.name}</span>
                         </Link>
                       </TableCell>
@@ -962,7 +975,7 @@ export function SavedFoldersPage() {
                       <TableCell className="text-muted-foreground">
                         {new Date().toLocaleDateString()}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className={tableOverflowMenuColumnClassName}>
                         <DropdownMenu>
                           <Tooltip>
                             <TooltipTrigger asChild>

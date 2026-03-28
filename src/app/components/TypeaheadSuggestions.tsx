@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo, useDeferredValue } from "react";
 import { Search } from "lucide-react";
+import { cn } from "./ui/utils";
 
 // Comprehensive customer support analytics prompt suggestions
 const allSuggestions = [
@@ -97,7 +98,7 @@ interface TypeaheadSuggestionsProps {
   forcedSuggestions?: string[];
 }
 
-function highlightMatch(text: string, query: string) {
+function highlightMatch(text: string, query: string, isHighlighted: boolean) {
   if (!query.trim()) return <span>{text}</span>;
 
   const lowerText = text.toLowerCase();
@@ -113,7 +114,14 @@ function highlightMatch(text: string, query: string) {
   return (
     <span>
       {before}
-      <span className="font-semibold text-foreground">{match}</span>
+      <span
+        className={cn(
+          "font-semibold",
+          isHighlighted ? "text-sidebar-accent-foreground" : "text-foreground",
+        )}
+      >
+        {match}
+      </span>
       {after}
     </span>
   );
@@ -239,33 +247,39 @@ export function TypeaheadSuggestions({
   return (
     <div
       ref={listRef}
-      className="absolute left-0 right-0 top-full z-50 mt-1 rounded-xl border bg-popover shadow-lg"
+      className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md"
     >
-      <div className="py-1">
-        {filtered.map((suggestion, index) => (
-          <div
-            key={suggestion}
-            ref={(el) => {
-              itemRefs.current[index] = el;
-            }}
-            className={`flex items-center gap-3 px-5 py-2.5 cursor-pointer text-sm text-left transition-colors ${
-              index === selectedIndex
-                ? "bg-accent text-accent-foreground"
-                : "text-muted-foreground hover:bg-accent/50"
-            }`}
-            onMouseEnter={() => setSelectedIndex(index)}
-            onMouseDown={(e) => {
-              // Use mousedown to fire before blur
-              e.preventDefault();
-              onSelect(suggestion);
-            }}
-          >
-            <Search className="h-4 w-4 shrink-0 opacity-50" />
-            <span className="truncate">
-              {highlightMatch(suggestion, query)}
-            </span>
-          </div>
-        ))}
+      <div className="p-1">
+        {filtered.map((suggestion, index) => {
+          const highlighted = index === selectedIndex;
+          return (
+            <div
+              key={suggestion}
+              ref={(el) => {
+                itemRefs.current[index] = el;
+              }}
+              role="option"
+              aria-selected={highlighted}
+              className={cn(
+                "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none transition-colors",
+                "[&_svg:not([class*='text-'])]:text-muted-foreground",
+                highlighted
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground active:bg-sidebar-accent"
+                  : "text-muted-foreground hover:bg-primary-25 hover:text-sidebar-accent-foreground active:bg-sidebar-accent active:text-sidebar-accent-foreground",
+              )}
+              onMouseEnter={() => setSelectedIndex(index)}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                onSelect(suggestion);
+              }}
+            >
+              <Search className="h-4 w-4 shrink-0 pointer-events-none" />
+              <span className="min-w-0 flex-1 truncate">
+                {highlightMatch(suggestion, query, highlighted)}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

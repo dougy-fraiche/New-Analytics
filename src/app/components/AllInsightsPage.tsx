@@ -18,8 +18,8 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "./ui/select";
+import { LabeledSelectValue } from "./HeaderFilters";
 import { Button } from "./ui/button";
 import {
   Tooltip,
@@ -37,14 +37,13 @@ import {
 } from "./ChartVariants";
 import { allOotbDashboards, standaloneCategories } from "../data/ootb-dashboards";
 import { useProjects } from "../contexts/ProjectContext";
-import { useChatPanelSlot } from "../contexts/ChatPanelSlotContext";
-import { DashboardChatPanel } from "./DashboardChatPanel";
-import { createPortal } from "react-dom";
 import { WidgetAIProvider } from "../contexts/WidgetAIContext";
+import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 import { WidgetAIPromptButton } from "./WidgetAIPromptButton";
 import { WidgetOverflowMenu } from "./WidgetOverflowMenu";
 import { WidgetAIExplanation } from "./WidgetAIExplanation";
 import { PageTransition } from "./PageTransition";
+import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
 
 // ─── Shared data sets (same as DashboardPage) ──────────────────────────────
 
@@ -213,7 +212,6 @@ export function AllInsightsPage() {
   const { projects, standaloneDashboards } = useProjects();
   const [searchQuery, setSearchQuery] = useState("");
   const [chartTypeFilter, setChartTypeFilter] = useState("all");
-  const chatPanelSlot = useChatPanelSlot();
 
   // Flatten custom dashboards for widget collection
   const customDashboards = useMemo(() => {
@@ -267,7 +265,7 @@ export function AllInsightsPage() {
   }, [allWidgets, searchQuery, chartTypeFilter]);
 
   return (
-    <WidgetAIProvider persistKey="all-insights" ootbTypeId="all-insights">
+    <WidgetAIProvider persistKey={GLOBAL_AI_ASSISTANT_KEY} ootbTypeId="all-insights">
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         <PageHeader>
           <div>
@@ -287,6 +285,14 @@ export function AllInsightsPage() {
         <div className="flex-1 overflow-auto min-h-0">
           <PageContent className="space-y-6 p-8">
             <PageTransition className="space-y-6">
+            <HeaderAIInsightsRow
+              dashboardId="insights"
+              dashboardData={{
+                id: "insights",
+                title: "All Insights",
+                description: "A catalog of every unique widget across all dashboards",
+              }}
+            />
             {/* Summary badges */}
             <div className="flex flex-wrap gap-3">
               <Badge variant="secondary" className="text-sm px-3 py-1">
@@ -314,8 +320,8 @@ export function AllInsightsPage() {
                     />
                   </div>
                   <Select value={chartTypeFilter} onValueChange={setChartTypeFilter}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="All Types" />
+                    <SelectTrigger className="h-8 w-auto shrink-0">
+                      <LabeledSelectValue label="Chart type" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Types</SelectItem>
@@ -359,7 +365,7 @@ export function AllInsightsPage() {
                     </EmptyHeader>
                   </Empty>
                 ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {filteredWidgets.map((widget) => (
                       <InsightWidgetCard key={widget.id} widget={widget} />
                     ))}
@@ -383,13 +389,6 @@ export function AllInsightsPage() {
           </PageContent>
         </div>
 
-        {/* AI Assistant Panel — portaled to layout-level slot */}
-        {chatPanelSlot && createPortal(
-          <DashboardChatPanel
-            dashboardId="all-insights"
-          />,
-          chatPanelSlot
-        )}
       </div>
     </WidgetAIProvider>
   );

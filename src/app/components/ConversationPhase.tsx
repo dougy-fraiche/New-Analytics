@@ -40,25 +40,18 @@ import {
   AlertDialogTitle,
 } from "./ui/alert-dialog";
 import { useNavigate } from "react-router";
-import { createPortal } from "react-dom";
-import { motion } from "motion/react";
 import { toast } from "sonner";
 
-import { DashboardChatPanel } from "./DashboardChatPanel";
 import { ConversationDashboardArea } from "./ConversationDashboardArea";
 import { useConversations, type Message, type DashboardData } from "../contexts/ConversationContext";
 import { useProjects } from "../contexts/ProjectContext";
-import { useChatPanelSlot } from "../contexts/ChatPanelSlotContext";
 import { useHeaderActionsSlot } from "../contexts/HeaderActionsSlotContext";
 import { generateAIResponse } from "../data/explore-data";
 import { useKeyboardShortcut } from "../hooks/useKeyboardShortcuts";
-import type { ChatMessage } from "../contexts/DashboardChatContext";
-import {
-  PAGE_ENTER_ANIMATE,
-  PAGE_ENTER_INITIAL,
-  PAGE_EXIT,
-  PAGE_TRANSITION,
-} from "./page-transition-presets";
+import { useDashboardChat } from "../contexts/DashboardChatContext";
+import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
+import { conversationMessageToGlobalChat } from "../lib/conversation-message-to-global-chat";
+import { useAiAssistantExploreBridge } from "../contexts/AiAssistantExploreBridgeContext";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -80,7 +73,6 @@ interface ConversationPhaseProps {
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   isThinking: boolean;
   setIsThinking: (v: boolean) => void;
-  shouldSkipAnimation: boolean;
   /** Floating input slide-down animation */
   isInputAnimating: boolean;
   setIsInputAnimating: (v: boolean) => void;
@@ -104,7 +96,6 @@ export function ConversationPhase({
   setMessages,
   isThinking,
   setIsThinking,
-  shouldSkipAnimation,
   isInputAnimating,
   setIsInputAnimating,
   inputAnimStartTop,
@@ -116,8 +107,9 @@ export function ConversationPhase({
   const { conversations, addMessageToConversation, renameConversation, deleteConversation, restoreConversation } = useConversations();
   const { projects, addDashboardToProject, addProject, addStandaloneDashboard } = useProjects();
   const navigate = useNavigate();
-  const chatPanelSlot = useChatPanelSlot();
   const headerActionsSlot = useHeaderActionsSlot();
+  const { appendMessage } = useDashboardChat();
+  const { setExploreBridge } = useAiAssistantExploreBridge();
 
   // ── Local state ───────────────────────────────────────────────────
   // Save dialog
@@ -142,20 +134,6 @@ export function ConversationPhase({
       if (messages[i].dashboardData) return messages[i].dashboardData!;
     }
     return null;
-  }, [messages]);
-
-  // ── Convert messages to ChatMessage[] for DashboardChatPanel ──────
-  const chatMessages: ChatMessage[] = useMemo(() => {
-    return messages.map((msg) => ({
-      id: msg.id,
-      role: msg.role,
-      content: msg.content,
-      timestamp: msg.timestamp,
-      dashboardData: msg.dashboardData,
-      widgetRef: msg.widgetRef,
-      widgetKpiLabel: msg.widgetKpiLabel,
-      widgetIconType: msg.widgetIconType,
-    }));
   }, [messages]);
 
   // ── Keyboard shortcuts ────────────────────────────────────────────
@@ -194,6 +172,7 @@ export function ConversationPhase({
         ...meta,
       };
       addMessageToConversation(targetConversationId, userMessage);
+      appendMessage(GLOBAL_AI_ASSISTANT_KEY, conversationMessageToGlobalChat(userMessage));
       setMessages((prev) => [...prev, userMessage]);
       onQueryChange("");
       setIsThinking(true);
@@ -211,6 +190,7 @@ export function ConversationPhase({
           dashboardData: aiResponse.dashboardData,
         };
         addMessageToConversation(targetConversationId, assistantMessage);
+        appendMessage(GLOBAL_AI_ASSISTANT_KEY, conversationMessageToGlobalChat(assistantMessage));
 
         if (stillOnSameConversation) {
           setMessages((prev) => [...prev, assistantMessage]);
@@ -218,8 +198,23 @@ export function ConversationPhase({
         }
       }, 2000);
     },
-    [currentConversationId, addMessageToConversation, setMessages, onQueryChange, setIsThinking],
+    [
+      currentConversationId,
+      addMessageToConversation,
+      appendMessage,
+      setMessages,
+      onQueryChange,
+      setIsThinking,
+    ],
   );
+
+  useEffect(() => {
+    setExploreBridge({
+      isThinking,
+      onSend: handleUserMessage,
+    });
+    return () => setExploreBridge({ isThinking: false, onSend: null });
+  }, [isThinking, handleUserMessage, setExploreBridge]);
 
   const handleWidgetPrompt = useCallback(
     (
@@ -265,6 +260,12 @@ export function ConversationPhase({
     setNewFolderName("");
     setLocationPopoverOpen(false);
     toast.success("Dashboard saved successfully!");
+    // Saved dashboards should no longer appear as active conversations.
+    if (currentConversationId) {
+      deleteConversation(currentConversationId);
+    }
+    // Move from conversation draft view to the persisted dashboard destination.
+    navigate(savedPath);
   };
 
   const handleCreateFolderAndSelect = () => {
@@ -325,40 +326,20 @@ export function ConversationPhase({
   return (
     <>
       {/* ─── Main content area (left): Dashboard / empty state ─── */}
-      <motion.div
-        key="conversation"
-        initial={shouldSkipAnimation ? false : PAGE_ENTER_INITIAL}
-        animate={PAGE_ENTER_ANIMATE}
-        exit={shouldSkipAnimation ? { opacity: 1 } : PAGE_EXIT}
-        transition={shouldSkipAnimation ? { duration: 0 } : PAGE_TRANSITION}
-        className="h-full overflow-auto"
-      >
+      <div key="conversation" className="h-full min-h-0">
         <ConversationDashboardArea
           isThinking={isThinking && !latestDashboard}
           dashboardData={latestDashboard}
           onWidgetPrompt={handleWidgetPrompt}
           onSave={handleSaveDashboardFromArea}
           isSaved={latestDashboard ? !!savedDashboards[latestDashboard.id] : false}
-          savedInfo={latestDashboard ? savedDashboards[latestDashboard.id] : undefined}
           onRename={() => {
             setRenameConvName(conversationName);
             setRenameConvDialogOpen(true);
           }}
           onDelete={() => setDeleteConfirmOpen(true)}
         />
-      </motion.div>
-
-      {/* ─── Chat panel (right) — portaled to layout-level slot ─── */}
-      {chatPanelSlot &&
-        createPortal(
-          <DashboardChatPanel
-            externalMessages={chatMessages}
-            onSendMessage={handleUserMessage}
-            externalIsThinking={isThinking}
-            placeholder="Ask a follow-up question..."
-          />,
-          chatPanelSlot,
-        )}
+      </div>
 
       {/* ─── Save Dashboard Dialog ─────────────────────────── */}
       <Dialog
@@ -457,7 +438,7 @@ export function ConversationPhase({
                       <button
                         key={project.id}
                         type="button"
-                        className={`flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none cursor-pointer ${justCreatedFolderId === project.id ? "animate-folder-flash" : "hover:bg-accent hover:text-accent-foreground"}`}
+                        className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none cursor-pointer hover:bg-accent hover:text-accent-foreground"
                         onClick={() => {
                           setSelectedProjectId(project.id);
                           setLocationPopoverOpen(false);
@@ -467,7 +448,7 @@ export function ConversationPhase({
                           className={`h-3.5 w-3.5 shrink-0 ${selectedProjectId === project.id ? "opacity-100" : "opacity-0"}`}
                         />
                         <Folder
-                          className={`h-3.5 w-3.5 shrink-0 transition-colors duration-700 ${justCreatedFolderId === project.id ? "text-primary" : "text-muted-foreground"}`}
+                          className={`h-3.5 w-3.5 shrink-0 ${justCreatedFolderId === project.id ? "text-primary" : "text-muted-foreground"}`}
                         />
                         <span className="truncate">{project.name}</span>
                       </button>

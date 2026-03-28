@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import { Pin, LayoutDashboard, PinOff, Search, MoreHorizontal, RotateCcw } from "lucide-react";
+import { Pin, PinOff, Search, MoreHorizontal, RotateCcw } from "lucide-react";
 import { Button } from "./ui/button";
 import { Checkbox } from "./ui/checkbox";
 import { Badge } from "./ui/badge";
@@ -12,6 +12,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  tableOverflowMenuColumnClassName,
 } from "./ui/table";
 import { useProjects } from "../contexts/ProjectContext";
 import { findCategoryForDashboard } from "../data/ootb-dashboards";
@@ -33,6 +34,7 @@ import {
 } from "./ui/empty";
 import { PageContent, PageHeader } from "./PageChrome";
 import { PageTransition } from "./PageTransition";
+import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
 
 export function FavoritesPage() {
   const { favorites, toggleFavorite, removeFavorites, restoreFavorites } = useProjects();
@@ -85,52 +87,56 @@ export function FavoritesPage() {
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <PageHeader>
-        <div className="flex items-center justify-between">
-          <div>
+        <div>
+          <div className="flex items-center gap-3">
             <h1 className="text-3xl tracking-tight">Pinned</h1>
-            <p className="text-muted-foreground mt-2">
-              Dashboards you&rsquo;ve pinned for quick access
-            </p>
+            <Badge variant="secondary" className="text-xs px-2 py-0.5">
+              {favorites.length} {favorites.length === 1 ? "pin" : "pinned"}
+            </Badge>
           </div>
+          <p className="text-muted-foreground mt-2">
+            Dashboards you&rsquo;ve pinned for quick access
+          </p>
+          {favorites.length > 0 && (
+            <div className="mt-4 flex w-full flex-wrap items-center gap-3">
+              <div className="relative flex-1 min-w-[200px] max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search pinned..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => setSearchQuery("")}
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Reset Filters
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </PageHeader>
       <div className="flex-1 min-h-0 overflow-auto">
         <PageContent className="p-8">
         <PageTransition className="space-y-6">
-      {/* Summary badges */}
-      <div className="flex flex-wrap gap-3">
-        <Badge variant="secondary" className="text-sm px-3 py-1">
-          {favorites.length} {favorites.length === 1 ? "pin" : "pinned"}
-        </Badge>
-      </div>
-
+      <HeaderAIInsightsRow
+        dashboardId="pinned"
+        dashboardData={{
+          id: "pinned",
+          title: "Pinned",
+          description: "Dashboards you've pinned for quick access",
+        }}
+      />
       {/* Favorites Table */}
       {favorites.length > 0 ? (
         <>
-        {/* Search */}
-        <div className="flex w-full flex-wrap items-center gap-3">
-            <div className="relative flex-1 min-w-[200px] max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search pinned..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            {searchQuery && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="shrink-0"
-                onClick={() => setSearchQuery("")}
-              >
-                <RotateCcw className="mr-2 h-4 w-4" />
-                Reset Filters
-              </Button>
-            )}
-        </div>
-
         {filteredFavorites.length > 0 ? (
         <div className="space-y-3">
             <BulkActionBar
@@ -160,13 +166,16 @@ export function FavoritesPage() {
                   </TableHead>
                   <TableHead>Dashboard Name</TableHead>
                   <TableHead>Location</TableHead>
-                  <TableHead className="w-[50px]"><span className="sr-only">Actions</span></TableHead>
+                  <TableHead className={tableOverflowMenuColumnClassName}>
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredFavorites.map((fav) => (
                     <TableRow
                       key={fav.id}
+                      className="h-[3rem]"
                       data-state={selectedIds.has(fav.id) ? "selected" : undefined}
                     >
                       <TableCell>
@@ -179,9 +188,8 @@ export function FavoritesPage() {
                       <TableCell>
                         <Link
                           to={fav.path}
-                          className="flex items-center gap-3 hover:underline"
+                          className="hover:underline"
                         >
-                          <LayoutDashboard className="h-4 w-4 text-muted-foreground" />
                           <span className="font-medium">{fav.name}</span>
                         </Link>
                       </TableCell>
@@ -190,7 +198,7 @@ export function FavoritesPage() {
                           ? "Custom Folder"
                           : (findCategoryForDashboard(fav.id)?.name ?? "Observability")}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className={tableOverflowMenuColumnClassName}>
                         <DropdownMenu>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -226,7 +234,6 @@ export function FavoritesPage() {
                                 });
                               }}
                             >
-                              <PinOff className="h-4 w-4 mr-2" />
                               Unpin
                             </DropdownMenuItem>
                           </DropdownMenuContent>

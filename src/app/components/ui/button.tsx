@@ -24,11 +24,11 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
         outline:
-          "border bg-background text-foreground hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50",
+          "border border-sidebar-border bg-background text-foreground hover:bg-primary-25 hover:text-sidebar-accent-foreground active:bg-sidebar-accent active:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-primary-25 dark:hover:text-sidebar-accent-foreground dark:active:bg-sidebar-accent dark:data-[state=open]:bg-sidebar-accent",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+          "border border-sidebar-border bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80",
         ghost:
-          "bg-transparent hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
+          "bg-transparent hover:bg-primary-25 hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground dark:hover:bg-primary-25 dark:hover:text-sidebar-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
@@ -36,6 +36,7 @@ const buttonVariants = cva(
         sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
         lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
         icon: "size-9 rounded-md",
+        "icon-xs": "size-7 rounded-md [&_svg:not([class*='size-'])]:size-3.5",
       },
     },
     defaultVariants: {

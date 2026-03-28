@@ -7,7 +7,6 @@ import {
 } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { Link } from "react-router";
-import { motion } from "motion/react";
 
 import { InlineWidget } from "./InlineWidget";
 import { getChartIcon } from "./ChartVariants";
@@ -57,11 +56,8 @@ export const MessageList = memo(function MessageList({
           const isOpen = activeDashboardId === dash.id;
           const saved = savedDashboards[dash.id];
           return (
-            <motion.div
+            <div
               key={msg.id}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
               className="flex justify-start"
             >
               <div className="w-full space-y-3">
@@ -124,18 +120,15 @@ export const MessageList = memo(function MessageList({
                   <p className="text-sm">{msg.content}</p>
                 </div>
               </div>
-            </motion.div>
+            </div>
           );
         }
 
         // ── Widget + AI response ─────────────────────────────
         if (msg.widgetData) {
           return (
-            <motion.div
+            <div
               key={msg.id}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
               className="flex justify-start"
             >
               <div className="w-full space-y-3">
@@ -144,17 +137,14 @@ export const MessageList = memo(function MessageList({
                   <p className="text-sm">{msg.content}</p>
                 </div>
               </div>
-            </motion.div>
+            </div>
           );
         }
 
         // ── Standard message bubble ──────────────────────────
         return (
-          <motion.div
+          <div
             key={msg.id}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
             className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
             {msg.role === "user" ? (
@@ -184,24 +174,20 @@ export const MessageList = memo(function MessageList({
                 <p className="text-sm">{msg.content}</p>
               </div>
             )}
-          </motion.div>
+          </div>
         );
       })}
 
       {/* Thinking indicator */}
       {isThinking && (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex justify-start"
-        >
+        <div className="flex justify-start">
           <div className="w-full py-1">
             <div className="flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4" />
               <p className="text-sm">Analyzing...</p>
             </div>
           </div>
-        </motion.div>
+        </div>
       )}
 
       {/* Scroll anchor */}

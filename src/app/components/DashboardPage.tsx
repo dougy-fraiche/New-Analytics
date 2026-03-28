@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router";
 import { useState, useEffect, useMemo } from "react";
-import { RotateCcw, Download, Share2, MoreVertical, Pencil, Pin, Copy, Settings, Clock, Trash2 } from "lucide-react";
+import { RotateCcw, Download, MoreVertical, Pencil, Pin, Copy, Settings, Clock, Trash2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import {
@@ -26,17 +26,15 @@ import {
   TableRow,
 } from "./ui/table";
 import { Separator } from "./ui/separator";
-import { DashboardChatPanel } from "./DashboardChatPanel";
 import { useProjects } from "../contexts/ProjectContext";
 import { DashboardChartGrid } from "./ChartVariants";
 import { toast } from "sonner";
-import { useChatPanelSlot } from "../contexts/ChatPanelSlotContext";
-import { createPortal } from "react-dom";
 import { DeleteDashboardDialog } from "./DeleteDashboardDialog";
 import { DuplicateDashboardDialog } from "./DuplicateDashboardDialog";
 import { PageContent, PageHeader } from "./PageChrome";
 import { allOotbDashboards, standaloneCategories } from "../data/ootb-dashboards";
 import { WidgetAIProvider } from "../contexts/WidgetAIContext";
+import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
 import { WidgetAIPromptButton } from "./WidgetAIPromptButton";
 import { WidgetOverflowMenu } from "./WidgetOverflowMenu";
@@ -49,7 +47,7 @@ import {
   DATE_RANGE_SECONDARY_OPTIONS,
   type DateRangeOption,
 } from "../data/date-ranges";
-import { LabeledSelectValue } from "./HeaderFilters";
+import { LabeledFilterInline, LabeledSelectValue } from "./HeaderFilters";
 
 import {
   Dialog,
@@ -260,17 +258,12 @@ export function DashboardPage() {
     : `/dashboard/${dashboardId}`;
   const currentlyPinned = isFavorite(favoriteId);
 
-  // Compute the persistence key and OOTB type for the chat panel
-  const chatPersistKey = projectId
-    ? `${projectId}/${dashboardId}`
-    : dashboardId;
   // For OOTB dashboards, the dashboardId IS the ootb type.
   // For saved dashboards, use the explicit sourceOotbId if available.
   const chatSourceOotbId = isSavedDashboard
     ? savedDashboardSourceOotbId
     : dashboardId;
 
-  const chatPanelSlot = useChatPanelSlot();
   const navigate = useNavigate();
 
   const handleDelete = () => {
@@ -322,17 +315,13 @@ export function DashboardPage() {
   };
 
   return (
-    <WidgetAIProvider persistKey={chatPersistKey || "__no_dashboard__"} ootbTypeId={chatSourceOotbId}>
+    <WidgetAIProvider persistKey={GLOBAL_AI_ASSISTANT_KEY} ootbTypeId={chatSourceOotbId}>
       <div className="flex flex-col h-full min-h-0">
         {/* Fixed header: title, description, global buttons */}
         <PageHeader>
           <div className="flex items-center gap-2">
             <h1 className="text-3xl tracking-tight">{meta.title}</h1>
             <div className="ml-auto flex items-center gap-2">
-              <Button variant="outline" size="sm">
-                <Share2 className="mr-2 h-4 w-4" />
-                Share
-              </Button>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -401,13 +390,10 @@ export function DashboardPage() {
             </div>
           </div>
           <p className="text-muted-foreground mt-1">{meta.description}</p>
-          <div className="mt-4 flex flex-nowrap items-center gap-2 overflow-x-auto whitespace-nowrap pb-1">
+          <div className="mt-4 flex flex-wrap items-center gap-2">
             <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRangeOption)}>
               <SelectTrigger className="h-8 w-auto shrink-0">
-                <span className="flex min-w-0 items-center gap-1">
-                  <span className="shrink-0 text-muted-foreground">Date range:</span>
-                  <span className="min-w-0 truncate">{DATE_RANGE_LABELS[dateRange]}</span>
-                </span>
+                <LabeledFilterInline label="Date range">{DATE_RANGE_LABELS[dateRange]}</LabeledFilterInline>
               </SelectTrigger>
               <SelectContent>
                 {DATE_RANGE_PRIMARY_OPTIONS.map((opt) => (
@@ -468,7 +454,14 @@ export function DashboardPage() {
               </Button>
             )}
           </div>
-          {dashboardId && (
+        </PageHeader>
+
+        {/* Scrollable content */}
+        <div className="flex-1 min-h-0 overflow-auto">
+          <PageContent className="p-4 md:p-8">
+          <PageTransition>
+          <div ref={dashboardContentRef} className="space-y-4">
+          {dashboardId ? (
             <HeaderAIInsightsRow
               dashboardId={dashboardId}
               dashboardData={{
@@ -477,14 +470,7 @@ export function DashboardPage() {
                 description: meta.description,
               }}
             />
-          )}
-        </PageHeader>
-
-        {/* Scrollable content */}
-        <div className="flex-1 min-h-0 overflow-auto">
-          <PageContent className="p-4 md:p-8">
-          <PageTransition>
-          <div ref={dashboardContentRef} className="space-y-6">
+          ) : null}
           {/* Section heading */}
           <div className="flex items-center gap-4 flex-wrap">
             <h2 className="tracking-tight">Key Performance Indicators</h2>
@@ -512,7 +498,7 @@ export function DashboardPage() {
                       260
                     </CardTitle>
                     <Badge variant="destructive" className="shrink-0 text-xs">
-                      +12% from last period
+                      +12%
                     </Badge>
                   </div>
                 </CardHeader>
@@ -540,7 +526,7 @@ export function DashboardPage() {
                       4.3h
                     </CardTitle>
                     <Badge variant="default" className="shrink-0 text-xs">
-                      -8% from last period
+                      -8%
                     </Badge>
                   </div>
                 </CardHeader>
@@ -568,7 +554,7 @@ export function DashboardPage() {
                       94%
                     </CardTitle>
                     <Badge variant="default" className="shrink-0 text-xs">
-                      +2% from last period
+                      +2%
                     </Badge>
                   </div>
                 </CardHeader>
@@ -664,15 +650,6 @@ export function DashboardPage() {
           </PageContent>
         </div>
       </div>
-
-      {/* Conversational UI Panel — portaled to layout-level slot */}
-      {chatPanelSlot && createPortal(
-        <DashboardChatPanel
-          dashboardId={chatPersistKey}
-          sourceOotbId={chatSourceOotbId}
-        />,
-        chatPanelSlot
-      )}
 
       {/* Rename Dashboard Dialog */}
       <Dialog open={showRenameDialog} onOpenChange={setShowRenameDialog}>

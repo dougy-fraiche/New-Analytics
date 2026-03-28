@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router";
-import { Calendar, Download, Share2, MoreVertical, Pin, Settings, Clock, RotateCcw } from "lucide-react";
+import { Calendar, Download, MoreVertical, Pin, Settings, Clock, RotateCcw } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -26,10 +26,8 @@ import { useProjects } from "../contexts/ProjectContext";
 import { ootbCategories } from "../data/ootb-dashboards";
 import { DashboardChartGrid } from "./ChartVariants";
 import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
-import { DashboardChatPanel } from "./DashboardChatPanel";
-import { useChatPanelSlot } from "../contexts/ChatPanelSlotContext";
 import { WidgetAIProvider } from "../contexts/WidgetAIContext";
-import { createPortal } from "react-dom";
+import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 import { WidgetAIPromptButton } from "./WidgetAIPromptButton";
 import { WidgetOverflowMenu } from "./WidgetOverflowMenu";
 import {
@@ -41,10 +39,10 @@ import {
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { useContainerBreakpoint } from "../hooks/useContainerBreakpoint";
-import { PageContent, PageHeader } from "./PageChrome";
+import { PageContent, PageHeader, pageHeaderTabsFooterClassName } from "./PageChrome";
 import { PageTransition } from "./PageTransition";
 import { KpiSparkline, KPI_SPARKLINE_SERIES } from "./KpiSparkline";
-import { LabeledSelectValue } from "./HeaderFilters";
+import { LabeledFilterInline, LabeledSelectValue } from "./HeaderFilters";
 import {
   DATE_RANGE_CUSTOM_OPTION,
   DATE_RANGE_LABELS,
@@ -142,8 +140,6 @@ export function ObservabilityCategoryPage() {
     }
   };
 
-  const chatPanelSlot = useChatPanelSlot();
-
   // Pin helpers
   const favoriteId = activeDashboard.id;
   const favoritePath = `/dashboard/${activeDashboard.id}`;
@@ -163,18 +159,14 @@ export function ObservabilityCategoryPage() {
   }, [dateRange, team, product]);
 
   return (
-    <WidgetAIProvider persistKey={activeDashboardId} ootbTypeId={activeDashboardId}>
+    <WidgetAIProvider persistKey={GLOBAL_AI_ASSISTANT_KEY} ootbTypeId={activeDashboardId}>
       <Tabs value={activeDashboardId} onValueChange={handleTabChange} className="flex flex-col h-full min-h-0">
         <div className="flex flex-col h-full min-h-0">
-          <PageHeader>
+          <PageHeader className={pageHeaderTabsFooterClassName}>
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-3xl tracking-tight">{category.name}</h1>
                 <div className="ml-auto flex items-center gap-2">
-                  <Button variant="outline" size="sm">
-                    <Share2 className="mr-2 h-4 w-4" />
-                    Share
-                  </Button>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
@@ -225,13 +217,10 @@ export function ObservabilityCategoryPage() {
                 {activeDashboard.description}
               </p>
             </div>
-            <div className="mt-4 flex flex-nowrap items-center gap-2 overflow-x-auto whitespace-nowrap pb-1">
+            <div className="mt-4 flex flex-wrap items-center gap-2">
               <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRangeOption)}>
                 <SelectTrigger className="h-8 w-auto shrink-0">
-                  <span className="flex min-w-0 items-center gap-1">
-                    <span className="shrink-0 text-muted-foreground">Date range:</span>
-                    <span className="min-w-0 truncate">{DATE_RANGE_LABELS[dateRange]}</span>
-                  </span>
+                  <LabeledFilterInline label="Date range">{DATE_RANGE_LABELS[dateRange]}</LabeledFilterInline>
                 </SelectTrigger>
                 <SelectContent>
                   {DATE_RANGE_PRIMARY_OPTIONS.map((opt) => (
@@ -292,13 +281,18 @@ export function ObservabilityCategoryPage() {
                 </Button>
               )}
             </div>
-            <TabsList className="w-full justify-start mt-4">
+            <TabsList variant="line" className="mt-4">
               {category.dashboards.map((dashboard) => (
                   <TabsTrigger key={dashboard.id} value={dashboard.id}>
                     {dashboard.name}
                   </TabsTrigger>
                 ))}
             </TabsList>
+          </PageHeader>
+          <div className="flex-1 min-h-0 overflow-auto">
+            <PageContent className="p-4 md:p-8">
+            <PageTransition>
+            <div ref={dashboardContentRef} className="space-y-4">
             <HeaderAIInsightsRow
               dashboardId={activeDashboard.id}
               dashboardData={{
@@ -307,13 +301,8 @@ export function ObservabilityCategoryPage() {
                 description: activeDashboard.description,
               }}
             />
-          </PageHeader>
-          <div className="flex-1 min-h-0 overflow-auto">
-            <PageContent className="p-4 md:p-8">
-            <PageTransition>
-            <div ref={dashboardContentRef} className="space-y-6">
             {category.dashboards.map((dashboard) => (
-              <TabsContent key={dashboard.id} value={dashboard.id} className="space-y-6 mt-2">
+              <TabsContent key={dashboard.id} value={dashboard.id} className="space-y-4 mt-2">
                 {/* KPI Section Header */}
                 <h2 className="tracking-tight">Key Performance Indicators</h2>
 
@@ -337,7 +326,7 @@ export function ObservabilityCategoryPage() {
                           260
                         </CardTitle>
                         <Badge variant="destructive" className="shrink-0 text-xs">
-                          +12% from last period
+                          +12%
                         </Badge>
                       </div>
                     </CardHeader>
@@ -363,7 +352,7 @@ export function ObservabilityCategoryPage() {
                           4.3h
                         </CardTitle>
                         <Badge variant="default" className="shrink-0 text-xs">
-                          -8% from last period
+                          -8%
                         </Badge>
                       </div>
                     </CardHeader>
@@ -389,7 +378,7 @@ export function ObservabilityCategoryPage() {
                           94%
                         </CardTitle>
                         <Badge variant="default" className="shrink-0 text-xs">
-                          +2% from last period
+                          +2%
                         </Badge>
                       </div>
                     </CardHeader>
@@ -456,7 +445,7 @@ export function ObservabilityCategoryPage() {
                   </TableHeader>
                   <TableBody>
                     {tableData.map((row) => (
-                      <TableRow key={row.agent}>
+                      <TableRow key={row.agent} className="h-[3rem]">
                         <TableCell className="font-medium">{row.agent}</TableCell>
                         <TableCell className="text-right">{row.escalations}</TableCell>
                         <TableCell className="text-right">{row.resolved}</TableCell>
@@ -477,14 +466,6 @@ export function ObservabilityCategoryPage() {
       </div>
       </Tabs>
 
-      {/* Chat panel — portaled to layout-level slot */}
-      {chatPanelSlot && createPortal(
-        <DashboardChatPanel
-          dashboardId={activeDashboardId}
-          sourceOotbId={activeDashboardId}
-        />,
-        chatPanelSlot
-      )}
     </WidgetAIProvider>
   );
 }

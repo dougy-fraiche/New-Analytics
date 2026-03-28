@@ -164,6 +164,91 @@ export const topAutomationOpportunities: AutomationOpportunity[] = [
   },
 ];
 
+// ── Top Insights feed cards ────────────────────────────────────────────
+
+export type TopInsightCard = {
+  id: number;
+  category:
+    | "Critical"
+    | "High"
+    | "Opportunity"
+    | "Action"
+    | "Anomaly"
+    | "Recommended Action"
+    | "Automation Opportunity";
+  title: string;
+  description: string;
+  detail: string;
+  timestamp: string;
+};
+
+export const topInsightsCards: TopInsightCard[] = [
+  {
+    id: 1,
+    category: "Critical",
+    title: "CSAT Anomaly Detected",
+    description: "Customer satisfaction dropped 15% today.",
+    detail: "CSAT: 72% (usually 87%)",
+    timestamp: "2h ago",
+  },
+  {
+    id: 2,
+    category: "High",
+    title: "AHT Anomaly Detected",
+    description: "Average handle time increased 42%.",
+    detail: "AHT: 8.5 min (usually 6.0 min)",
+    timestamp: "4h ago",
+  },
+  {
+    id: 3,
+    category: "Opportunity",
+    title: "Call Volume Spike",
+    description: "Unexpected volume spike of 28%.",
+    detail: "3,847 calls (usually 3,000)",
+    timestamp: "1d ago",
+  },
+  {
+    id: 4,
+    category: "Action",
+    title: "Bill Explanation",
+    description: "1,620 automatable calls · 3.6% of total mix.",
+    detail: "$13K annual savings · 4:00 avg duration",
+    timestamp: "New",
+  },
+  {
+    id: 5,
+    category: "Action",
+    title: "Card Activation",
+    description: "1,245 automatable calls · 3.3% of total mix.",
+    detail: "$11K annual savings · 3:30 avg duration",
+    timestamp: "New",
+  },
+  {
+    id: 6,
+    category: "Action",
+    title: "Payment Arrangement",
+    description: "980 automatable calls · 3.1% of total mix.",
+    detail: "$9K annual savings · 5:15 avg duration",
+    timestamp: "New",
+  },
+  {
+    id: 7,
+    category: "Recommended Action",
+    title: "Enable WISMO Auto-Reply",
+    description: "Auto-send shipment status for repetitive order-tracking requests.",
+    detail: "Projected deflection: 18% of weekly chat volume",
+    timestamp: "3h ago",
+  },
+  {
+    id: 8,
+    category: "Automation Opportunity",
+    title: "Refund Policy Auto-Check",
+    description: "Most return checks follow a fixed policy decision tree.",
+    detail: "Estimated reduction: 45 agent-hours per week",
+    timestamp: "6h ago",
+  },
+];
+
 // ── Title generation rules ────────────────────────────────────────────
 
 const titleRules: Array<{ keywords: string[]; titles: string[] }> = [

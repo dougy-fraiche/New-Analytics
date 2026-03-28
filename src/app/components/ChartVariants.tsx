@@ -598,7 +598,7 @@ export function DashboardChartGrid({
   return (
     <div
       ref={containerRef}
-      className={cn("grid gap-6", isStacked ? "grid-cols-1" : "grid-cols-3")}
+      className={cn("grid gap-4", isStacked ? "grid-cols-1" : "grid-cols-3")}
     >
       {panelConfigs.map(({ panel, dataset, config, Icon }, i) => {
         const isHighlighted = !!highlightedSet?.has(i);

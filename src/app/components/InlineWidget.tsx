@@ -71,7 +71,7 @@ export function InlineWidget({ widget }: InlineWidgetProps) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="pt-0 pb-3 space-y-2">
+      <CardContent className="pt-0 pb-4 space-y-2">
         {widget.chartType === "metric" ? (
           <div className="flex items-center justify-center h-[80px]">
             <div className="text-center">

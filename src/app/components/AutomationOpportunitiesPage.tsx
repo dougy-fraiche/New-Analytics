@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronDown, RotateCcw } from "lucide-react";
-import { createPortal } from "react-dom";
+import { ChevronDown, Download, Mail, Play, MoreVertical, RotateCcw } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 
 import { Button } from "./ui/button";
@@ -8,6 +7,14 @@ import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader,
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Calendar } from "./ui/calendar";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
+import { Progress } from "./ui/progress";
+import { Separator } from "./ui/separator";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -16,19 +23,27 @@ import {
   SelectTrigger,
 } from "./ui/select";
 import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
-import { DashboardChatPanel } from "./DashboardChatPanel";
-import { PageContent, PageHeader } from "./PageChrome";
+import { PageContent, PageHeader, pageHeaderTabsFooterClassName } from "./PageChrome";
 import { PageTransition } from "./PageTransition";
-import { useChatPanelSlot } from "../contexts/ChatPanelSlotContext";
 import { WidgetAIProvider } from "../contexts/WidgetAIContext";
+import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 import { WidgetAIPromptButton } from "./WidgetAIPromptButton";
 import {
   automationAnalyzedPeriodStats,
-  automationAnalysisPeriodSubtitle,
-  automationImpactProjectionSubtitle,
-  automationOpportunitiesByScope,
-  type AutomationOpportunityRow,
+  automationSubtopicsTabPeriodStats,
+  automationSubtopicsTabTopicRows,
+  automationTopicsTabPeriodStats,
+  automationTopicsTabTopicRows,
+  AUTOMATION_SUBTOPICS_ANALYZED_PERIOD_SUBTITLE,
+  AUTOMATION_TOPICS_ANALYZED_PERIOD_SUBTITLE,
+  type AutomationPeriodStat,
   type AutomationScopeTab,
+  topOpportunitiesByScope,
+  type TopicsTabTopicRow,
+  type TopOpportunityBarItem,
+  type TopOpportunityCategory,
+  type TopOpportunityMetric,
+  type TopOpportunityTopic,
 } from "../data/automation-opportunities-page";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import {
@@ -38,7 +53,10 @@ import {
   DATE_RANGE_SECONDARY_OPTIONS,
   type DateRangeOption,
 } from "../data/date-ranges";
-import { LabeledSelectValue } from "./HeaderFilters";
+import { LabeledFilterInline, LabeledSelectValue } from "./HeaderFilters";
+import { SampleInteractionsDialog } from "./SampleInteractionsDialog";
+import { CreateAIAgentPopoverButton } from "./CreateAIAgentPopoverButton";
+import { cn } from "./ui/utils";
 
 const DASHBOARD_ID = "automation-opportunities";
 
@@ -59,75 +77,476 @@ function formatShortDateRange(range: DateRange): string {
   return `${fmt(range.from)} - ${fmt(range.to)}`;
 }
 
-function OpportunityCard({
-  row,
-  scope,
+function toMax(items: TopOpportunityBarItem[]): number {
+  return items.reduce((max, it) => (it.value > max ? it.value : max), 0) || 1;
+}
+
+function AnalyzedPeriodSection({
+  stats,
+  subtitle,
+  showStatGrid = true,
 }: {
-  row: AutomationOpportunityRow;
-  scope: AutomationScopeTab;
+  stats: AutomationPeriodStat[];
+  subtitle?: string;
+  showStatGrid?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
-  const anchorId = `automation-opp-${scope}-${row.id}`;
-
   return (
-    <Card id={anchorId}>
-      <CardHeader>
-        <CardTitle className="text-lg font-medium tracking-tight">{row.title}</CardTitle>
-        <CardDescription className="leading-relaxed">{row.description}</CardDescription>
-        <CardAction>
-          <div className="flex items-center gap-1">
-            <WidgetAIPromptButton
-              widgetTitle={`Opportunity: ${row.title}`}
-              chartType="metric"
-              widgetAnchorId={anchorId}
-              tooltipLabel="Ask AI about this opportunity"
-              tooltipSide="bottom"
-              triggerClassName="h-9 w-9"
-            />
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9"
-                  aria-expanded={open}
-                  onClick={() => setOpen((o) => !o)}
-                >
-                  <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">{open ? "Show less" : "Show more detail"}</TooltipContent>
-            </Tooltip>
-          </div>
-        </CardAction>
-      </CardHeader>
-
-      <CardContent className="space-y-2">
-        <div className="flex flex-wrap gap-2">
-          {(open ? row.metrics : row.metrics.slice(0, 5)).map((m) => (
-            <div
-              key={`${row.id}-${m.label}`}
-              className="bg-muted text-muted-foreground flex min-w-[100px] flex-col gap-0.5 rounded-md px-3 py-2 text-xs"
-            >
-              <span className="font-medium">{m.label}</span>
-              <span className="text-foreground text-sm font-medium">{m.value}</span>
-            </div>
+    <section className="space-y-3">
+      <div>
+        <h2 className="text-lg font-medium tracking-tight">Analyzed Period</h2>
+        {subtitle ? (
+          <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+        ) : null}
+      </div>
+      {showStatGrid ? (
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+          {stats.map((stat) => (
+            <Card key={stat.label}>
+              <CardContent className="space-y-1.5 p-4">
+                <p className="text-sm text-muted-foreground">{stat.label}</p>
+                <p className="text-xl font-semibold tracking-tight tabular-nums">{stat.value}</p>
+              </CardContent>
+            </Card>
           ))}
-          {!open && row.metrics.length > 5 ? (
-            <Button type="button" variant="outline" size="sm" onClick={() => setOpen(true)}>
-              +{row.metrics.length - 5} more
-            </Button>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function MetricStrip({
+  metrics,
+  rightSlot,
+  className,
+}: {
+  metrics: TopOpportunityMetric[];
+  rightSlot?: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn("flex w-full min-w-0 items-start gap-x-4 gap-y-3", className)}>
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-3">
+        {metrics.map((m) => (
+          <div key={m.key} className="flex flex-col gap-0.5 pr-6 border-r last:border-r-0 last:pr-0">
+            <div
+              className={`text-base font-medium tabular-nums ${
+                m.tone === "positive" ? "text-emerald-700 dark:text-emerald-400" : "text-foreground"
+              }`}
+            >
+              {m.value}
+            </div>
+            <div className="text-xs text-muted-foreground">{m.label}</div>
+          </div>
+        ))}
+      </div>
+      {rightSlot ? <div className="flex shrink-0 items-center self-center">{rightSlot}</div> : null}
+    </div>
+  );
+}
+
+function ActionBarList({
+  title,
+  items,
+  variant = "standalone",
+  maxScale,
+}: {
+  title: string;
+  items: TopOpportunityBarItem[];
+  variant?: "standalone" | "embedded";
+  /** When set, bar fill uses this denominator (e.g. 100 for percentage rows). */
+  maxScale?: number;
+}) {
+  const max = maxScale ?? toMax(items);
+  const wrapperClassName =
+    variant === "embedded"
+      ? "border-b bg-neutral-25"
+      : "rounded-lg border bg-muted";
+  return (
+    <div className={wrapperClassName}>
+      <div className="px-4 py-3">
+        <div className="text-sm font-medium">{title}</div>
+      </div>
+      <div className="p-4 space-y-3">
+        {items.map((it) => {
+          const pct = Math.max(0, Math.min(1, it.value / max));
+          return (
+            <div key={it.label} className="flex items-center gap-4">
+              <div className="w-[200px] shrink-0 text-xs text-muted-foreground truncate">
+                {it.label}
+              </div>
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                <Progress
+                  value={pct * 100}
+                  className="h-2 min-w-0 flex-1 border border-border/60 bg-muted mr-3"
+                  indicatorClassName="rounded-full"
+                />
+                <div className="shrink-0 text-xs text-muted-foreground tabular-nums text-right">
+                  {it.display ?? it.value.toLocaleString()}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function OverflowActionsMenu({
+  categoryTitle,
+  onOpenSampleInteractions,
+}: {
+  categoryTitle: string;
+  onOpenSampleInteractions: (categoryTitle: string) => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-9 w-9">
+          <MoreVertical className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuItem onSelect={() => onOpenSampleInteractions(categoryTitle)}>
+          <Play className="h-4 w-4" />
+          View Sample interactions
+        </DropdownMenuItem>
+        <DropdownMenuItem>
+          <Mail className="h-4 w-4" />
+          Share by Email
+        </DropdownMenuItem>
+        <DropdownMenuItem>
+          <Download className="h-4 w-4" />
+          Export to Excel
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function TopicRow({
+  topic,
+  open,
+  onToggle,
+  rightSlot,
+  isFirst = false,
+  categoryTitle,
+  agentSourceKey,
+  agentScopeTitle,
+  onOpenSampleInteractions,
+}: {
+  topic: TopOpportunityTopic;
+  open: boolean;
+  onToggle: () => void;
+  rightSlot?: React.ReactNode;
+  isFirst?: boolean;
+  categoryTitle: string;
+  agentSourceKey: string;
+  agentScopeTitle: string;
+  onOpenSampleInteractions: (categoryTitle: string) => void;
+}) {
+  const canExpand = (topic.subTopics && topic.subTopics.length > 0) || !!topic.bars || !!topic.secondaryCta;
+  return (
+    <div className={isFirst ? "" : "border-t"}>
+      <div className="flex items-start gap-3 px-4 py-3">
+        <button
+          type="button"
+          className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-md hover:bg-muted disabled:opacity-50"
+          onClick={onToggle}
+          disabled={!canExpand}
+          aria-label={open ? "Collapse" : "Expand"}
+        >
+          <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
+        </button>
+        <div className="min-w-0 flex-1">
+          <div>
+            <div className="text-sm font-medium">{topic.title}</div>
+            {topic.subtitle ? (
+              <div className="mt-0.5 text-xs text-muted-foreground">{topic.subtitle}</div>
+            ) : null}
+          </div>
+          <div className="mt-3">
+            <MetricStrip
+              metrics={topic.metrics}
+              rightSlot={
+                <div className="flex items-center gap-2">
+                  {rightSlot}
+                  <CreateAIAgentPopoverButton sourceKey={agentSourceKey} scopeTitle={agentScopeTitle} />
+                </div>
+              }
+            />
+          </div>
+        </div>
+        <div className="shrink-0">
+          <OverflowActionsMenu
+            categoryTitle={categoryTitle}
+            onOpenSampleInteractions={onOpenSampleInteractions}
+          />
+        </div>
+      </div>
+
+      {open && (topic.bars || topic.secondaryCta) ? (
+        <div className="px-4 pb-4 space-y-4">
+          {topic.bars ? <ActionBarList title={topic.bars.title} items={topic.bars.items} /> : null}
+          {topic.secondaryCta ? (
+            <div>
+              <Button variant="outline" size="sm">
+                {topic.secondaryCta.label}
+              </Button>
+            </div>
           ) : null}
         </div>
+      ) : null}
+    </div>
+  );
+}
+
+function SubTopicSection({
+  index,
+  topic,
+  categoryTitle,
+  onOpenSampleInteractions,
+}: {
+  index: number;
+  topic: TopOpportunityTopic;
+  categoryTitle: string;
+  onOpenSampleInteractions: (categoryTitle: string) => void;
+}) {
+  return (
+    <div>
+      <div className="flex items-start gap-3 py-3 pl-12 pr-4">
+        <div className="mt-0.5 flex w-6 shrink-0 justify-center">
+          <div className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
+            {index}
+          </div>
+        </div>
+        <div className="min-w-0 flex-1">
+          <div>
+            <div className="text-sm font-medium">{topic.title}</div>
+            {topic.subtitle ? (
+              <div className="mt-0.5 text-xs text-muted-foreground">{topic.subtitle}</div>
+            ) : null}
+          </div>
+          <div className="mt-3">
+            <MetricStrip metrics={topic.metrics} />
+          </div>
+          {topic.bars ? (
+            <div className="mt-4 space-y-4">
+              <div className="text-sm font-medium">{topic.bars.title}</div>
+              <div className="space-y-3">
+                {topic.bars.items.map((it) => (
+                  <div key={it.label} className="flex items-center gap-4">
+                    <div className="w-[200px] shrink-0 text-xs text-muted-foreground truncate">
+                      {it.label}
+                    </div>
+                    <div className="flex min-w-0 flex-1 items-center gap-2">
+                      <Progress
+                        value={(it.value / toMax(topic.bars!.items)) * 100}
+                        className="h-2 min-w-0 flex-1 border border-border/60 bg-muted mr-3"
+                        indicatorClassName="rounded-full"
+                      />
+                      <div className="shrink-0 text-xs text-muted-foreground tabular-nums text-right">
+                        {it.value.toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {topic.secondaryCta ? (
+                <Button variant="outline" size="sm">
+                  {topic.secondaryCta.label}
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+        <div className="shrink-0">
+          <OverflowActionsMenu
+            categoryTitle={categoryTitle}
+            onOpenSampleInteractions={onOpenSampleInteractions}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AutomationTopicsTabTopicCard({
+  row,
+  expanded,
+  onToggleExpanded,
+  onOpenSampleInteractions,
+  agentTabKey,
+}: {
+  row: TopicsTabTopicRow;
+  expanded: boolean;
+  onToggleExpanded: () => void;
+  onOpenSampleInteractions: (categoryTitle: string) => void;
+  /** Disambiguates source keys between Topics vs Sub-topics tabs. */
+  agentTabKey: string;
+}) {
+  const canExpand = !!row.bars;
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-start gap-3">
+          <div className="min-w-0 flex-1">
+            <CardTitle className="text-lg font-medium tracking-tight">{row.title}</CardTitle>
+            <CardDescription className="mt-1.5 text-sm leading-relaxed">{row.description}</CardDescription>
+          </div>
+          <OverflowActionsMenu
+            categoryTitle={row.sampleInteractionsLabel}
+            onOpenSampleInteractions={onOpenSampleInteractions}
+          />
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-4">
+        <MetricStrip
+          metrics={row.chipMetrics}
+          rightSlot={
+            <CreateAIAgentPopoverButton
+              sourceKey={`${agentTabKey}:${row.id}`}
+              scopeTitle={row.title}
+            />
+          }
+        />
+        {expanded && row.bars ? (
+          <div className="rounded-lg border overflow-hidden">
+            <ActionBarList
+              title={row.bars.title}
+              items={row.bars.items}
+              maxScale={100}
+              variant="embedded"
+            />
+          </div>
+        ) : null}
       </CardContent>
 
-      <CardFooter className="flex flex-wrap gap-2">
-        <Button type="button" size="sm">
-          Create AI Agent
+      <CardFooter>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          disabled={!canExpand}
+          onClick={onToggleExpanded}
+          className="px-0"
+        >
+          <ChevronDown className={`mr-2 h-4 w-4 transition-transform ${expanded ? "rotate-180" : ""}`} />
+          {expanded ? "Hide Breakdown & Related Opportunities" : "Explore Breakdown & Related Opportunities"}
         </Button>
-        <Button type="button" variant="outline" size="sm">
-          View playbook
+      </CardFooter>
+    </Card>
+  );
+}
+
+function TopOpportunityCard({
+  category,
+  expanded,
+  onToggleExpanded,
+  expandedTopicIds,
+  toggleTopic,
+  expandedSubTopicIds,
+  toggleSubTopic,
+  onOpenSampleInteractions,
+}: {
+  category: TopOpportunityCategory;
+  expanded: boolean;
+  onToggleExpanded: () => void;
+  expandedTopicIds: Set<string>;
+  toggleTopic: (id: string) => void;
+  expandedSubTopicIds: Set<string>;
+  toggleSubTopic: (id: string) => void;
+  onOpenSampleInteractions: (categoryTitle: string) => void;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-start gap-3">
+          <div className="min-w-0 flex-1">
+            <CardTitle className="text-lg font-medium tracking-tight">{category.title}</CardTitle>
+            <CardDescription>{category.subtitle}</CardDescription>
+          </div>
+          <OverflowActionsMenu
+            categoryTitle={category.title}
+            onOpenSampleInteractions={onOpenSampleInteractions}
+          />
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-4">
+        <MetricStrip
+          metrics={category.metrics}
+          rightSlot={
+            <CreateAIAgentPopoverButton
+              sourceKey={`category:${category.id}`}
+              scopeTitle={category.title}
+            />
+          }
+        />
+
+        {expanded ? (
+          <div className="rounded-lg border overflow-hidden">
+            {category.bars ? (
+              <ActionBarList
+                title={category.bars.title}
+                items={category.bars.items}
+                variant="embedded"
+              />
+            ) : null}
+
+            {category.topics.length > 0 ? (
+              <div>
+                {category.topics.map((t, idx) => {
+                  const topicKey = `${category.id}:${t.id}`;
+                  const topicOpen = expandedTopicIds.has(topicKey);
+                  return (
+                    <div key={t.id}>
+                      <TopicRow
+                        topic={t}
+                        open={topicOpen}
+                        onToggle={() => toggleTopic(topicKey)}
+                        isFirst={idx === 0}
+                        categoryTitle={category.title}
+                        agentSourceKey={`${category.id}:${t.id}`}
+                        agentScopeTitle={t.title}
+                        onOpenSampleInteractions={onOpenSampleInteractions}
+                      />
+                      {topicOpen && t.subTopics && t.subTopics.length > 0 ? (
+                        <div className="bg-muted/10 pb-4">
+                          <div className="pt-3 pl-12 pr-4">
+                            <Separator className="mb-3" />
+                          </div>
+                          {t.subTopics.map((st, sIdx) => (
+                            <div key={st.id}>
+                              <SubTopicSection
+                                index={sIdx + 1}
+                                topic={st}
+                                categoryTitle={category.title}
+                                onOpenSampleInteractions={onOpenSampleInteractions}
+                              />
+                              {sIdx < t.subTopics.length - 1 ? (
+                                <div className="pl-12 pr-4">
+                                  <Separator />
+                                </div>
+                              ) : null}
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </CardContent>
+
+      <CardFooter>
+        <Button type="button" variant="ghost" size="sm" onClick={onToggleExpanded} className="px-0">
+          <ChevronDown className={`mr-2 h-4 w-4 transition-transform ${expanded ? "rotate-180" : ""}`} />
+          {expanded ? "Hide Breakdown & Related Opportunities" : "Explore Breakdown & Related Opportunities"}
         </Button>
       </CardFooter>
     </Card>
@@ -135,8 +554,12 @@ function OpportunityCard({
 }
 
 export function AutomationOpportunitiesPage() {
-  const chatPanelSlot = useChatPanelSlot();
   const [scope, setScope] = useState<AutomationScopeTab>("categories");
+  const [expandedCategoryIds, setExpandedCategoryIds] = useState<Set<string>>(() => new Set());
+  const [expandedTopicIds, setExpandedTopicIds] = useState<Set<string>>(() => new Set());
+  const [expandedSubTopicIds, setExpandedSubTopicIds] = useState<Set<string>>(() => new Set());
+  const [expandedTopicsTabRowIds, setExpandedTopicsTabRowIds] = useState<Set<string>>(() => new Set());
+  const [expandedSubtopicsTabRowIds, setExpandedSubtopicsTabRowIds] = useState<Set<string>>(() => new Set());
 
   const [dateRange, setDateRange] = useState<DateRangeOption>(DEFAULT_FILTERS.dateRange);
   const [customRange, setCustomRange] = useState<DateRange | undefined>();
@@ -146,6 +569,9 @@ export function AutomationOpportunitiesPage() {
   const [channel, setChannel] = useState<(typeof DEFAULT_FILTERS)["channel"]>(DEFAULT_FILTERS.channel);
   const [category, setCategory] = useState<(typeof DEFAULT_FILTERS)["category"]>(DEFAULT_FILTERS.category);
   const [direction, setDirection] = useState<(typeof DEFAULT_FILTERS)["direction"]>(DEFAULT_FILTERS.direction);
+
+  const [sampleInteractionsOpen, setSampleInteractionsOpen] = useState(false);
+  const [sampleInteractionsCategory, setSampleInteractionsCategory] = useState("");
 
   const hasFilterChanges = useMemo(() => {
     return (
@@ -159,14 +585,14 @@ export function AutomationOpportunitiesPage() {
   }, [category, channel, dateRange, direction, skill, team]);
 
   return (
-    <WidgetAIProvider persistKey={DASHBOARD_ID}>
+    <WidgetAIProvider persistKey={GLOBAL_AI_ASSISTANT_KEY} ootbTypeId={DASHBOARD_ID}>
       <Tabs
         value={scope}
         onValueChange={(v) => setScope(v as AutomationScopeTab)}
         className="flex flex-col flex-1 min-h-0"
       >
         <div className="flex flex-col flex-1 min-h-0">
-          <PageHeader>
+          <PageHeader className={pageHeaderTabsFooterClassName}>
             <div>
               <h1 className="text-3xl tracking-tight">Automation Opportunities</h1>
               <p className="text-muted-foreground mt-1">
@@ -174,7 +600,7 @@ export function AutomationOpportunitiesPage() {
               </p>
             </div>
 
-            <div className="mt-4 flex flex-nowrap items-center gap-2 overflow-x-auto whitespace-nowrap pb-1">
+            <div className="mt-4 flex flex-wrap items-center gap-2">
               <Select
                 value={dateRange}
                 onValueChange={(v) => {
@@ -186,14 +612,11 @@ export function AutomationOpportunitiesPage() {
                 }}
               >
                 <SelectTrigger className="h-8 w-auto shrink-0">
-                  <span className="flex min-w-0 items-center gap-1">
-                    <span className="shrink-0 text-muted-foreground">Date range:</span>
-                    <span className="min-w-0 truncate">
-                      {dateRange === DATE_RANGE_CUSTOM_OPTION && customRange?.from && customRange?.to
-                        ? formatShortDateRange(customRange)
-                        : DATE_RANGE_LABELS[dateRange]}
-                    </span>
-                  </span>
+                  <LabeledFilterInline label="Date range">
+                    {dateRange === DATE_RANGE_CUSTOM_OPTION && customRange?.from && customRange?.to
+                      ? formatShortDateRange(customRange)
+                      : DATE_RANGE_LABELS[dateRange]}
+                  </LabeledFilterInline>
                 </SelectTrigger>
                 <SelectContent>
                   {DATE_RANGE_PRIMARY_OPTIONS.map((opt) => (
@@ -239,7 +662,7 @@ export function AutomationOpportunitiesPage() {
 
               <Select value={channel} onValueChange={(v) => setChannel(v as typeof channel)}>
                 <SelectTrigger className="h-8 w-auto shrink-0">
-                  <LabeledSelectValue label="Chanel" />
+                  <LabeledSelectValue label="Channel" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
@@ -294,20 +717,11 @@ export function AutomationOpportunitiesPage() {
               ) : null}
             </div>
 
-            <TabsList className="mt-4 h-auto w-full justify-start rounded-none border-0 bg-transparent p-0">
+            <TabsList variant="line" className="mt-4">
               <TabsTrigger value="categories">Categories</TabsTrigger>
               <TabsTrigger value="topics">Topics</TabsTrigger>
               <TabsTrigger value="subtopics">Sub-topics</TabsTrigger>
             </TabsList>
-            <HeaderAIInsightsRow
-              dashboardId={DASHBOARD_ID}
-              dashboardData={{
-                id: DASHBOARD_ID,
-                title: "Automation Opportunities",
-                description:
-                  "High-impact automation opportunities across categories, topics, and sub-topics.",
-              }}
-            />
           </PageHeader>
 
           <Dialog open={customRangeOpen} onOpenChange={setCustomRangeOpen}>
@@ -337,54 +751,139 @@ export function AutomationOpportunitiesPage() {
             </DialogContent>
           </Dialog>
 
+          <SampleInteractionsDialog
+            open={sampleInteractionsOpen}
+            onOpenChange={setSampleInteractionsOpen}
+            categoryTitle={sampleInteractionsCategory}
+          />
+
           <div className="flex-1 min-h-0 overflow-auto">
             <PageContent className="space-y-8 p-4 md:p-8">
               <PageTransition className="space-y-8">
-                <section className="space-y-3">
-                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                    <h2 className="text-lg font-medium tracking-tight">Analyzed Period</h2>
-                    <span className="text-sm text-muted-foreground">
-                      / {automationAnalysisPeriodSubtitle}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-                    {automationAnalyzedPeriodStats.map((stat) => (
-                      <Card key={stat.label}>
-                        <CardContent className="space-y-1.5 pt-6">
-                          <p className="text-sm text-muted-foreground">{stat.label}</p>
-                          <p className="text-xl font-semibold tracking-tight tabular-nums">{stat.value}</p>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </section>
-
-                {( ["categories", "topics", "subtopics"] as const).map((tab) => (
-                  <TabsContent key={tab} value={tab} className="mt-0 space-y-4 outline-none">
-                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                      <h2 className="text-lg font-medium tracking-tight">Top Opportunities</h2>
-                      <span className="text-sm text-muted-foreground">
-                        / {automationImpactProjectionSubtitle}
-                      </span>
-                    </div>
+                <HeaderAIInsightsRow
+                  dashboardId={DASHBOARD_ID}
+                  dashboardData={{
+                    id: DASHBOARD_ID,
+                    title: "Automation Opportunities",
+                    description:
+                      "High-impact automation opportunities across categories, topics, and sub-topics.",
+                  }}
+                />
+                <TabsContent value="categories" className="mt-0 space-y-8 outline-none">
+                  <AnalyzedPeriodSection stats={automationAnalyzedPeriodStats} />
+                  <section className="space-y-4">
+                    <h2 className="text-lg font-medium tracking-tight">Top Opportunities</h2>
                     <div className="flex flex-col gap-4">
-                      {automationOpportunitiesByScope[tab].map((row) => (
-                        <OpportunityCard key={row.id} row={row} scope={tab} />
+                      {topOpportunitiesByScope.categories.map((cat) => (
+                        <TopOpportunityCard
+                          key={cat.id}
+                          category={cat}
+                          expanded={expandedCategoryIds.has(cat.id)}
+                          onToggleExpanded={() => {
+                            setExpandedCategoryIds((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(cat.id)) next.delete(cat.id);
+                              else next.add(cat.id);
+                              return next;
+                            });
+                          }}
+                          expandedTopicIds={expandedTopicIds}
+                          expandedSubTopicIds={expandedSubTopicIds}
+                          toggleTopic={(id) => {
+                            setExpandedTopicIds((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(id)) next.delete(id);
+                              else next.add(id);
+                              return next;
+                            });
+                          }}
+                          toggleSubTopic={(id) => {
+                            setExpandedSubTopicIds((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(id)) next.delete(id);
+                              else next.add(id);
+                              return next;
+                            });
+                          }}
+                          onOpenSampleInteractions={(title) => {
+                            setSampleInteractionsCategory(title);
+                            setSampleInteractionsOpen(true);
+                          }}
+                        />
                       ))}
                     </div>
-                  </TabsContent>
-                ))}
+                  </section>
+                </TabsContent>
+
+                <TabsContent value="topics" className="mt-0 space-y-8 outline-none">
+                  <AnalyzedPeriodSection
+                    stats={automationTopicsTabPeriodStats}
+                    subtitle={AUTOMATION_TOPICS_ANALYZED_PERIOD_SUBTITLE}
+                  />
+                  <section className="space-y-4">
+                    <h2 className="text-lg font-medium tracking-tight">Top Opportunities</h2>
+                    <div className="flex flex-col gap-4">
+                      {automationTopicsTabTopicRows.map((row) => (
+                        <AutomationTopicsTabTopicCard
+                          key={row.id}
+                          row={row}
+                          agentTabKey="topics-tab"
+                          expanded={expandedTopicsTabRowIds.has(row.id)}
+                          onToggleExpanded={() => {
+                            setExpandedTopicsTabRowIds((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(row.id)) next.delete(row.id);
+                              else next.add(row.id);
+                              return next;
+                            });
+                          }}
+                          onOpenSampleInteractions={(title) => {
+                            setSampleInteractionsCategory(title);
+                            setSampleInteractionsOpen(true);
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                </TabsContent>
+
+                <TabsContent value="subtopics" className="mt-0 space-y-8 outline-none">
+                  <AnalyzedPeriodSection
+                    stats={automationSubtopicsTabPeriodStats}
+                    subtitle={AUTOMATION_SUBTOPICS_ANALYZED_PERIOD_SUBTITLE}
+                  />
+                  <section className="space-y-4">
+                    <h2 className="text-lg font-medium tracking-tight">Top Opportunities</h2>
+                    <div className="flex flex-col gap-4">
+                      {automationSubtopicsTabTopicRows.map((row) => (
+                        <AutomationTopicsTabTopicCard
+                          key={row.id}
+                          row={row}
+                          agentTabKey="subtopics-tab"
+                          expanded={expandedSubtopicsTabRowIds.has(row.id)}
+                          onToggleExpanded={() => {
+                            setExpandedSubtopicsTabRowIds((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(row.id)) next.delete(row.id);
+                              else next.add(row.id);
+                              return next;
+                            });
+                          }}
+                          onOpenSampleInteractions={(title) => {
+                            setSampleInteractionsCategory(title);
+                            setSampleInteractionsOpen(true);
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                </TabsContent>
               </PageTransition>
             </PageContent>
           </div>
         </div>
       </Tabs>
 
-      {chatPanelSlot &&
-        createPortal(
-          <DashboardChatPanel dashboardId={DASHBOARD_ID} sourceOotbId={DASHBOARD_ID} />,
-          chatPanelSlot,
-        )}
     </WidgetAIProvider>
   );
 }

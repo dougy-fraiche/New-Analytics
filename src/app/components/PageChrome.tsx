@@ -10,7 +10,7 @@ import { cn } from "./ui/utils";
  *   Put the main action in `<Button variant="default">` (uses `--primary` / Figma P500).
  * - **Card icon well:** circular soft-primary icon container:
  *   `className={cardIconWellClassName}` on the wrapper around a `size-5` or `size-6` icon.
- * - **Tags / filters:** use `<Badge variant="primarySoft">` (maps to `--primary-soft` / P50 + P900 text).
+ * - **Tags / filters:** use the default badge variants (`default`, `secondary`, `destructive`, `outline`).
  */
 export const pageHeaderTitleRowClassName = "w-full";
 
@@ -23,7 +23,14 @@ export const cardIconWellClassName =
  * subtle bottom border, equal top/bottom padding (matches previous pt-6).
  */
 export const pageHeaderClassName =
-  "shrink-0 sticky top-0 z-10 w-full border-b border-border/60 bg-background pt-6 pb-6";
+  "shrink-0 sticky top-0 z-10 w-full border-b border-border/60 bg-background pt-6 pb-6 [&_h1]:text-primary-900";
+
+/**
+ * Merge onto `<PageHeader className={pageHeaderTabsFooterClassName}>` when the last row
+ * is a line-variant `TabsList`, so bottom padding is removed and the tab row aligns with the
+ * header bottom border.
+ */
+export const pageHeaderTabsFooterClassName = "pb-0";
 
 /** Constrains title/actions to the same max width as `PageContent` (1440px). */
 export const pageHeaderInnerClassName =
@@ -45,9 +52,15 @@ export function PageContent({
 }
 
 /** Page title bar: full-bleed background + inner content capped at 1440px. */
-export function PageHeader({ children }: { children: ReactNode }) {
+export function PageHeader({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return (
-    <header className={pageHeaderClassName}>
+    <header className={cn(pageHeaderClassName, className)}>
       <div className={pageHeaderInnerClassName}>{children}</div>
     </header>
   );

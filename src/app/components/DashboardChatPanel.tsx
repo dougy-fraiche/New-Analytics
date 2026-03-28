@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { Plus, ArrowRight, Mic, Square, Loader2, Upload, Image, Paperclip, MoreVertical, Trash2 } from "lucide-react";
+import { Plus, ArrowRight, Mic, Square, Loader2, Upload, Image, Paperclip, MoreVertical, Trash2, ChevronRight } from "lucide-react";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { ResizeHandle } from "./ResizeHandle";
@@ -20,11 +20,14 @@ import {
 } from "./ui/empty";
 import { toast } from "sonner";
 import { useDashboardChat, useDashboardMessages, type ChatMessage } from "../contexts/DashboardChatContext";
+import { useAiAssistantExploreBridge } from "../contexts/AiAssistantExploreBridgeContext";
+import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 import { getChartIcon } from "./ChartVariants";
+import { AiAssistantEmptyStateGraphic, AiAssistantHeaderIcon } from "./AiAssistantHeaderIcon";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 interface DashboardChatPanelProps {
-  /** Dashboard ID used for persistence key (e.g. route dashboardId or composite key) */
+  /** Route / page context id (saved id, OOTB id, etc.) — not used for message persistence in global mode */
   dashboardId?: string;
   /**
    * Source OOTB dashboard type ID — used to resolve suggested prompts and AI
@@ -32,57 +35,7 @@ interface DashboardChatPanelProps {
    * Falls back to dashboardId when not provided.
    */
   sourceOotbId?: string;
-  // Optional props for external control (Explore page)
-  externalMessages?: ChatMessage[];
-  onSendMessage?: (message: string) => void;
-  externalIsThinking?: boolean;
   placeholder?: string;
-}
-
-// Inner “AI” mark from Figma (provided as an asset by the Figma MCP server).
-const FIGMA_AI_ASSISTANT_MARK_URL =
-  "https://www.figma.com/api/mcp/asset/11b15c37-c124-4e44-8c72-ba17066b5223";
-
-function AiAssistantHeaderIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      width="36"
-      height="36"
-      viewBox="0 0 36 36"
-      className={className}
-      aria-hidden="true"
-      focusable="false"
-    >
-      <defs>
-        <clipPath id="aiAssistantMarkClip">
-          <rect x="5" y="5" width="26" height="26" rx="13" />
-        </clipPath>
-      </defs>
-
-      <rect x="0" y="0" width="36" height="36" rx="18" fill="white" />
-      <rect
-        x="-2"
-        y="-2"
-        width="40"
-        height="40"
-        rx="20"
-        fill="none"
-        stroke="#6e56cf"
-        strokeWidth="2"
-        opacity="0.49"
-      />
-      <g clipPath="url(#aiAssistantMarkClip)">
-        <image
-          href={FIGMA_AI_ASSISTANT_MARK_URL}
-          x="5"
-          y="5"
-          width="26"
-          height="26"
-          preserveAspectRatio="xMidYMid slice"
-        />
-      </g>
-    </svg>
-  );
 }
 
 // ─── Dashboard-specific suggested questions ──────────────────────────────────
@@ -187,10 +140,10 @@ const dashboardSuggestedQuestions: Record<string, string[]> = {
 };
 
 const defaultSuggestedQuestions = [
-  "What are the key trends in this dashboard?",
-  "Show me the most important metrics",
-  "Compare with last month",
-  "Export this data",
+  "What are the key insights here?",
+  "What should I focus on first?",
+  "What changed recently?",
+  "What actions do you recommend?",
 ];
 
 // ─── Dashboard-specific AI response handlers ─────────────────────────────────
@@ -413,24 +366,24 @@ function ThreadView({
   // Empty thread state with suggested prompts
   if (displayMessages.length === 0 && !isThinking) {
     return (
-      <div className="h-full min-h-0 flex flex-col items-center justify-center text-center">
-        <AiAssistantHeaderIcon className="w-[12.5rem] h-[12.5rem] shrink-0 overflow-visible" />
+      <div className="h-full min-h-0 p-6 flex flex-col items-center justify-center text-center">
+        <AiAssistantEmptyStateGraphic className="w-[12.5rem] h-[12.5rem] shrink-0" />
         <div className="mt-6 text-sm text-muted-foreground max-w-[28rem]">
-          Ask questions about this dashboard or request specific insights.
+          Hi 👋 I'm your AI assistant, designed to help you. Not sure where to start? Try one of these below.
         </div>
 
         {suggestedQuestions && suggestedQuestions.length > 0 && (
           <div className="mt-6 w-full max-w-[28rem] space-y-2 text-left">
-            <p className="text-xs font-medium text-muted-foreground mb-2">Suggested Questions</p>
             {suggestedQuestions.map((question, index) => (
               <Button
                 key={index}
                 variant="outline"
-                size="sm"
-                className="w-full justify-start text-left h-auto py-2 px-3 whitespace-normal"
+                size="lg"
+                className="w-full justify-start text-left whitespace-normal"
                 onClick={() => onSendSuggestion?.(question)}
               >
                 <span className="text-sm">{question}</span>
+                <ChevronRight className="h-4 w-4 ml-auto shrink-0 text-muted-foreground" />
               </Button>
             ))}
           </div>
@@ -512,39 +465,30 @@ function ThreadView({
 export function DashboardChatPanel({
   dashboardId,
   sourceOotbId,
-  externalMessages,
-  onSendMessage,
-  externalIsThinking,
   placeholder,
 }: DashboardChatPanelProps) {
   const dashboardChat = useDashboardChat();
-
-  // The persistence key combines route context for uniqueness
-  const persistKey = dashboardId ?? "__no_dashboard__";
+  const { isThinking: exploreThinking, onSend: exploreOnSend } = useAiAssistantExploreBridge();
 
   // The OOTB type used for prompts / AI responses: explicit sourceOotbId > dashboardId
   const ootbTypeId = sourceOotbId || dashboardId;
 
-  // For external-control mode (Explore page), we skip persistence entirely
-  const isExternalMode = !!externalMessages;
-
-  const storedMessages = useDashboardMessages(persistKey);
-  const persistedMessages = isExternalMode ? [] : storedMessages;
+  const storedMessages = useDashboardMessages(GLOBAL_AI_ASSISTANT_KEY);
 
   const [query, setQuery] = useState("");
   const [internalIsThinking, setInternalIsThinking] = useState(false);
   const [panelWidthRem, setPanelWidthRem] = useState(CHAT_PANEL_DEFAULT_WIDTH_REM);
   const [isResizing, setIsResizing] = useState(false);
 
-  // When dashboardId changes, reset local input state
-  const prevDashboardIdRef = useRef(dashboardId);
+  const routeContextKey = `${dashboardId ?? ""}|${sourceOotbId ?? ""}`;
+  const prevRouteContextKeyRef = useRef(routeContextKey);
   useEffect(() => {
-    if (prevDashboardIdRef.current !== dashboardId) {
-      prevDashboardIdRef.current = dashboardId;
+    if (prevRouteContextKeyRef.current !== routeContextKey) {
+      prevRouteContextKeyRef.current = routeContextKey;
       setQuery("");
       setInternalIsThinking(false);
     }
-  }, [dashboardId]);
+  }, [routeContextKey]);
 
   const chatVoice = useVoiceInput({
     onTranscript: (text) => {
@@ -567,17 +511,13 @@ export function DashboardChatPanel({
     },
   });
 
-  // Use external messages if provided, otherwise use persisted messages
-  const messages = isExternalMode ? externalMessages! : persistedMessages;
-  const isThinking = externalIsThinking !== undefined ? externalIsThinking : internalIsThinking;
+  const messages = storedMessages;
+  const isThinking = exploreOnSend ? exploreThinking : internalIsThinking;
 
-  // Resolve suggested questions: use ootbTypeId to look up, fallback to defaults
+  // Keep one consistent, general set of suggested questions across the app.
   const suggestedQuestions = useMemo(() => {
-    if (ootbTypeId && dashboardSuggestedQuestions[ootbTypeId]) {
-      return dashboardSuggestedQuestions[ootbTypeId];
-    }
     return defaultSuggestedQuestions;
-  }, [ootbTypeId]);
+  }, []);
 
   const handleResize = useCallback((deltaPx: number) => {
     const deltaRem = deltaPx / REM_PX;
@@ -604,7 +544,7 @@ export function DashboardChatPanel({
         content: message,
         timestamp: new Date(),
       };
-      dashboardChat.appendMessage(persistKey, userMessage);
+      dashboardChat.appendMessage(GLOBAL_AI_ASSISTANT_KEY, userMessage);
       setInternalIsThinking(true);
 
       setTimeout(() => {
@@ -615,11 +555,11 @@ export function DashboardChatPanel({
           content: aiResponse,
           timestamp: new Date(),
         };
-        dashboardChat.appendMessage(persistKey, assistantMessage);
+        dashboardChat.appendMessage(GLOBAL_AI_ASSISTANT_KEY, assistantMessage);
         setInternalIsThinking(false);
       }, 1500);
     },
-    [dashboardChat, persistKey, ootbTypeId],
+    [dashboardChat, ootbTypeId],
   );
 
   const handleSend = (message: string = query) => {
@@ -627,8 +567,8 @@ export function DashboardChatPanel({
 
     setQuery("");
 
-    if (onSendMessage) {
-      onSendMessage(message);
+    if (exploreOnSend) {
+      exploreOnSend(message.trim());
       return;
     }
 
@@ -636,20 +576,20 @@ export function DashboardChatPanel({
   };
 
   const handleClearConversation = useCallback(() => {
-    const snapshot = dashboardChat.getMessages(persistKey);
-    dashboardChat.clearMessages(persistKey);
+    const snapshot = dashboardChat.getMessages(GLOBAL_AI_ASSISTANT_KEY);
+    dashboardChat.clearMessages(GLOBAL_AI_ASSISTANT_KEY);
     toast.success("Conversation cleared", {
       action: {
         label: "Undo",
         onClick: () => {
           if (snapshot.length > 0) {
-            dashboardChat.setMessages(persistKey, snapshot);
+            dashboardChat.setMessages(GLOBAL_AI_ASSISTANT_KEY, snapshot);
           }
           toast.success("Conversation restored");
         },
       },
     });
-  }, [dashboardChat, persistKey]);
+  }, [dashboardChat]);
 
   return (
     <div
@@ -668,12 +608,12 @@ export function DashboardChatPanel({
 
       {/* Header */}
       <div className="px-4 flex items-center justify-between shrink-0 h-[60px] border-b border-border bg-background">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-4 min-w-0">
           <AiAssistantHeaderIcon className="h-9 w-9 shrink-0" />
           <h2 className="font-semibold">AI Assistant</h2>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          {!isExternalMode && messages.length > 0 && (
+          {!exploreOnSend && messages.length > 0 && (
             <DropdownMenu>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -703,40 +643,12 @@ export function DashboardChatPanel({
 
       {/* Messages — single conversation; scrolls when content overflows */}
       <div className="flex-1 overflow-y-auto min-h-0 p-4">
-        {isExternalMode ? (
-          messages.filter((m) => !m.dashboardData).length === 0 ? (
-            <div className="h-full min-h-0 flex flex-col items-center justify-center text-center">
-              <AiAssistantHeaderIcon className="w-[12.5rem] h-[12.5rem] shrink-0" />
-              <div className="mt-6 text-sm text-muted-foreground max-w-[28rem]">
-                Ask questions about this dashboard or request specific insights.
-              </div>
-
-              <div className="mt-6 w-full max-w-[28rem] space-y-2 text-left">
-                <p className="text-xs font-medium text-muted-foreground mb-2">Suggested Questions</p>
-                {suggestedQuestions.map((question, index) => (
-                  <Button
-                    key={index}
-                    variant="outline"
-                    size="sm"
-                    className="w-full justify-start text-left h-auto py-2 px-3 whitespace-normal"
-                    onClick={() => handleSend(question)}
-                  >
-                    <span className="text-sm">{question}</span>
-                  </Button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <ThreadView messages={messages} isThinking={isThinking} />
-          )
-        ) : (
-          <ThreadView
-            messages={messages}
-            isThinking={isThinking}
-            suggestedQuestions={suggestedQuestions}
-            onSendSuggestion={handleSend}
-          />
-        )}
+        <ThreadView
+          messages={messages}
+          isThinking={isThinking}
+          suggestedQuestions={suggestedQuestions}
+          onSendSuggestion={handleSend}
+        />
       </div>
 
       {/* Input Area — always visible at bottom */}

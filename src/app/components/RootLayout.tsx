@@ -1,5 +1,5 @@
 import { Outlet, useLocation, useParams, useNavigate } from "react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { SidebarProvider } from "./ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { TopNavBar } from "./TopNavBar";
@@ -7,6 +7,7 @@ import { SearchOverlay } from "./SearchOverlay";
 import { ConversationProvider, useConversations } from "../contexts/ConversationContext";
 import { ProjectProvider, useProjects } from "../contexts/ProjectContext";
 import { DashboardChatProvider } from "../contexts/DashboardChatContext";
+import { AiAssistantExploreBridgeProvider } from "../contexts/AiAssistantExploreBridgeContext";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { findOotbDashboardById, ootbCategories } from "../data/ootb-dashboards";
@@ -15,6 +16,14 @@ import { HeaderActionsSlotContext } from "../contexts/HeaderActionsSlotContext";
 import { Toaster } from "./ui/sonner";
 import { KeyboardShortcutProvider, useKeyboardShortcut } from "../hooks/useKeyboardShortcuts";
 import { PortalContainerContext } from "../contexts/PortalContainerContext";
+import { CreateAIAgentJobsProvider } from "../contexts/CreateAIAgentJobsContext";
+import { CreateAIAgentJobsLayer } from "./CreateAIAgentJobsLayer";
+import { DashboardChatPanel } from "./DashboardChatPanel";
+import { resolveAiAssistantRouteContext } from "../lib/resolve-ai-assistant-route-context";
+import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
+
+const AI_ASSISTANT_OPEN_STORAGE_KEY = "ai-assistant-panel-open";
+const WIDGET_AI_MESSAGE_SENT_EVENT = "widget-ai-message-sent";
 
 /** Inner layout — safely consumes all providers mounted by the outer RootLayout wrapper. */
 function RootLayoutInner() {
@@ -27,6 +36,67 @@ function RootLayoutInner() {
   const navigate = useNavigate();
   const { conversations } = useConversations();
   const { projects, standaloneDashboards } = useProjects();
+
+  /** Explore hero only — AI panel is collapsed/disabled here; conversation URLs use the global panel. */
+  const isExploreHome = location.pathname === "/";
+
+  const [aiAssistantOpen, setAiAssistantOpenState] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return window.sessionStorage.getItem(AI_ASSISTANT_OPEN_STORAGE_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+
+  const setAiAssistantOpen = useCallback((open: boolean) => {
+    setAiAssistantOpenState(open);
+    try {
+      window.sessionStorage.setItem(AI_ASSISTANT_OPEN_STORAGE_KEY, open ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isExploreHome) {
+      setAiAssistantOpenState(false);
+      try {
+        window.sessionStorage.setItem(AI_ASSISTANT_OPEN_STORAGE_KEY, "0");
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [isExploreHome]);
+
+  // Open the assistant automatically when viewing an Explore conversation thread.
+  useEffect(() => {
+    if (location.pathname.startsWith("/conversation/")) {
+      setAiAssistantOpen(true);
+    }
+  }, [location.pathname, setAiAssistantOpen]);
+
+  // When a widget sends a prompt, ensure the global assistant panel is open.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      if (isExploreHome) return;
+      const detail = (e as CustomEvent<{ persistKey?: string }>).detail;
+      if (detail?.persistKey && detail.persistKey !== GLOBAL_AI_ASSISTANT_KEY) return;
+      setAiAssistantOpen(true);
+    };
+
+    window.addEventListener(WIDGET_AI_MESSAGE_SENT_EVENT, handler as EventListener);
+    return () => window.removeEventListener(WIDGET_AI_MESSAGE_SENT_EVENT, handler as EventListener);
+  }, [isExploreHome, setAiAssistantOpen]);
+
+  const aiRouteContext = useMemo(
+    () =>
+      resolveAiAssistantRouteContext(location.pathname, params, {
+        projects,
+        standaloneDashboards,
+      }),
+    [location.pathname, params, projects, standaloneDashboards],
+  );
 
   // Navigate to Explore on "E" key — registered via central shortcut registry.
   // Disabled when the search overlay is open so single-key shortcuts don't
@@ -103,11 +173,11 @@ function RootLayoutInner() {
       return [];
     }
 
-    // All Conversations page (sub of Explore)
+    // Draft Insights list (sub of Explore)
     if (location.pathname === "/conversations") {
       return [
         { label: "Explore", href: "/" },
-        { label: "All Conversations" },
+        { label: "Draft Insights" },
       ];
     }
 
@@ -216,6 +286,9 @@ function RootLayoutInner() {
                 onSearchClick={() => setSearchOpen(true)}
                 breadcrumbs={breadcrumbs}
                 onActionsSlotRef={setHeaderActionsSlot}
+                aiAssistantOpen={aiAssistantOpen}
+                onAiAssistantOpenChange={setAiAssistantOpen}
+                aiAssistantDisabled={isExploreHome}
               />
               <div data-panel-container className="flex flex-1 min-w-0 min-h-0">
                 <div className="flex-1 flex flex-col min-w-0" style={{ minWidth: "min(420px, 100%)" }}>
@@ -227,8 +300,17 @@ function RootLayoutInner() {
                     </div>
                   </main>
                 </div>
-                {/* Portal target for chat panels — pages render into this via createPortal */}
-                <div ref={setChatPanelSlot} className="min-w-0" />
+                {/* Global AI assistant mount; Explore hero (`/`) omits the panel */}
+                <div ref={setChatPanelSlot} className="min-w-0 flex shrink-0">
+                  {!isExploreHome ? (
+                    <div className={aiAssistantOpen ? "" : "hidden"}>
+                      <DashboardChatPanel
+                        dashboardId={aiRouteContext.dashboardId}
+                        sourceOotbId={aiRouteContext.sourceOotbId}
+                      />
+                    </div>
+                  ) : null}
+                </div>
               </div>
             </div>
           </div>
@@ -243,6 +325,7 @@ function RootLayoutInner() {
           id="radix-portal-root"
           className="fixed inset-0 pointer-events-none overflow-visible z-[9999] [&>*]:pointer-events-auto"
         />
+        <CreateAIAgentJobsLayer />
       </HeaderActionsSlotContext.Provider>
     </ChatPanelSlotContext.Provider>
     </PortalContainerContext.Provider>
@@ -257,9 +340,13 @@ export function RootLayout() {
       <ConversationProvider>
         <ProjectProvider>
           <DashboardChatProvider>
-            <DndProvider backend={HTML5Backend}>
-              <RootLayoutInner />
-            </DndProvider>
+            <AiAssistantExploreBridgeProvider>
+              <DndProvider backend={HTML5Backend}>
+                <CreateAIAgentJobsProvider>
+                  <RootLayoutInner />
+                </CreateAIAgentJobsProvider>
+              </DndProvider>
+            </AiAssistantExploreBridgeProvider>
           </DashboardChatProvider>
         </ProjectProvider>
       </ConversationProvider>

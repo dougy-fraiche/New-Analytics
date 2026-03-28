@@ -98,10 +98,14 @@ export function ChatInputBar({
 
   return (
     <div
-      className={`relative mx-auto w-full max-w-[50rem] rounded-3xl border bg-card text-card-foreground shadow-sm transition-shadow focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/20`}
+      className={`relative mx-auto w-full max-w-[50rem] rounded-3xl border bg-card text-card-foreground transition-shadow focus-within:border-ring ${
+        isHero
+          ? "explore-chat-input-elevated"
+          : "shadow-sm focus-within:ring-[3px] focus-within:ring-ring/20"
+      }`}
     >
-      <div className={`${isHero ? "w-full px-5 pt-4 pb-3" : "w-full px-4 pt-3 pb-2"}`}>
-        <div className={`${isHero ? "space-y-3" : "space-y-2"}`}>
+      <div className="w-full p-4">
+        <div className="space-y-4">
           <div className="flex items-start gap-3">
             <div className="flex-1 min-w-0">
               <Textarea
@@ -169,18 +173,22 @@ export function ChatInputBar({
                 onValueChange={(value) => {
                   if (value === "fast" || value === "deep") setResearchMode(value);
                 }}
-                variant="outline"
-                className="w-auto shrink-0 data-[variant=outline]:shadow-none"
+                variant="default"
+                className="w-auto shrink-0 gap-2 rounded-none bg-transparent"
                 aria-label="Explore mode"
               >
-                <ToggleGroupItem value="fast" aria-label="Fast mode" className="h-9 !flex-none gap-1.5 px-3 py-1">
+                <ToggleGroupItem
+                  value="fast"
+                  aria-label="Fast mode"
+                  className="h-9 !flex-none gap-1.5 rounded-md px-3 py-1 first:rounded-md last:rounded-md"
+                >
                   <Zap className="h-3.5 w-3.5" />
                   Fast
                 </ToggleGroupItem>
                 <ToggleGroupItem
                   value="deep"
                   aria-label="Deep research mode"
-                  className="h-9 !flex-none gap-1.5 px-3 py-1"
+                  className="h-9 !flex-none gap-1.5 rounded-md px-3 py-1 first:rounded-md last:rounded-md"
                 >
                   <Telescope className="h-3.5 w-3.5" />
                   Deep Research
@@ -199,16 +207,14 @@ export function ChatInputBar({
                 }}
               >
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-[170px] shrink-0 justify-between" aria-label="Date range">
-                    <span className="inline-flex min-w-0 items-center gap-2">
-                      <CalendarDays className="h-4 w-4 shrink-0" />
-                      <span className="truncate">
-                        {dateRange === "custom-range"
-                          ? formatCustomRange(customRange)
-                          : DATE_RANGE_LABELS[dateRange]}
-                      </span>
+                  <Button variant="ghost" className="h-9 w-fit max-w-full gap-2 px-3" aria-label="Date range">
+                    <CalendarDays className="h-4 w-4 shrink-0" />
+                    <span className="min-w-0 max-w-[18rem] truncate">
+                      {dateRange === "custom-range"
+                        ? formatCustomRange(customRange)
+                        : DATE_RANGE_LABELS[dateRange]}
                     </span>
-                    <ChevronDown className="h-4 w-4 opacity-60" />
+                    <ChevronDown className="h-4 w-4 shrink-0 opacity-60" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent

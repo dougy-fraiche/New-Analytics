@@ -1,14 +1,20 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useState } from "react";
 
 export function useContainerBreakpoint<T extends HTMLElement>(
   breakpointPx: number,
 ) {
-  const ref = useRef<T | null>(null);
+  const [node, setNode] = useState<T | null>(null);
   const [isBelowBreakpoint, setIsBelowBreakpoint] = useState(false);
 
-  useEffect(() => {
-    const node = ref.current;
-    if (!node) return;
+  const ref = useCallback((el: T | null) => {
+    setNode(el);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!node) {
+      setIsBelowBreakpoint(false);
+      return;
+    }
 
     const update = () => {
       setIsBelowBreakpoint(node.clientWidth < breakpointPx);
@@ -20,7 +26,7 @@ export function useContainerBreakpoint<T extends HTMLElement>(
     observer.observe(node);
 
     return () => observer.disconnect();
-  }, [breakpointPx]);
+  }, [node, breakpointPx]);
 
   return { ref, isBelowBreakpoint };
 }

@@ -373,15 +373,15 @@ export function WidgetAIPromptButton({
                 <Button
                   ref={triggerRef}
                   variant="ghost"
-                  size="icon"
+                  size="icon-xs"
                   className={cn(
-                    "h-7 w-7 rounded-md text-muted-foreground hover:text-primary transition-colors",
+                    "shrink-0 text-muted-foreground transition-colors hover:text-primary",
                     triggerClassName,
                   )}
                   aria-expanded={radixPopoverOpen || isKpiPortal}
                   aria-haspopup="dialog"
                 >
-                  <Sparkles className="h-3.5 w-3.5" />
+                  <Sparkles className="shrink-0" />
                 </Button>
               </PopoverTrigger>
             </span>

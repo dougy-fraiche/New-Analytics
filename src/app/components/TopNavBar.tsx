@@ -2,22 +2,11 @@ import {
   PanelLeft,
   Sun,
   Moon,
-  Bell,
-  HelpCircle,
   Search,
-  MessageSquarePlus,
+  Sparkles,
 } from "lucide-react";
 import { Link } from "react-router";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
 import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
 import { useTheme } from "next-themes";
 import { useSidebar } from "./ui/sidebar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
@@ -34,10 +23,20 @@ interface TopNavBarProps {
   onSearchClick?: () => void;
   breadcrumbs?: Array<{ label: string; href?: string }>;
   onActionsSlotRef?: (el: HTMLDivElement | null) => void;
+  aiAssistantOpen?: boolean;
+  onAiAssistantOpenChange?: (open: boolean) => void;
+  /** When true (e.g. Explore routes), hide toggle / show disabled control */
+  aiAssistantDisabled?: boolean;
 }
 
-export function TopNavBar({ onSearchClick, breadcrumbs = [], onActionsSlotRef }: TopNavBarProps) {
-  const unreadNotifications = 3;
+export function TopNavBar({
+  onSearchClick,
+  breadcrumbs = [],
+  onActionsSlotRef,
+  aiAssistantOpen = false,
+  onAiAssistantOpenChange,
+  aiAssistantDisabled = false,
+}: TopNavBarProps) {
   const { theme, setTheme } = useTheme();
   const { state: sidebarState, toggleSidebar } = useSidebar();
   const isCollapsed = sidebarState === "collapsed";
@@ -135,115 +134,33 @@ export function TopNavBar({ onSearchClick, breadcrumbs = [], onActionsSlotRef }:
           <TooltipContent side="bottom">{theme === "dark" ? "Light mode" : "Dark mode"}</TooltipContent>
         </Tooltip>
 
-        {/* Help Button */}
-        <DropdownMenu>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="inline-flex">
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="size-8">
-                    <HelpCircle className="h-4 w-4" />
-                    <span className="sr-only">Help</span>
-                  </Button>
-                </DropdownMenuTrigger>
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">Help</TooltipContent>
-          </Tooltip>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Help & Support</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <Search className="mr-2 h-4 w-4" />
-              <span>Search Help Articles</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <MessageSquarePlus className="mr-2 h-4 w-4" />
-              <span>Contact Support</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <span>Documentation</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <span>Keyboard Shortcuts</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <span>What's New</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* Notification Bell */}
-        <DropdownMenu>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="inline-flex">
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="size-8 relative">
-                    <Bell className="h-4 w-4" />
-                    {unreadNotifications > 0 && (
-                      <Badge
-                        variant="destructive"
-                        className="absolute -top-0.5 -right-0.5 h-4 min-w-4 flex items-center justify-center p-0 text-[10px]"
-                      >
-                        {unreadNotifications}
-                      </Badge>
-                    )}
-                    <span className="sr-only">Notifications</span>
-                  </Button>
-                </DropdownMenuTrigger>
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">Notifications</TooltipContent>
-          </Tooltip>
-          <DropdownMenuContent align="end" className="w-80">
-            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <div className="max-h-96 overflow-y-auto">
-              <DropdownMenuItem className="flex flex-col items-start py-3 cursor-pointer">
-                <div className="flex items-start gap-2 w-full">
-                  <div className="h-2 w-2 bg-primary rounded-full mt-1.5 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm" style={{ fontWeight: 500 }}>New recommended action available</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Deploy Account Verification AI Agent - High Priority
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">2 minutes ago</p>
-                  </div>
-                </div>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex flex-col items-start py-3 cursor-pointer">
-                <div className="flex items-start gap-2 w-full">
-                  <div className="h-2 w-2 bg-primary rounded-full mt-1.5 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm" style={{ fontWeight: 500 }}>Dashboard saved successfully</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Custom Support Analytics Dashboard saved to Q1 Analytics
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">1 hour ago</p>
-                  </div>
-                </div>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex flex-col items-start py-3 cursor-pointer">
-                <div className="flex items-start gap-2 w-full">
-                  <div className="h-2 w-2 bg-muted-foreground/40 rounded-full mt-1.5 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm" style={{ fontWeight: 500 }}>Escalation rate alert</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Escalation rate increased by 8% in the last 7 days
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">3 hours ago</p>
-                  </div>
-                </div>
-              </DropdownMenuItem>
-            </div>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="justify-center text-sm text-primary">
-              View all notifications
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* Global AI Assistant toggle (single thread — not used on Explore) */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-flex">
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`size-8 ${aiAssistantOpen ? "bg-accent text-accent-foreground" : ""}`}
+                disabled={aiAssistantDisabled}
+                aria-pressed={aiAssistantOpen}
+                onClick={() => onAiAssistantOpenChange?.(!aiAssistantOpen)}
+              >
+                <Sparkles className="h-4 w-4" />
+                <span className="sr-only">
+                  {aiAssistantDisabled ? "AI assistant — not available on Explore" : aiAssistantOpen ? "Close AI assistant" : "Open AI assistant"}
+                </span>
+              </Button>
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {aiAssistantDisabled
+              ? "AI assistant is available on dashboard pages — use Explore chat here"
+              : aiAssistantOpen
+                ? "AI assistant open"
+                : "AI assistant closed"}
+          </TooltipContent>
+        </Tooltip>
       </div>
     </header>
   );

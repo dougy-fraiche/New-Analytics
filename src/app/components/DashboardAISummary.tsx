@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, type ReactNode } from "react";
 import {
   Zap,
   BellOff,
@@ -8,12 +8,12 @@ import {
   MoreVertical,
   RefreshCw,
   Copy,
-  ArrowRight,
+  ChevronDown,
 } from "lucide-react";
-import { Link } from "react-router";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
-import { Checkbox } from "./ui/checkbox";
+import { Skeleton } from "./ui/skeleton";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -30,6 +30,34 @@ import {
 import { RecommendedActionSheet } from "./RecommendedActionSheet";
 import type { DashboardData } from "../contexts/ConversationContext";
 import { WidgetAIPromptButton } from "./WidgetAIPromptButton";
+import { cn } from "./ui/utils";
+import { useContainerBreakpoint } from "../hooks/useContainerBreakpoint";
+
+/** Matches `DashboardChartGrid` / `ChartVariants` `stackedBelowWidth` (768). */
+const RECOMMENDED_ACTIONS_STACK_BELOW_PX = 768;
+
+// ── AI Insights panel open state (expand/collapse in summary card) ──
+
+const AI_INSIGHTS_OPEN_KEY = "ai-insights-panel-open";
+
+function readInsightsPanelOpen(fallback: boolean): boolean {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = window.localStorage.getItem(AI_INSIGHTS_OPEN_KEY);
+    if (raw === null) return fallback;
+    return raw === "true";
+  } catch {
+    return fallback;
+  }
+}
+
+function writeInsightsPanelOpen(open: boolean) {
+  try {
+    window.localStorage.setItem(AI_INSIGHTS_OPEN_KEY, String(open));
+  } catch {
+    /* ignore quota / private mode */
+  }
+}
 
 // ── localStorage helpers for dismissed actions ──
 
@@ -143,6 +171,29 @@ function getPurposeTitle(action: RecommendedAction): string {
   if (impact.includes("handle time")) return `Reduce handle time for ${action.affectedIntent}`;
   if (impact.includes("transfer")) return `Reduce transfers for ${action.affectedIntent}`;
   return `Improve ${action.affectedIntent}`;
+}
+
+function buildActionCardParagraph(action: RecommendedAction): string {
+  const type = action.type.toLowerCase();
+  const base = `${getPurposeTitle(action)} by implementing ${action.title.toLowerCase()}. ${action.description}`;
+
+  let contextTail =
+    " This keeps execution focused on measurable customer outcomes and faster, more consistent resolution.";
+
+  if (type.includes("ai")) {
+    contextTail =
+      " This gives agents and customers faster answers with consistent policy handling and fewer avoidable escalations.";
+  } else if (type.includes("tool")) {
+    contextTail =
+      " This equips teams with stronger in-workflow tooling so repeat requests are resolved quickly and reliably at scale.";
+  } else if (type.includes("process")) {
+    contextTail =
+      " This streamlines the workflow so handoffs are reduced and resolution quality remains consistent across teams.";
+  }
+
+  const combined = `${base}${contextTail}`.replace(/\s+/g, " ").trim();
+  // Keep card copy concise; UI enforces max three visible lines.
+  return combined.length > 240 ? `${combined.slice(0, 237).trimEnd()}...` : combined;
 }
 
 const GLOBAL_SUGGESTED_ACTION_POOL: RecommendedAction[] = (() => {
@@ -488,71 +539,6 @@ function generateFallbackSummary(dashboard: DashboardData): AISummaryData {
   };
 }
 
-// ── Skeleton loading shimmer ──
-
-function AISummarySkeleton() {
-  return (
-    <div className="space-y-5 animate-pulse">
-      <div className="flex items-center gap-2">
-        <Sparkles className="h-3.5 w-3.5 text-primary/40" />
-        <div className="h-3.5 bg-muted rounded w-32" />
-      </div>
-
-      {/* Summary paragraph */}
-      <div className="space-y-2.5">
-        <div className="h-3.5 bg-muted rounded w-full" />
-        <div className="h-3.5 bg-muted rounded w-[96%]" />
-        <div className="h-3.5 bg-muted rounded w-[82%]" />
-      </div>
-
-      {/* Bullet points */}
-      <div className="space-y-3">
-        {[93, 88, 91, 84].map((w, i) => (
-          <div key={i} className="flex items-start gap-2.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-muted shrink-0" />
-            <div className="h-3.5 bg-muted rounded mt-0.5" style={{ width: `${w}%` }} />
-          </div>
-        ))}
-      </div>
-
-      {/* Recommended actions section */}
-      <div className="space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <div className="h-4 w-4 rounded bg-muted" />
-            <div className="h-3.5 bg-muted rounded w-36" />
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="h-8 bg-muted rounded-md w-20" />
-            <div className="h-8 bg-muted rounded-md w-24" />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className="flex min-h-[150px] flex-col gap-2 rounded-xl border border-primary/20 bg-primary/[0.03] p-4"
-            >
-              <div className="flex gap-2">
-                <div className="mt-0.5 size-4 shrink-0 rounded bg-muted" />
-                <div className="min-w-0 flex-1 space-y-2.5">
-                  <div className="h-4 bg-muted rounded w-[88%]" />
-                  <div className="h-5 bg-muted rounded w-28" />
-                  <div className="h-3.5 bg-muted rounded w-full" />
-                  <div className="h-3.5 bg-muted rounded w-[94%]" />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="flex justify-end pt-1">
-          <div className="h-4 w-48 rounded bg-muted" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── Main component ──
 
 interface DashboardAISummaryProps {
@@ -561,39 +547,51 @@ interface DashboardAISummaryProps {
   dashboardData?: DashboardData;
   /** Hide the top "AI Insights" row when used inside another section header */
   hideSectionHeader?: boolean;
+  /**
+   * When true, the summary card shows an Expand/Collapse AI Insights bar (persisted).
+   * Defaults to the same value as hideSectionHeader when omitted.
+   */
+  insightsCollapsible?: boolean;
+  /** Initial open state when no value is stored (see insightsCollapsible) */
+  defaultInsightsOpen?: boolean;
+  /** Optional override for the recommended-actions block title */
+  recommendedActionsTitle?: string;
+  /** Hide the dismiss-all button in the recommended-actions block */
+  hideDismissAll?: boolean;
+  /** Optional custom content to render in place of suggested action cards */
+  recommendedActionsContent?: ReactNode;
 }
 
-export function DashboardAISummary({ dashboardId, dashboardData, hideSectionHeader = false }: DashboardAISummaryProps) {
+export function DashboardAISummary({
+  dashboardId,
+  dashboardData,
+  hideSectionHeader = false,
+  insightsCollapsible: insightsCollapsibleProp,
+  defaultInsightsOpen = false,
+  recommendedActionsTitle = "Recommended actions",
+  hideDismissAll = false,
+  recommendedActionsContent,
+}: DashboardAISummaryProps) {
+  const insightsCollapsible = insightsCollapsibleProp ?? hideSectionHeader;
+  const [insightsOpen, setInsightsOpen] = useState(() =>
+    insightsCollapsible ? readInsightsPanelOpen(defaultInsightsOpen) : true
+  );
+  const handleInsightsOpenChange = useCallback((next: boolean) => {
+    setInsightsOpen(next);
+    writeInsightsPanelOpen(next);
+  }, []);
+
   const data = dashboardSummaries[dashboardId] ?? (dashboardData ? generateFallbackSummary(dashboardData) : null);
   const [sheetAction, setSheetAction] = useState<RecommendedAction | null>(null);
   const [actionDismissed, setActionDismissed] = useState(() => isActionDismissed(dashboardId));
   const [dismissedActionIds, setDismissedActionIds] = useState<Set<number>>(() =>
     getDismissedActionIdsForDashboard(dashboardId)
   );
-  const [selectedRecommendedIds, setSelectedRecommendedIds] = useState<Set<number>>(() => new Set());
   const [relativeTime, setRelativeTime] = useState("");
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Simulated AI generation loading
-  const [generating, setGenerating] = useState(false);
-  const hasGeneratedRef = useRef<Record<string, boolean>>({});
-
-  useEffect(() => {
-    // Ensure we never leave the skeleton stuck visible when switching dashboards.
-    if (!data) {
-      setGenerating(false);
-      return;
-    }
-    if (hasGeneratedRef.current[dashboardId]) {
-      setGenerating(false);
-      return;
-    }
-    hasGeneratedRef.current[dashboardId] = true;
-    setGenerating(true);
-    const timer = setTimeout(() => {
-      setGenerating(false);
-    }, 1200 + Math.random() * 800);
-    return () => clearTimeout(timer);
-  }, [dashboardId, data]);
+  const { ref: recommendedActionsGridRef, isBelowBreakpoint: stackRecommendedActionCards } =
+    useContainerBreakpoint<HTMLDivElement>(RECOMMENDED_ACTIONS_STACK_BELOW_PX);
 
   // Live-updating relative timestamp
   useEffect(() => {
@@ -610,13 +608,11 @@ export function DashboardAISummary({ dashboardId, dashboardData, hideSectionHead
   useEffect(() => {
     setActionDismissed(isActionDismissed(dashboardId));
     setDismissedActionIds(getDismissedActionIdsForDashboard(dashboardId));
-    setSelectedRecommendedIds(new Set());
   }, [dashboardId]);
 
   const handleDismissAction = useCallback(() => {
     dismissAction(dashboardId);
     setActionDismissed(true);
-    setSelectedRecommendedIds(new Set());
     const linkedAction = recommendedActionsData.find(
       (a) => a.id === data?.linkedActionId
     );
@@ -638,11 +634,6 @@ export function DashboardAISummary({ dashboardId, dashboardData, hideSectionHead
     (action: RecommendedAction) => {
       dismissSingleActionId(dashboardId, action.id);
       setDismissedActionIds((prev) => new Set([...prev, action.id]));
-      setSelectedRecommendedIds((prev) => {
-        const next = new Set(prev);
-        next.delete(action.id);
-        return next;
-      });
       toast.success("Action dismissed", {
         description: `"${action.title}" has been dismissed.`,
         action: {
@@ -662,21 +653,34 @@ export function DashboardAISummary({ dashboardId, dashboardData, hideSectionHead
   );
 
   const handleRegenerate = useCallback(() => {
+    if (insightsCollapsible) {
+      handleInsightsOpenChange(true);
+    }
+
+    // Show a quick loading state to mimic regeneration latency.
+    setIsRefreshing(true);
+
     // Reset the generation timestamp
     const map = getGenTimestamps();
     map[dashboardId] = Date.now();
     localStorage.setItem(GEN_TS_KEY, JSON.stringify(map));
     setRelativeTime(formatRelativeTime(Date.now()));
 
-    // Re-trigger loading animation
-    setGenerating(true);
-    setTimeout(() => {
-      setGenerating(false);
+    // Reset dismissed recommended actions for this dashboard.
+    undismissAction(dashboardId);
+    setActionDismissed(false);
+    const perActionMap = getPerActionDismissedMap();
+    delete perActionMap[dashboardId];
+    localStorage.setItem(PER_ACTION_DISMISSED_KEY, JSON.stringify(perActionMap));
+    setDismissedActionIds(new Set());
+
+    window.setTimeout(() => {
+      setIsRefreshing(false);
       toast.success("Summary regenerated", {
         description: "AI summary has been refreshed with the latest data.",
       });
-    }, 1200 + Math.random() * 800);
-  }, [dashboardId]);
+    }, 650);
+  }, [dashboardId, insightsCollapsible, handleInsightsOpenChange]);
 
   const handleCopyInsights = useCallback(() => {
     if (!data) return;
@@ -697,6 +701,16 @@ export function DashboardAISummary({ dashboardId, dashboardData, hideSectionHead
 
   if (!data) return null;
 
+  const showMetaOnGeneratedRowOnly = hideSectionHeader && !insightsCollapsible;
+  const generatedTimestampBadge =
+    relativeTime ? (
+      <Badge variant="secondary" className="shrink-0 gap-1.5 text-muted-foreground">
+        <Clock className="h-3 w-3 shrink-0" aria-hidden />
+        Generated {relativeTime}
+      </Badge>
+    ) : null;
+
+  const insightsPanelId = `ai-insights-panel-content-${dashboardId}`;
   const seed = hashStringToPositiveInt(dashboardId);
   const pool = GLOBAL_SUGGESTED_ACTION_POOL.length ? GLOBAL_SUGGESTED_ACTION_POOL : recommendedActionsData.slice(0, 3);
   const optionCount = Math.max(1, Math.min(1 + (seed % 3), pool.length));
@@ -705,23 +719,36 @@ export function DashboardAISummary({ dashboardId, dashboardData, hideSectionHead
     ? Array.from({ length: optionCount }, (_, i) => pool[(startIdx + i) % pool.length])
     : [];
   const visibleSuggestedActions = suggestedActions.filter((a) => !dismissedActionIds.has(a.id));
+  const suggestedActionGridCount = visibleSuggestedActions.length;
+  const recommendedActionsGridClass = cn(
+    "grid w-full min-w-0 items-stretch gap-4",
+    stackRecommendedActionCards || suggestedActionGridCount <= 1
+      ? "grid-cols-1"
+      : suggestedActionGridCount === 2
+        ? "grid-cols-2"
+        : "grid-cols-3",
+  );
+  const recommendedActionsSkeletonGridClass = cn(
+    "grid w-full min-w-0 items-stretch gap-4",
+    stackRecommendedActionCards ? "grid-cols-1" : "grid-cols-2",
+  );
 
   return (
     <>
       <div className="space-y-3">
         {!hideSectionHeader && (
           <div className="flex items-center gap-3">
-            <h2 className="tracking-tight flex-1">AI Insights</h2>
-            <div className="flex items-center gap-2">
+            <h3 className="flex-1 tracking-tight">AI Insights</h3>
+            <div className="flex shrink-0 items-center gap-2">
+              {generatedTimestampBadge}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
+                    size="icon-xs"
                     onClick={handleRegenerate}
                   >
-                    <RefreshCw className="h-4 w-4" />
+                    <RefreshCw />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">Refresh summary</TooltipContent>
@@ -750,157 +777,258 @@ export function DashboardAISummary({ dashboardId, dashboardData, hideSectionHead
           </div>
         )}
 
-        <div className="space-y-5 px-1 pb-1">
-          {relativeTime && (
-            <div className="flex items-center justify-between gap-3">
-              <div className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
-                <List className="h-4 w-4 text-primary" />
-                Generated Summary
+        <Card className="group/widget mb-8 gap-0 shadow-none transition-[box-shadow,border-color] hover:border-primary/30 hover:shadow-md">
+          {insightsCollapsible ? (
+            <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 space-y-0 border-b border-border/60 p-4">
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 shrink-0"
+                      aria-expanded={insightsOpen}
+                      aria-controls={insightsPanelId}
+                      aria-label={insightsOpen ? "Collapse AI insights" : "Expand AI insights"}
+                      onClick={() => handleInsightsOpenChange(!insightsOpen)}
+                    >
+                      <ChevronDown
+                        className={cn(
+                          "h-4 w-4 text-muted-foreground transition-transform",
+                          insightsOpen && "rotate-180"
+                        )}
+                        aria-hidden
+                      />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    {insightsOpen ? "Hide AI insights" : "Show AI insights"}
+                  </TooltipContent>
+                </Tooltip>
+                <CardTitle className="inline-flex min-w-0 flex-1 items-center gap-2 text-base font-medium">
+                  <Sparkles className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+                  AI Insights
+                </CardTitle>
               </div>
-              <Badge variant="secondary" className="text-muted-foreground gap-1">
-                <Clock className="h-3 w-3" />
-                Generated {relativeTime}
-              </Badge>
-            </div>
-          )}
-          {generating ? (
-            <AISummarySkeleton />
-          ) : (
-            <>
-              {/* Summary paragraph */}
-              <p className="text-sm text-foreground leading-relaxed">{data.summary}</p>
-
-              {/* Bullet points */}
-              <ul className="space-y-2.5">
-                {data.bullets.map((bullet) => (
-                  <li key={bullet.label} className="flex items-start gap-2.5 text-sm">
-                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                    <span>
-                      <span style={{ fontWeight: 500 }}>{bullet.label}</span>
-                      <span className="text-muted-foreground"> — {bullet.detail}</span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-
-              {/* Recommended Action — hidden when dismissed */}
-              {!actionDismissed && visibleSuggestedActions.length > 0 && (
-                <div className="flex flex-col gap-2">
+              <div className="flex shrink-0 items-center gap-2">
+                {generatedTimestampBadge}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={handleRegenerate}
+                    >
+                      <RefreshCw />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">Refresh summary</TooltipContent>
+                </Tooltip>
+              </div>
+            </CardHeader>
+          ) : null}
+          {insightsCollapsible && !insightsOpen ? null : (
+            <div
+              id={insightsCollapsible ? insightsPanelId : undefined}
+              className={insightsCollapsible ? "flex min-w-0 flex-col" : "contents"}
+            >
+              <CardContent className="space-y-6 pt-4">
+                <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="flex min-w-0 flex-1 items-center gap-2">
-                      <Zap className="h-4 w-4 shrink-0 text-amber-500" aria-hidden />
-                      <span className="text-sm font-medium text-foreground">Recommended actions</span>
+                      <List className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+                      <span className="text-sm font-medium text-foreground">Generated Summary</span>
                     </div>
-                    <div className="flex shrink-0 flex-wrap items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        className="h-8 rounded-md px-3 text-xs"
-                        onClick={() => {
-                          const ids = visibleSuggestedActions.map((a) => a.id);
-                          setSelectedRecommendedIds((prev) => {
-                            const all =
-                              ids.length > 0 && ids.every((id) => prev.has(id));
-                            return all ? new Set() : new Set(ids);
-                          });
-                        }}
-                      >
-                        Select All
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="h-8 gap-1.5 rounded-md border-primary/15 bg-muted/40 px-3 text-xs text-foreground hover:bg-muted/60"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDismissAction();
-                        }}
-                      >
-                        <BellOff className="h-3.5 w-3.5" />
-                        Dismiss all
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
-                    {visibleSuggestedActions.map((action) => (
-                      <div
-                        key={action.id}
-                        id={`ai-summary-action-${dashboardId}-${action.id}`}
-                        className="flex min-h-[150px] min-w-0 flex-col gap-2 rounded-xl border border-primary/40 bg-primary/[0.03] p-4 transition-colors hover:border-primary/55 hover:bg-primary/[0.05]"
-                      >
-                        <div className="flex min-h-0 flex-1 gap-2">
-                          <div
-                            className="pt-0.5"
-                            onClick={(e) => e.stopPropagation()}
-                            onPointerDown={(e) => e.stopPropagation()}
-                          >
-                            <Checkbox
-                              checked={selectedRecommendedIds.has(action.id)}
-                              onCheckedChange={() => {
-                                setSelectedRecommendedIds((prev) => {
-                                  const next = new Set(prev);
-                                  if (next.has(action.id)) next.delete(action.id);
-                                  else next.add(action.id);
-                                  return next;
-                                });
-                              }}
-                              aria-label={`Select ${action.title}`}
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            className="min-w-0 flex-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
-                            onClick={() => setSheetAction(action)}
-                          >
-                            <div className="flex flex-col gap-2.5">
-                              <span className="line-clamp-2 text-base font-normal leading-6 text-foreground">
-                                {action.title}
-                              </span>
-                              <Badge
-                                variant="outline"
-                                className="w-fit border-green-500/50 bg-emerald-50 px-2 py-0.5 text-xs font-normal text-emerald-800 dark:border-green-700 dark:bg-emerald-950/40 dark:text-emerald-300"
-                              >
-                                {action.impactValue}
-                              </Badge>
-                              <p className="text-sm leading-5 text-muted-foreground">{action.description}</p>
-                            </div>
-                          </button>
-                        </div>
-                        <div
-                          className="flex justify-end border-t border-transparent pt-1"
-                          onClick={(e) => e.stopPropagation()}
-                          onPointerDown={(e) => e.stopPropagation()}
-                        >
-                          <WidgetAIPromptButton
-                            widgetTitle={`Action: ${action.title}`}
-                            chartType="action"
-                            widgetAnchorId={`ai-summary-action-${dashboardId}-${action.id}`}
-                            tooltipLabel="Ask AI about this action"
-                            tooltipSide="bottom"
-                            triggerClassName="h-8 w-8"
-                          />
-                        </div>
+                    {showMetaOnGeneratedRowOnly ? (
+                      <div className="flex shrink-0 flex-wrap items-center gap-2">
+                        {generatedTimestampBadge}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-xs"
+                              onClick={handleRegenerate}
+                            >
+                              <RefreshCw />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">Refresh summary</TooltipContent>
+                        </Tooltip>
                       </div>
-                    ))}
+                    ) : null}
                   </div>
-
-                  <div className="flex justify-end pt-1">
-                    <Link
-                      to="/recommended-actions"
-                      className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-xs font-normal text-primary underline-offset-4 hover:underline"
+                  <div className="mt-4 flex min-h-0 items-stretch gap-2">
+                    <div
+                      className="flex w-4 shrink-0 justify-center self-stretch"
+                      aria-hidden
                     >
-                      See All Recommended actions
-                      <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
-                    </Link>
+                      <div className="h-full min-h-[2.5rem] w-px shrink-0 bg-sidebar-border" />
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-4">
+                  {isRefreshing ? (
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-[92%]" />
+                      <Skeleton className="h-4 w-[88%]" />
+                      <Skeleton className="h-4 w-[76%]" />
+                    </div>
+                  ) : (
+                    <p className="text-sm leading-relaxed text-foreground">{data.summary}</p>
+                  )}
+
+                  {isRefreshing ? (
+                    <div className="space-y-2.5">
+                      <Skeleton className="h-4 w-[86%]" />
+                      <Skeleton className="h-4 w-[82%]" />
+                      <Skeleton className="h-4 w-[78%]" />
+                      <Skeleton className="h-4 w-[74%]" />
+                    </div>
+                  ) : (
+                    <ul className="space-y-2.5">
+                      {data.bullets.map((bullet) => (
+                        <li key={bullet.label} className="relative pl-4 text-sm">
+                          <span className="absolute left-0 top-[0.55rem] h-1.5 w-1.5 rounded-full bg-primary" />
+                          <span>
+                            <span className="font-medium">{bullet.label}</span>
+                            <span className="text-muted-foreground"> — {bullet.detail}</span>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                    </div>
                   </div>
                 </div>
-              )}
-            </>
+
+                {(isRefreshing ||
+                  recommendedActionsContent ||
+                  (!actionDismissed && visibleSuggestedActions.length > 0)) && (
+                  <div
+                    ref={recommendedActionsGridRef}
+                    className="flex min-w-0 w-full flex-col gap-4"
+                  >
+                    {isRefreshing ? (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Skeleton className="h-4 w-40" />
+                        <Skeleton className="h-8 w-24 rounded-md" />
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex min-w-0 flex-1 items-center gap-2">
+                          <Zap className="h-4 w-4 shrink-0 text-amber-500" aria-hidden />
+                          <span className="text-sm font-medium text-foreground">
+                            {recommendedActionsTitle}
+                          </span>
+                        </div>
+                        {!hideDismissAll ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 shrink-0 gap-1.5 px-3 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDismissAction();
+                            }}
+                          >
+                            <BellOff className="h-3.5 w-3.5" />
+                            Dismiss all
+                          </Button>
+                        ) : null}
+                      </div>
+                    )}
+
+                    {isRefreshing ? (
+                      <div className={recommendedActionsSkeletonGridClass}>
+                        {Array.from({ length: 2 }).map((_, i) => (
+                          <div
+                            key={i}
+                            className="flex min-w-0 flex-col gap-2 rounded-xl border border-primary/30 bg-primary/[0.02] p-4 transition-[box-shadow,border-color] hover:border-primary/30 hover:shadow-md"
+                          >
+                            <div className="flex flex-col gap-2.5">
+                              <div className="flex items-start justify-between gap-2">
+                                <Skeleton className="h-5 w-[70%]" />
+                                <Skeleton className="h-8 w-8 rounded-md" />
+                              </div>
+                              <Skeleton className="h-5 w-24 rounded-md" />
+                              <Skeleton className="h-4 w-[92%]" />
+                              <Skeleton className="h-4 w-[84%]" />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : recommendedActionsContent ? (
+                      recommendedActionsContent
+                    ) : (
+                      <div className={recommendedActionsGridClass}>
+                          {visibleSuggestedActions.map((action) => (
+                            <div
+                              key={action.id}
+                              id={`ai-summary-action-${dashboardId}-${action.id}`}
+                              className="flex min-w-0 flex-col gap-2 rounded-xl border border-primary/40 bg-primary/[0.03] p-4 transition-[box-shadow,border-color,background-color] hover:border-primary/55 hover:bg-primary/[0.05] hover:shadow-md"
+                            >
+                              <button
+                                type="button"
+                                className="min-w-0 w-full rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                onClick={() => setSheetAction(action)}
+                              >
+                                <div className="flex flex-col gap-2.5">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <span className="line-clamp-2 text-base font-medium leading-6 text-foreground">
+                                        {action.title}
+                                      </span>
+                                      <div
+                                        className="flex shrink-0 items-center gap-1"
+                                        onClick={(e) => e.stopPropagation()}
+                                        onPointerDown={(e) => e.stopPropagation()}
+                                      >
+                                        <WidgetAIPromptButton
+                                          widgetTitle={`Action: ${action.title}`}
+                                          chartType="action"
+                                          widgetAnchorId={`ai-summary-action-${dashboardId}-${action.id}`}
+                                          tooltipLabel="Ask AI about this action"
+                                          tooltipSide="bottom"
+                                        />
+                                        <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon-xs">
+                                              <MoreVertical />
+                                            </Button>
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent align="end">
+                                            <DropdownMenuItem
+                                              onSelect={() => handleDismissSingleAction(action)}
+                                            >
+                                              <BellOff className="h-4 w-4" />
+                                              Dismiss action
+                                            </DropdownMenuItem>
+                                          </DropdownMenuContent>
+                                        </DropdownMenu>
+                                      </div>
+                                    </div>
+                                    <Badge
+                                      variant="outline"
+                                      className="w-fit border-green-500/50 bg-emerald-50 px-2 py-0.5 text-xs font-normal text-emerald-800 dark:border-green-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+                                    >
+                                      {action.impactValue}
+                                    </Badge>
+                                    <p className="line-clamp-3 text-sm font-normal leading-snug text-foreground/80">
+                                      {buildActionCardParagraph(action)}
+                                    </p>
+                                </div>
+                              </button>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </div>
           )}
-        </div>
+        </Card>
       </div>
 
       <RecommendedActionSheet
