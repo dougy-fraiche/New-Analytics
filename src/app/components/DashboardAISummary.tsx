@@ -834,7 +834,7 @@ export function DashboardAISummary({
               id={insightsCollapsible ? insightsPanelId : undefined}
               className={insightsCollapsible ? "flex min-w-0 flex-col" : "contents"}
             >
-              <CardContent className="space-y-6 pt-4">
+              <CardContent className="space-y-6 bg-muted/20 pt-4">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="flex min-w-0 flex-1 items-center gap-2">

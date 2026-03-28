@@ -1,4 +1,4 @@
-import { useState, type RefObject } from "react";
+import { useState, type LegacyRef, type RefObject } from "react";
 import {
   Plus,
   ArrowRight,
@@ -130,7 +130,7 @@ export function ChatInputBar({
                 }}
                 rows={1}
                 className={`min-h-9 max-h-40 overflow-y-auto border-0 focus-visible:ring-0 shadow-none px-1 py-2 ${isHero ? "text-base" : "text-sm"}`}
-                ref={inputRef}
+                ref={inputRef as LegacyRef<HTMLTextAreaElement>}
                 autoComplete="off"
               />
             </div>

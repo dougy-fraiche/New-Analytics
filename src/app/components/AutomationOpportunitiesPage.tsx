@@ -60,6 +60,14 @@ import { cn } from "./ui/utils";
 
 const DASHBOARD_ID = "automation-opportunities";
 
+/** Matches dashboard KPI / chart widget cards (DashboardPage, ChartVariants). */
+const AUTOMATION_CARD_HOVER =
+  "group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30";
+
+/** Match overflow trigger (`h-9 w-9`, `size-4` icon). */
+const AUTOMATION_ASK_AI_TRIGGER_CLASS =
+  "size-9 rounded-md [&_svg:not([class*='size-'])]:size-4";
+
 const DEFAULT_FILTERS = {
   dateRange: "last-7-days",
   team: "all",
@@ -101,7 +109,7 @@ function AnalyzedPeriodSection({
       {showStatGrid ? (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
           {stats.map((stat) => (
-            <Card key={stat.label}>
+            <Card key={stat.label} className={cn(AUTOMATION_CARD_HOVER)}>
               <CardContent className="space-y-1.5 p-4">
                 <p className="text-sm text-muted-foreground">{stat.label}</p>
                 <p className="text-xl font-semibold tracking-tight tabular-nums">{stat.value}</p>
@@ -248,40 +256,36 @@ function TopicRow({
   const canExpand = (topic.subTopics && topic.subTopics.length > 0) || !!topic.bars || !!topic.secondaryCta;
   return (
     <div className={isFirst ? "" : "border-t"}>
-      <div className="flex items-start gap-3 px-4 py-3">
+      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] gap-x-3 gap-y-3 px-4 py-3">
         <button
           type="button"
-          className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-md hover:bg-muted disabled:opacity-50"
+          className="row-span-2 mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center self-start rounded-md hover:bg-muted disabled:opacity-50"
           onClick={onToggle}
           disabled={!canExpand}
           aria-label={open ? "Collapse" : "Expand"}
         >
           <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
         </button>
-        <div className="min-w-0 flex-1">
-          <div>
-            <div className="text-sm font-medium">{topic.title}</div>
-            {topic.subtitle ? (
-              <div className="mt-0.5 text-xs text-muted-foreground">{topic.subtitle}</div>
-            ) : null}
-          </div>
-          <div className="mt-3">
-            <MetricStrip
-              metrics={topic.metrics}
-              rightSlot={
-                <div className="flex items-center gap-2">
-                  {rightSlot}
-                  <CreateAIAgentPopoverButton sourceKey={agentSourceKey} scopeTitle={agentScopeTitle} />
-                </div>
-              }
-            />
-          </div>
+        <div className="col-start-2 row-start-1 min-w-0">
+          <div className="text-sm font-medium">{topic.title}</div>
+          {topic.subtitle ? (
+            <div className="mt-0.5 text-xs text-muted-foreground">{topic.subtitle}</div>
+          ) : null}
         </div>
-        <div className="shrink-0">
+        <div className="col-start-3 row-start-1 flex justify-end">
           <OverflowActionsMenu
             categoryTitle={categoryTitle}
             onOpenSampleInteractions={onOpenSampleInteractions}
           />
+        </div>
+        <div className="col-start-2 row-start-2 min-w-0">
+          <MetricStrip metrics={topic.metrics} />
+        </div>
+        <div className="col-start-3 row-start-2 flex justify-end self-center">
+          <div className="flex items-center gap-2">
+            {rightSlot}
+            <CreateAIAgentPopoverButton sourceKey={agentSourceKey} scopeTitle={agentScopeTitle} />
+          </div>
         </div>
       </div>
 
@@ -387,17 +391,25 @@ function AutomationTopicsTabTopicCard({
 }) {
   const canExpand = !!row.bars;
   return (
-    <Card>
+    <Card className={cn(AUTOMATION_CARD_HOVER)}>
       <CardHeader>
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
             <CardTitle className="text-lg font-medium tracking-tight">{row.title}</CardTitle>
             <CardDescription className="mt-1.5 text-sm leading-relaxed">{row.description}</CardDescription>
           </div>
-          <OverflowActionsMenu
-            categoryTitle={row.sampleInteractionsLabel}
-            onOpenSampleInteractions={onOpenSampleInteractions}
-          />
+          <div className="flex shrink-0 items-center gap-1">
+            <WidgetAIPromptButton
+              widgetTitle={row.title}
+              chartType="bar"
+              tooltipLabel="Ask AI about this opportunity"
+              triggerClassName={AUTOMATION_ASK_AI_TRIGGER_CLASS}
+            />
+            <OverflowActionsMenu
+              categoryTitle={row.sampleInteractionsLabel}
+              onOpenSampleInteractions={onOpenSampleInteractions}
+            />
+          </div>
         </div>
       </CardHeader>
 
@@ -460,17 +472,25 @@ function TopOpportunityCard({
   onOpenSampleInteractions: (categoryTitle: string) => void;
 }) {
   return (
-    <Card>
+    <Card className={cn(AUTOMATION_CARD_HOVER)}>
       <CardHeader>
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
             <CardTitle className="text-lg font-medium tracking-tight">{category.title}</CardTitle>
             <CardDescription>{category.subtitle}</CardDescription>
           </div>
-          <OverflowActionsMenu
-            categoryTitle={category.title}
-            onOpenSampleInteractions={onOpenSampleInteractions}
-          />
+          <div className="flex shrink-0 items-center gap-1">
+            <WidgetAIPromptButton
+              widgetTitle={category.title}
+              chartType="bar"
+              tooltipLabel="Ask AI about this opportunity"
+              triggerClassName={AUTOMATION_ASK_AI_TRIGGER_CLASS}
+            />
+            <OverflowActionsMenu
+              categoryTitle={category.title}
+              onOpenSampleInteractions={onOpenSampleInteractions}
+            />
+          </div>
         </div>
       </CardHeader>
 
@@ -517,7 +537,7 @@ function TopOpportunityCard({
                           <div className="pt-3 pl-12 pr-4">
                             <Separator className="mb-3" />
                           </div>
-                          {t.subTopics.map((st, sIdx) => (
+                          {(t.subTopics ?? []).map((st, sIdx, arr) => (
                             <div key={st.id}>
                               <SubTopicSection
                                 index={sIdx + 1}
@@ -525,7 +545,7 @@ function TopOpportunityCard({
                                 categoryTitle={category.title}
                                 onOpenSampleInteractions={onOpenSampleInteractions}
                               />
-                              {sIdx < t.subTopics.length - 1 ? (
+                              {sIdx < arr.length - 1 ? (
                                 <div className="pl-12 pr-4">
                                   <Separator />
                                 </div>

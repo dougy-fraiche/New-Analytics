@@ -7,7 +7,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "./ui/breadcrumb";
-import React from "react";
 
 interface AppHeaderProps {
   onSearchClick?: () => void;

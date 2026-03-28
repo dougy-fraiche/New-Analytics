@@ -146,14 +146,15 @@ function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
   const sortedRows = React.useMemo(() => {
     if (!ctx || ctx.sortColumn === null) return rows;
 
+    const sortColumn = ctx.sortColumn;
     return [...rows].sort((a, b) => {
       if (!React.isValidElement<{ children?: React.ReactNode }>(a)) return 0;
       if (!React.isValidElement<{ children?: React.ReactNode }>(b)) return 0;
 
       const aCells = React.Children.toArray(a.props.children);
       const bCells = React.Children.toArray(b.props.children);
-      const aCell = aCells[ctx.sortColumn];
-      const bCell = bCells[ctx.sortColumn];
+      const aCell = aCells[sortColumn];
+      const bCell = bCells[sortColumn];
 
       const aValue = parseSortableValue(getNodeText(aCell));
       const bValue = parseSortableValue(getNodeText(bCell));

@@ -1,20 +1,13 @@
 import { createContext, useContext, useCallback, useRef, useSyncExternalStore, useMemo, ReactNode } from "react";
 import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
+import type { DashboardData, WidgetMessageMeta } from "../types/conversation-types";
 
-export interface ChatMessage {
+export interface ChatMessage extends WidgetMessageMeta {
   id: string;
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
-  dashboardData?: any;
-  /** Optional widget reference — shown as a badge above the message */
-  widgetRef?: string;
-  /** When the prompt originated from a chart KPI/segment selection, shown with the widget title */
-  widgetKpiLabel?: string;
-  /** Optional chart type for widget icon in the badge */
-  widgetIconType?: string;
-  /** Optional in-page anchor for jumping back to the originating card */
-  widgetAnchorId?: string;
+  dashboardData?: DashboardData;
 }
 
 type Listener = () => void;
@@ -82,7 +75,7 @@ interface DashboardChatContextType {
 const DashboardChatContext = createContext<DashboardChatContextType | undefined>(undefined);
 
 export function DashboardChatProvider({ children }: { children: ReactNode }) {
-  const storeRef = useRef<ChatStore>(null);
+  const storeRef = useRef<ChatStore | null>(null);
   if (!storeRef.current) {
     storeRef.current = new ChatStore();
     // Single app-wide assistant thread — no per-dashboard seed data.

@@ -1,6 +1,7 @@
 "use client";
 
 import * as echarts from "echarts";
+import type { ECElementEvent } from "echarts";
 import "echarts/theme/dark";
 import "echarts/theme/v5";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -69,12 +70,22 @@ export type ChartDataSelectInfo = {
   clientY?: number;
 };
 
+type ZrLikeEvent = {
+  clientX?: number;
+  clientY?: number;
+  event?: ZrLikeEvent;
+  offsetX?: number;
+  offsetY?: number;
+  zrX?: number;
+  zrY?: number;
+};
+
 /** Resolve viewport coordinates for AI popover anchoring (ECharts wraps events inconsistently). */
 function resolveChartClickClientXY(
-  params: { event?: any },
+  params: Pick<ECElementEvent, "event">,
   container: HTMLElement | null,
 ): { clientX?: number; clientY?: number } {
-  const raw = params?.event;
+  const raw = params?.event as ZrLikeEvent | undefined;
   if (!raw) return {};
 
   const native =
@@ -135,7 +146,7 @@ export function EChartsCanvas({
     const chart = echarts.init(el, theme, { renderer: "canvas" });
     chart.setOption(resolveCssVars(optionForTheme, el), { notMerge: true });
 
-    const handleClick = (params: any) => {
+    const handleClick = (params: ECElementEvent) => {
       const { clientX, clientY } = resolveChartClickClientXY(params, el);
       onDataSelectRef.current?.({
         name: params.name,

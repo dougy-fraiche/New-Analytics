@@ -51,7 +51,10 @@ import { useKeyboardShortcut } from "../hooks/useKeyboardShortcuts";
 import { useDashboardChat } from "../contexts/DashboardChatContext";
 import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 import { conversationMessageToGlobalChat } from "../lib/conversation-message-to-global-chat";
-import { useAiAssistantExploreBridge } from "../contexts/AiAssistantExploreBridgeContext";
+import {
+  useAiAssistantExploreBridge,
+  type ExploreWidgetPromptMeta,
+} from "../contexts/AiAssistantExploreBridgeContext";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -158,7 +161,7 @@ export function ConversationPhase({
   const handleUserMessage = useCallback(
     (
       message: string,
-      meta?: { widgetRef?: string; widgetIconType?: string; widgetKpiLabel?: string },
+      meta?: ExploreWidgetPromptMeta,
     ) => {
       if (!message.trim() || !currentConversationId) return;
 

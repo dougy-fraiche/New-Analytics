@@ -6,10 +6,14 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import type { WidgetMessageMeta } from "../types/conversation-types";
+
+/** Meta passed when sending from Explore (no in-page anchor). */
+export type ExploreWidgetPromptMeta = Omit<WidgetMessageMeta, "widgetAnchorId">;
 
 export type ExploreAiSendHandler = (
   message: string,
-  meta?: { widgetRef?: string; widgetIconType?: string; widgetKpiLabel?: string },
+  meta?: ExploreWidgetPromptMeta,
 ) => void;
 
 export type AiAssistantExploreBridgeState = {

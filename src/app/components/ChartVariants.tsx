@@ -15,7 +15,9 @@ import {
   PieChart as PieChartIcon,
   Activity,
   Target,
+  type LucideIcon,
 } from "lucide-react";
+import type { ChartRow } from "../types/conversation-types";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PRNG
@@ -69,6 +71,43 @@ export type ChartType =
   | "line-multi"
   | "area-stacked";
 
+/** All valid `ChartType` literals (for runtime validation). */
+export const CHART_TYPES: ChartType[] = [
+  "area",
+  "area-gradient",
+  "line",
+  "line-curved",
+  "scatter",
+  "bar-vertical",
+  "bar-gradient",
+  "bar-horizontal",
+  "pie",
+  "donut",
+  "funnel",
+  "treemap",
+  "radar",
+  "radar-filled",
+  "radial",
+  "bar-grouped",
+  "bar-stacked",
+  "line-multi",
+  "area-stacked",
+];
+
+const CHART_TYPE_SET = new Set<string>(CHART_TYPES);
+
+export function isChartType(value: unknown): value is ChartType {
+  return typeof value === "string" && CHART_TYPE_SET.has(value);
+}
+
+/** Icon for a widget badge; unknown strings fall back to `BarChart3`. */
+export function getChartIconForWidgetType(type: string | undefined): LucideIcon {
+  if (type !== undefined && isChartType(type)) {
+    return getChartIcon(type);
+  }
+  return BarChart3;
+}
+
 type DataSource = "trend" | "category" | "comparison";
 
 export interface PanelConfig {
@@ -80,7 +119,7 @@ export interface PanelConfig {
 }
 
 export interface DatasetConfig {
-  data: Array<Record<string, any>>;
+  data: ChartRow[];
   xKey: string;
   yKey: string;
   y2Key?: string;
@@ -376,7 +415,7 @@ function capitalize(s: string): string {
 
 export function buildChartConfig(
   chartType: ChartType,
-  data: Array<Record<string, any>>,
+  data: ChartRow[],
   xKey: string,
   yKey: string,
   y2Key: string | undefined,
@@ -461,7 +500,7 @@ export type ChartDataSelectInfo = import("./EChartsCanvas").ChartDataSelectInfo;
 
 interface UniversalChartProps {
   type: ChartType;
-  data: Array<Record<string, any>>;
+  data: ChartRow[];
   xKey: string;
   yKey: string;
   y2Key?: string;

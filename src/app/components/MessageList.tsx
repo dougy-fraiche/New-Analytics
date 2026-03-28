@@ -1,4 +1,4 @@
-import { memo, useRef, useEffect, type RefObject } from "react";
+import { memo, useRef, useEffect } from "react";
 import {
   Loader2,
   LayoutDashboard,
@@ -9,7 +9,7 @@ import { Badge } from "./ui/badge";
 import { Link } from "react-router";
 
 import { InlineWidget } from "./InlineWidget";
-import { getChartIcon } from "./ChartVariants";
+import { getChartIconForWidgetType } from "./ChartVariants";
 import type { Message, DashboardData } from "../contexts/ConversationContext";
 
 // ── Types ─────────────────────────────────────────────────────────────
@@ -154,7 +154,7 @@ export const MessageList = memo(function MessageList({
                     <span className="inline-flex items-center gap-1 min-w-0">
                       {(() => {
                         const IconComp = msg.widgetIconType
-                          ? getChartIcon(msg.widgetIconType as any)
+                          ? getChartIconForWidgetType(msg.widgetIconType)
                           : null;
                         return IconComp ? <IconComp className="h-3 w-3 shrink-0" /> : null;
                       })()}

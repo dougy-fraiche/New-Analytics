@@ -1,19 +1,8 @@
 import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
+import type { ChartRow, DashboardData, WidgetMessageMeta } from "../types/conversation-types";
 
 // Context for managing conversations and messages across the Explore page
-export interface DashboardData {
-  id: string;
-  title: string;
-  description: string;
-  metrics?: Array<{
-    label: string;
-    value: string;
-  }>;
-  chartData?: {
-    trend?: Array<Record<string, any>>;
-    breakdown?: Array<Record<string, any>>;
-  };
-}
+export type { DashboardData };
 
 export interface WidgetData {
   id: string;
@@ -23,24 +12,18 @@ export interface WidgetData {
   value?: string;
   change?: string;
   trend?: "up" | "down" | "neutral";
-  data: Array<Record<string, any>>;
+  data: ChartRow[];
   xKey: string;
   yKey: string;
 }
 
-export interface Message {
+export interface Message extends WidgetMessageMeta {
   id: string;
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
   dashboardData?: DashboardData;
   widgetData?: WidgetData;
-  /** Optional widget reference — shown as a badge above the message */
-  widgetRef?: string;
-  /** When the prompt came from a chart KPI/segment, shown with the widget title */
-  widgetKpiLabel?: string;
-  /** Optional chart type for widget icon in the badge */
-  widgetIconType?: string;
 }
 
 export interface Conversation {

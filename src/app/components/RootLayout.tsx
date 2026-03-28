@@ -265,6 +265,43 @@ function RootLayoutInner() {
     return [];
   }, [location.pathname, params, conversations, projects, standaloneDashboards]);
 
+  /** Short label for the AI Assistant input context pill (last breadcrumb, else route fallbacks). */
+  const aiPageContextLabel = useMemo(() => {
+    let label: string | undefined;
+    if (breadcrumbs.length > 0) {
+      label = breadcrumbs[breadcrumbs.length - 1]!.label;
+    } else if (location.pathname === "/insights") {
+      label = "All Insights";
+    } else if (location.pathname === "/automation-opportunities") {
+      label = "Automation Opportunities";
+    } else if (location.pathname === "/observability") {
+      label = "Observability";
+    } else if (location.pathname === "/saved") {
+      label = "Saved";
+    } else if (location.pathname === "/pinned") {
+      label = "Pinned";
+    } else if (location.pathname === "/recommended-actions") {
+      label = "Recommended Actions";
+    } else if (location.pathname === "/actions/history") {
+      label = "Action History";
+    } else if (location.pathname === "/settings") {
+      label = "Settings";
+    }
+
+    // Breadcrumbs omit the active tab dashboard on `/observability/:cat/:dash`; use dashboard title for the pill.
+    if (
+      location.pathname.startsWith("/observability/") &&
+      params.categoryId &&
+      params.dashboardId
+    ) {
+      const dash = findOotbDashboardById(params.dashboardId);
+      if (dash?.name) label = dash.name;
+    }
+
+    const trimmed = label?.trim();
+    return trimmed || undefined;
+  }, [breadcrumbs, location.pathname, params.categoryId, params.dashboardId]);
+
   // Check if current route needs full-height layout (no outer scroll/padding — page manages its own)
   const isFullHeightPage =
     location.pathname.includes('/dashboard') ||
@@ -307,6 +344,7 @@ function RootLayoutInner() {
                       <DashboardChatPanel
                         dashboardId={aiRouteContext.dashboardId}
                         sourceOotbId={aiRouteContext.sourceOotbId}
+                        pageContextLabel={aiPageContextLabel}
                       />
                     </div>
                   ) : null}

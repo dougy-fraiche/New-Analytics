@@ -30,6 +30,11 @@ import {
   DATE_RANGE_SECONDARY_OPTIONS,
   type DateRangeOption,
 } from "../data/date-ranges";
+import {
+  DEFAULT_DASHBOARD_FILTERS as DEFAULT_FILTERS,
+  type DashboardProductFilter,
+  type DashboardTeamFilter,
+} from "../data/dashboard-filters";
 import { LabeledFilterInline, LabeledSelectValue } from "./HeaderFilters";
 
 interface ConversationDashboardAreaProps {
@@ -47,12 +52,6 @@ interface ConversationDashboardAreaProps {
   onRename?: () => void;
   onDelete?: () => void;
 }
-
-const DEFAULT_FILTERS = {
-  dateRange: "last-30-days" as DateRangeOption,
-  team: "all-teams",
-  product: "all-products",
-} as const;
 
 function ThinkingAnimation() {
   return (
@@ -243,7 +242,7 @@ function DashboardContent({
               </SelectContent>
             </Select>
 
-            <Select value={team} onValueChange={setTeam}>
+            <Select value={team} onValueChange={(v) => setTeam(v as DashboardTeamFilter)}>
               <SelectTrigger className="h-8 w-auto shrink-0">
                 <LabeledSelectValue label="Team" />
               </SelectTrigger>
@@ -255,7 +254,7 @@ function DashboardContent({
               </SelectContent>
             </Select>
 
-            <Select value={product} onValueChange={setProduct}>
+            <Select value={product} onValueChange={(v) => setProduct(v as DashboardProductFilter)}>
               <SelectTrigger className="h-8 w-auto shrink-0">
                 <LabeledSelectValue label="Product" />
               </SelectTrigger>

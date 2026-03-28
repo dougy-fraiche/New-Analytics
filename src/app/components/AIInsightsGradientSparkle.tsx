@@ -26,7 +26,7 @@ export function AIInsightsGradientSparkles({ className }: { className?: string }
           <stop offset="100%" stopColor="#FF8A00" />
         </linearGradient>
       </defs>
-      {__iconNode.map(([tag, attrs], i) => {
+      {__iconNode.map(([tag, attrs], i: number) => {
         const { key: pathKey, ...rest } = attrs as { key?: string; [k: string]: unknown };
         const Tag = tag as "path";
         return (

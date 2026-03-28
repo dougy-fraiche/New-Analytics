@@ -6,6 +6,7 @@ import { ThemeProvider } from "next-themes";
 import { RootLayout } from "./components/RootLayout";
 import { ExplorePage } from "./components/ExplorePage";
 import { AlertCircle } from "lucide-react";
+import { ROUTES } from "./routes";
 
 function NotFound() {
   return (
@@ -58,11 +59,11 @@ const lazyRoute = (importFn: () => Promise<{ [key: string]: React.ComponentType 
 
 const router = createBrowserRouter([
   {
-    path: "/interaction-playback",
+    path: ROUTES.INTERACTION_PLAYBACK,
     ...lazyRoute(() => import("./components/InteractionPlaybackPage"), "InteractionPlaybackPage"),
   },
   {
-    path: "/",
+    path: ROUTES.EXPLORE,
     Component: RootLayout,
     ErrorBoundary: ErrorBoundary,
     HydrateFallback: HydrateFallback,
@@ -93,7 +94,7 @@ const router = createBrowserRouter([
 export default function App() {
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-      <RouterProvider router={router} fallbackElement={null} />
+      <RouterProvider router={router} />
     </ThemeProvider>
   );
 }

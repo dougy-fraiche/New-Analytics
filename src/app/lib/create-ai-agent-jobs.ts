@@ -102,7 +102,8 @@ function isValidSerializedJobV1(row: unknown): row is SerializedAgentJobV1 {
     o.step >= 0 &&
     o.step <= 7 &&
     (o.layout === "compact" || o.layout === "dialog") &&
-    o.position &&
+    o.position != null &&
+    typeof o.position === "object" &&
     typeof (o.position as AgentJobPosition).x === "number" &&
     typeof (o.position as AgentJobPosition).y === "number" &&
     typeof o.stepEnteredAt === "number"

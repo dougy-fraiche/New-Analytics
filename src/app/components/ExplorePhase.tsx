@@ -1,4 +1,4 @@
-import type { RefObject } from "react";
+import type { LegacyRef, RefObject } from "react";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
@@ -106,7 +106,7 @@ export function ExplorePhase({
               </h1>
 
               <div
-                ref={heroInputBarRef}
+                ref={heroInputBarRef as LegacyRef<HTMLDivElement>}
                 className="w-full"
                 style={{ visibility: isInputAnimating ? "hidden" : "visible" }}
               >

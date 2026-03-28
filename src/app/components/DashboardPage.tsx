@@ -47,6 +47,11 @@ import {
   DATE_RANGE_SECONDARY_OPTIONS,
   type DateRangeOption,
 } from "../data/date-ranges";
+import {
+  DEFAULT_DASHBOARD_FILTERS as DEFAULT_FILTERS,
+  type DashboardProductFilter,
+  type DashboardTeamFilter,
+} from "../data/dashboard-filters";
 import { LabeledFilterInline, LabeledSelectValue } from "./HeaderFilters";
 
 import {
@@ -144,12 +149,6 @@ const tableData = [
     satisfaction: "93%",
   },
 ];
-
-const DEFAULT_FILTERS = {
-  dateRange: "last-30-days" as DateRangeOption,
-  team: "all-teams",
-  product: "all-products",
-} as const;
 
 export function DashboardPage() {
   const { dashboardId, projectId } = useParams();
@@ -414,7 +413,7 @@ export function DashboardPage() {
               </SelectContent>
             </Select>
 
-            <Select value={team} onValueChange={setTeam}>
+            <Select value={team} onValueChange={(v) => setTeam(v as DashboardTeamFilter)}>
               <SelectTrigger className="h-8 w-auto shrink-0">
                 <LabeledSelectValue label="Team" />
               </SelectTrigger>
@@ -426,7 +425,7 @@ export function DashboardPage() {
               </SelectContent>
             </Select>
 
-            <Select value={product} onValueChange={setProduct}>
+            <Select value={product} onValueChange={(v) => setProduct(v as DashboardProductFilter)}>
               <SelectTrigger className="h-8 w-auto shrink-0">
                 <LabeledSelectValue label="Product" />
               </SelectTrigger>

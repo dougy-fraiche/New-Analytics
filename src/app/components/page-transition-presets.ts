@@ -22,7 +22,7 @@ export const PAGE_EXIT = {
 
 export const PAGE_TRANSITION: Transition = {
   duration: 0.35,
-  ease: EXPLORE_STYLE_EASE,
+  ease: EXPLORE_STYLE_EASE as [number, number, number, number],
 };
 
 export const REDUCED_MOTION_TRANSITION: Transition = {

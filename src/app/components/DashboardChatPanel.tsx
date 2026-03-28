@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Plus, ArrowRight, Mic, Square, Loader2, Upload, Image, Paperclip, MoreVertical, Trash2, ChevronRight } from "lucide-react";
+import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { ResizeHandle } from "./ResizeHandle";
@@ -22,7 +23,7 @@ import { toast } from "sonner";
 import { useDashboardChat, useDashboardMessages, type ChatMessage } from "../contexts/DashboardChatContext";
 import { useAiAssistantExploreBridge } from "../contexts/AiAssistantExploreBridgeContext";
 import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
-import { getChartIcon } from "./ChartVariants";
+import { getChartIconForWidgetType } from "./ChartVariants";
 import { AiAssistantEmptyStateGraphic, AiAssistantHeaderIcon } from "./AiAssistantHeaderIcon";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
@@ -36,6 +37,8 @@ interface DashboardChatPanelProps {
    */
   sourceOotbId?: string;
   placeholder?: string;
+  /** Human-readable current page title for the input context pill (from route / breadcrumbs). */
+  pageContextLabel?: string;
 }
 
 // ─── Dashboard-specific suggested questions ──────────────────────────────────
@@ -411,7 +414,7 @@ function ThreadView({
                       <div className="flex items-start gap-1.5 min-w-0">
                         {(() => {
                           const IconComp = msg.widgetIconType
-                            ? getChartIcon(msg.widgetIconType as any)
+                            ? getChartIconForWidgetType(msg.widgetIconType)
                             : null;
                           return IconComp ? <IconComp className="h-3.5 w-3.5 shrink-0 mt-0.5" /> : null;
                         })()}
@@ -466,6 +469,7 @@ export function DashboardChatPanel({
   dashboardId,
   sourceOotbId,
   placeholder,
+  pageContextLabel,
 }: DashboardChatPanelProps) {
   const dashboardChat = useDashboardChat();
   const { isThinking: exploreThinking, onSend: exploreOnSend } = useAiAssistantExploreBridge();
@@ -656,6 +660,15 @@ export function DashboardChatPanel({
         <div className="rounded-3xl border bg-background text-foreground transition-shadow focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/20">
           <div className="px-4 pt-3 pb-2">
             <div className="space-y-2">
+              {pageContextLabel ? (
+                <Badge
+                  variant="secondary"
+                  className="max-w-full min-w-0 justify-start"
+                  aria-label={`Current page context: ${pageContextLabel}`}
+                >
+                  <span className="min-w-0 truncate">{pageContextLabel}</span>
+                </Badge>
+              ) : null}
               <Textarea
                 placeholder={placeholder || "Ask a question\u2026"}
                 value={query + (chatVoice.isListening && chatVoice.interimText ? chatVoice.interimText : "")}

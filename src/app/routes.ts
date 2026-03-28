@@ -19,4 +19,18 @@ export const ROUTES = {
   ACTIONS_HISTORY: "/actions/history",
   INSIGHTS: "/insights",
   SETTINGS: "/settings",
+  /** Full-screen interaction playback (opened in popup; may sit outside RootLayout). */
+  INTERACTION_PLAYBACK: "/interaction-playback",
+} as const;
+
+/**
+ * Prefixes for `pathname.startsWith` (trailing slash where nested segments follow).
+ * Keeps assistant route resolution aligned with `ROUTES`.
+ */
+export const ROUTE_PREFIXES = {
+  dashboard: "/dashboard/",
+  observabilityNested: `${ROUTES.OBSERVABILITY}/`,
+  savedDashboard: "/saved/dashboard/",
+  saved: "/saved/",
+  project: "/project/",
 } as const;

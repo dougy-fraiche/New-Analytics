@@ -1,5 +1,7 @@
 /** Mock data for the Sample Interactions modal + interaction playback (Figma: Auto-Insight). */
 
+import { ROUTES } from "../routes";
+
 export type SampleInteractionRow = {
   id: string;
   agentName: string;
@@ -362,7 +364,8 @@ export function openInteractionPlaybackWindow(payload: InteractionPlaybackPayloa
 
   const base = import.meta.env.BASE_URL || "/";
   const normalized = base.endsWith("/") ? base : `${base}/`;
-  const urlObj = new URL("interaction-playback", `${window.location.origin}${normalized}`);
+  const playbackPath = ROUTES.INTERACTION_PLAYBACK.replace(/^\//, "");
+  const urlObj = new URL(playbackPath, `${window.location.origin}${normalized}`);
   urlObj.searchParams.set("sid", sid);
   const url = urlObj.href;
 

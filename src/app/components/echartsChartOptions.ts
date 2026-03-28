@@ -300,7 +300,7 @@ export function buildUniversalEChartsOption(params: {
               fontSize: 11,
             },
             labelLine: { show: showLabel },
-            data: data.map((d, i) => ({
+            data: data.map((d) => ({
               name: String(d[xKey] ?? ""),
               value: Number(d[yKey]) || 0,
             })),
@@ -746,7 +746,7 @@ export function buildInlineEChartsOption(params: {
               borderWidth: 0,
             },
             label: { show: false },
-            data: data.map((d, i) => ({
+            data: data.map((d) => ({
               name: String(d[xKey] ?? ""),
               value: Number(d[yKey]) || 0,
             })),

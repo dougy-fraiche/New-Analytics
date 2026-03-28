@@ -50,6 +50,11 @@ import {
   DATE_RANGE_SECONDARY_OPTIONS,
   type DateRangeOption,
 } from "../data/date-ranges";
+import {
+  DEFAULT_DASHBOARD_FILTERS as DEFAULT_FILTERS,
+  type DashboardProductFilter,
+  type DashboardTeamFilter,
+} from "../data/dashboard-filters";
 
 // Mock data for dashboard content (same as DashboardPage)
 const trendData = [
@@ -91,12 +96,6 @@ const tableData = [
   { agent: "David Kim", escalations: 15, resolved: 215, avgTime: "3.5h", satisfaction: "97%" },
   { agent: "Lisa Wang", escalations: 27, resolved: 192, avgTime: "4.6h", satisfaction: "93%" },
 ];
-
-const DEFAULT_FILTERS = {
-  dateRange: "last-30-days" as DateRangeOption,
-  team: "all-teams",
-  product: "all-products",
-} as const;
 
 export function ObservabilityCategoryPage() {
   const { categoryId, dashboardId: urlDashboardId } = useParams();
@@ -241,7 +240,7 @@ export function ObservabilityCategoryPage() {
                 </SelectContent>
               </Select>
 
-              <Select value={team} onValueChange={setTeam}>
+              <Select value={team} onValueChange={(v) => setTeam(v as DashboardTeamFilter)}>
                 <SelectTrigger className="h-8 w-auto shrink-0">
                   <LabeledSelectValue label="Team" />
                 </SelectTrigger>
@@ -253,7 +252,7 @@ export function ObservabilityCategoryPage() {
                 </SelectContent>
               </Select>
 
-              <Select value={product} onValueChange={setProduct}>
+              <Select value={product} onValueChange={(v) => setProduct(v as DashboardProductFilter)}>
                 <SelectTrigger className="h-8 w-auto shrink-0">
                   <LabeledSelectValue label="Product" />
                 </SelectTrigger>
