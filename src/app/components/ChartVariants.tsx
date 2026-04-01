@@ -4,8 +4,7 @@ import { ChartConfig, ChartContainer } from "./ui/chart";
 import { EChartsCanvas } from "./EChartsCanvas";
 import { buildUniversalEChartsOption } from "./echartsChartOptions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { WidgetAIPromptButton } from "./WidgetAIPromptButton";
-import { WidgetOverflowMenu } from "./WidgetOverflowMenu";
+import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
 import { WidgetAIExplanation } from "./WidgetAIExplanation";
 import { cn } from "./ui/utils";
 import { useContainerBreakpoint } from "../hooks/useContainerBreakpoint";
@@ -134,6 +133,8 @@ export interface DashboardChartGridProps {
   highlightedPanelIndices?: Set<number> | number[];
   anomalyClassName?: string;
   stackedBelowWidth?: number;
+  /** Set false on Observability OOTB dashboards; default true (saved / conversation dashboards). */
+  showWidgetOverflowMenu?: boolean;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -573,6 +574,7 @@ export function DashboardChartGrid({
   highlightedPanelIndices,
   anomalyClassName,
   stackedBelowWidth = 768,
+  showWidgetOverflowMenu = true,
 }: DashboardChartGridProps) {
   const { ref: containerRef, isBelowBreakpoint: isStacked } =
     useContainerBreakpoint<HTMLDivElement>(stackedBelowWidth);
@@ -609,7 +611,7 @@ export function DashboardChartGrid({
         i
       );
 
-      return { panel, dataset, config, Icon: getChartIcon(panel.chartType) };
+      return { panel, dataset, config };
     });
   }, [layout, trend, category, comparison]);
 
@@ -639,7 +641,7 @@ export function DashboardChartGrid({
       ref={containerRef}
       className={cn("grid gap-4", isStacked ? "grid-cols-1" : "grid-cols-3")}
     >
-      {panelConfigs.map(({ panel, dataset, config, Icon }, i) => {
+      {panelConfigs.map(({ panel, dataset, config }, i) => {
         const isHighlighted = !!highlightedSet?.has(i);
         const chartContent = (
           <Card
@@ -650,11 +652,11 @@ export function DashboardChartGrid({
           >
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
-                <Icon className="h-4 w-4 text-primary" />
                 <CardTitle className="text-base flex-1">{panel.title}</CardTitle>
-                <WidgetAIPromptButton
+                <WidgetAskAIAndOverflow
                   widgetTitle={panel.title}
                   chartType={panel.chartType}
+                  showOverflowMenu={showWidgetOverflowMenu}
                   open={openAskPanelIndex === i}
                   onOpenChange={(open) => {
                     if (open) {
@@ -671,9 +673,10 @@ export function DashboardChartGrid({
                   selectedKpiLabel={openAskPanelIndex === i ? selectedKpiLabel : null}
                   anchorPoint={openAskPanelIndex === i ? anchorPoint : null}
                 />
-                <WidgetOverflowMenu widgetTitle={panel.title} chartType={panel.chartType} />
               </div>
-              <CardDescription>{panel.description}</CardDescription>
+              {panel.description?.trim() ? (
+                <CardDescription>{panel.description}</CardDescription>
+              ) : null}
             </CardHeader>
             <CardContent>
               <UniversalChart

@@ -20,10 +20,10 @@ export const cardIconWellClassName =
 
 /**
  * Page title region: full width of the main column, background edge-to-edge,
- * subtle bottom border, equal top/bottom padding (matches previous pt-6).
+ * subtle bottom border, equal top/bottom padding (2rem).
  */
 export const pageHeaderClassName =
-  "shrink-0 sticky top-0 z-10 w-full border-b border-border/60 bg-background pt-6 pb-6 [&_h1]:text-primary-900";
+  "shrink-0 sticky top-0 z-10 w-full border-b border-border/60 bg-background pt-8 pb-8 [&_h1]:text-primary-900";
 
 /**
  * Merge onto `<PageHeader className={pageHeaderTabsFooterClassName}>` when the last row
@@ -32,12 +32,12 @@ export const pageHeaderClassName =
  */
 export const pageHeaderTabsFooterClassName = "pb-0";
 
-/** Constrains title/actions to the same max width as `PageContent` (1440px). */
+/** Constrains title/actions to the same max width as `PageContent` (1280px). */
 export const pageHeaderInnerClassName =
-  "mx-auto w-full max-w-[1440px] px-4 md:px-8";
+  "mx-auto w-full max-w-[1280px] px-4 md:px-8";
 
-/** Max width for scrollable page body (aligns with prior RootLayout constraint). */
-export const pageContentMaxWidthClassName = "mx-auto w-full max-w-[1440px]";
+/** Max width for scrollable page body (app-wide content column). */
+export const pageContentMaxWidthClassName = "mx-auto w-full max-w-[1280px]";
 
 export function PageContent({
   className,
@@ -51,7 +51,7 @@ export function PageContent({
   );
 }
 
-/** Page title bar: full-bleed background + inner content capped at 1440px. */
+/** Page title bar: full-bleed background + inner content capped at 1280px. */
 export function PageHeader({
   children,
   className,

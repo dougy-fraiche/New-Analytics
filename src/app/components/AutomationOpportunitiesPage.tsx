@@ -1,5 +1,14 @@
 import { useMemo, useState } from "react";
-import { ChevronDown, Download, Mail, Play, MoreVertical, RotateCcw } from "lucide-react";
+import {
+  CalendarRange,
+  ChevronDown,
+  Download,
+  Mail,
+  Play,
+  MoreVertical,
+  RotateCcw,
+  Trophy,
+} from "lucide-react";
 import type { DateRange } from "react-day-picker";
 
 import { Button } from "./ui/button";
@@ -89,6 +98,15 @@ function toMax(items: TopOpportunityBarItem[]): number {
   return items.reduce((max, it) => (it.value > max ? it.value : max), 0) || 1;
 }
 
+function TopOpportunitiesSectionHeading() {
+  return (
+    <h3 className="mt-8 flex items-center gap-2 text-lg font-medium tracking-tight">
+      <Trophy className="size-4 shrink-0 text-primary" aria-hidden />
+      Top Opportunities
+    </h3>
+  );
+}
+
 function AnalyzedPeriodSection({
   stats,
   subtitle,
@@ -101,7 +119,10 @@ function AnalyzedPeriodSection({
   return (
     <section className="space-y-3">
       <div>
-        <h2 className="text-lg font-medium tracking-tight">Analyzed Period</h2>
+        <h3 className="!mt-8 flex items-center gap-2 text-lg font-medium tracking-tight">
+          <CalendarRange className="size-4 shrink-0 text-primary" aria-hidden />
+          Analyzed Period
+        </h3>
         {subtitle ? (
           <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
         ) : null}
@@ -398,7 +419,7 @@ function AutomationTopicsTabTopicCard({
             <CardTitle className="text-lg font-medium tracking-tight">{row.title}</CardTitle>
             <CardDescription className="mt-1.5 text-sm leading-relaxed">{row.description}</CardDescription>
           </div>
-          <div className="flex shrink-0 items-center gap-1">
+          <div className="flex shrink-0 items-center gap-0">
             <WidgetAIPromptButton
               widgetTitle={row.title}
               chartType="bar"
@@ -479,7 +500,7 @@ function TopOpportunityCard({
             <CardTitle className="text-lg font-medium tracking-tight">{category.title}</CardTitle>
             <CardDescription>{category.subtitle}</CardDescription>
           </div>
-          <div className="flex shrink-0 items-center gap-1">
+          <div className="flex shrink-0 items-center gap-0">
             <WidgetAIPromptButton
               widgetTitle={category.title}
               chartType="bar"
@@ -792,7 +813,7 @@ export function AutomationOpportunitiesPage() {
                 <TabsContent value="categories" className="mt-0 space-y-8 outline-none">
                   <AnalyzedPeriodSection stats={automationAnalyzedPeriodStats} />
                   <section className="space-y-4">
-                    <h2 className="text-lg font-medium tracking-tight">Top Opportunities</h2>
+                    <TopOpportunitiesSectionHeading />
                     <div className="flex flex-col gap-4">
                       {topOpportunitiesByScope.categories.map((cat) => (
                         <TopOpportunityCard
@@ -841,7 +862,7 @@ export function AutomationOpportunitiesPage() {
                     subtitle={AUTOMATION_TOPICS_ANALYZED_PERIOD_SUBTITLE}
                   />
                   <section className="space-y-4">
-                    <h2 className="text-lg font-medium tracking-tight">Top Opportunities</h2>
+                    <TopOpportunitiesSectionHeading />
                     <div className="flex flex-col gap-4">
                       {automationTopicsTabTopicRows.map((row) => (
                         <AutomationTopicsTabTopicCard
@@ -873,7 +894,7 @@ export function AutomationOpportunitiesPage() {
                     subtitle={AUTOMATION_SUBTOPICS_ANALYZED_PERIOD_SUBTITLE}
                   />
                   <section className="space-y-4">
-                    <h2 className="text-lg font-medium tracking-tight">Top Opportunities</h2>
+                    <TopOpportunitiesSectionHeading />
                     <div className="flex flex-col gap-4">
                       {automationSubtopicsTabTopicRows.map((row) => (
                         <AutomationTopicsTabTopicCard

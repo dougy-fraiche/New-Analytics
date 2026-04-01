@@ -28,6 +28,8 @@ interface CollapsibleSidebarSectionProps {
   children: ReactNode;
   /** Optional className override for the SidebarGroup wrapper */
   className?: string;
+  /** When set, overrides pathname === path for header highlight (e.g. nested routes) */
+  headerIsActive?: boolean;
 }
 
 export function CollapsibleSidebarSection({
@@ -39,9 +41,11 @@ export function CollapsibleSidebarSection({
   tooltip,
   children,
   className = "py-0",
+  headerIsActive: headerIsActiveProp,
 }: CollapsibleSidebarSectionProps) {
   const location = useLocation();
-  const isActive = location.pathname === path;
+  const isActive =
+    headerIsActiveProp !== undefined ? headerIsActiveProp : location.pathname === path;
 
   return (
     <SidebarGroup className={className}>
@@ -55,11 +59,7 @@ export function CollapsibleSidebarSection({
                   <span>{label}</span>
                   <CollapsibleTrigger asChild>
                     <button
-                      className={`ml-auto flex h-5 w-5 items-center justify-center rounded-sm text-sidebar-foreground transition-opacity hover:bg-sidebar-accent hover:text-sidebar-accent-foreground outline-hidden group-data-[collapsible=icon]:hidden ${
-                        open
-                          ? "opacity-100"
-                          : "opacity-0 group-hover/menu-item:opacity-100 group-focus-within/menu-item:opacity-100"
-                      }`}
+                      className="ml-auto flex h-5 w-5 items-center justify-center rounded-sm text-sidebar-foreground opacity-100 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground outline-hidden group-data-[collapsible=icon]:hidden"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();

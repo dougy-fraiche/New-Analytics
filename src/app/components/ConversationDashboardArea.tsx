@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Sparkles, LayoutDashboard, BarChart3, Bookmark, MoreVertical, Pencil, Trash2, Check, RotateCcw } from "lucide-react";
+import { Sparkles, LayoutDashboard, BarChart3, Bookmark, MoreVertical, Pencil, Trash2, Check, RotateCcw, LineChart } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -309,6 +309,11 @@ function DashboardContent({
             ))}
           </div>
         )}
+
+        <h3 className="!mt-8 flex items-center gap-2 tracking-tight">
+          <LineChart className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+          Insights & Analysis
+        </h3>
 
         {/* Randomized Chart Grid */}
         <DashboardChartGrid

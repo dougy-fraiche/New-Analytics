@@ -73,7 +73,8 @@ function getTransparentColorStop(lineColor: string): string {
 export function KpiSparkline({
   values,
   className,
-  lineColor = "var(--primary)",
+  /** Figma P500; gradient fade resolved in-document via `getTransparentColorStop`. */
+  lineColor = "var(--kpi-line)",
   seriesName = "Value",
   formatValue = defaultFormatValue,
 }: KpiSparklineProps) {
@@ -97,8 +98,8 @@ export function KpiSparkline({
       grid: {
         left: 0,
         right: 2,
-        top: 2,
-        bottom: 2,
+        top: 0,
+        bottom: 0,
         containLabel: false,
       },
       tooltip: {
@@ -157,7 +158,7 @@ export function KpiSparkline({
           showSymbol: false,
           showAllSymbol: false,
           lineStyle: {
-            width: 2,
+            width: 1.5,
             color: lineColor,
           },
           itemStyle: {
@@ -183,7 +184,7 @@ export function KpiSparkline({
           emphasis: {
             focus: "none",
             scale: false,
-            lineStyle: { width: 2, color: lineColor },
+            lineStyle: { width: 1.5, color: lineColor },
             areaStyle: {
               color: {
                 type: "linear",
@@ -208,7 +209,7 @@ export function KpiSparkline({
   return (
     <EChartsCanvas
       option={option}
-      className={cn("h-14 min-h-14 w-full min-w-0", className)}
+      className={cn("h-6 min-h-6 w-full min-w-0", className)}
     />
   );
 }

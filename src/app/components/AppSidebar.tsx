@@ -64,7 +64,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { Kbd } from "./ui/kbd";
 import { Badge } from "./ui/badge";
 import { useConversations } from "../contexts/ConversationContext";
 import { useProjects, type Dashboard } from "../contexts/ProjectContext";
@@ -228,6 +227,7 @@ export function AppSidebar() {
   const { state: dialogState, dispatch } = dialogs;
 
   // Persisted collapse states
+  const [exploreOpen, setExploreOpen] = usePersistedState("sidebar-explore-open", true);
   const [pinnedOpen, setPinnedOpen] = usePersistedState("sidebar-pinned-open", true);
   const [observabilityOpen, setObservabilityOpen] = usePersistedState("sidebar-observability-open", true);
   const [savedOpen, setSavedOpen] = usePersistedState("sidebar-saved-open", true);
@@ -342,92 +342,90 @@ export function AppSidebar() {
             </SidebarMenuItem>
           </SidebarMenu>
 
-          {/* Explore with nested conversations */}
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={location.pathname === "/"} className="group/explore" tooltip="Explore">
-                <Link to="/">
-                  <Compass />
-                  <span>Explore</span>
-                  <Kbd className="ml-auto opacity-0 group-hover/explore:opacity-100 transition-opacity group-data-[collapsible=icon]:hidden">E</Kbd>
-                </Link>
-              </SidebarMenuButton>
-              <SidebarMenuSub>
-                {activeConversations.length === 0 ? (
-                  <SidebarMenuSubItem>
-                    <span className="px-2 py-1.5 text-xs text-muted-foreground">No drafts yet</span>
-                  </SidebarMenuSubItem>
-                ) : (
-                  <>
-                    {visibleConversations.map((conversation) => {
-                      const isActive = location.pathname === `/conversation/${conversation.id}`;
-                      return (
-                        <SidebarMenuSubItem key={conversation.id}>
-                          <div className="relative group/subitem">
-                            <SidebarMenuSubButton asChild isActive={isActive} className="group-hover/subitem:pr-8 group-focus-within/subitem:pr-8">
-                              <Link to={`/conversation/${conversation.id}`}>
-                                <span className="truncate">{conversation.name}</span>
-                              </Link>
-                            </SidebarMenuSubButton>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <button className={subItemOverflowClasses}>
-                                  <MoreHorizontal className="h-3.5 w-3.5" />
-                                  <span className="sr-only">More options for {conversation.name}</span>
-                                </button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent side="right" align="start">
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    dispatch({
-                                      type: "OPEN_RENAME_CONVERSATION",
-                                      payload: { conversationId: conversation.id, name: conversation.name },
-                                    })
-                                  }
-                                >
-                                  <Pencil className="h-4 w-4 mr-2" />
-                                  Rename
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => {
-                                    const snapshot = { ...conversation };
-                                    deleteConversation(conversation.id);
-                                    toast.success("Conversation deleted", {
-                                      description: `"${conversation.name}" has been deleted.`,
-                                      action: {
-                                        label: "Undo",
-                                        onClick: () => {
-                                          restoreConversation(snapshot);
-                                          toast.success("Conversation restored");
-                                        },
-                                      },
-                                    });
-                                  }}
-                                  className="text-destructive"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </SidebarMenuSubItem>
-                      );
-                    })}
-                    {hasMore && (
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton asChild isActive={location.pathname === "/conversations"}>
-                          <Link to="/conversations" className="text-muted-foreground">
-                            <span>View all →</span>
+          {/* Explore — collapsible draft threads (`E` still navigates to Explore via RootLayout) */}
+          <CollapsibleSidebarSection
+            icon={Compass}
+            label="Explore"
+            path="/"
+            open={exploreOpen}
+            onToggle={setExploreOpen}
+            headerIsActive={
+              location.pathname === "/" || location.pathname.startsWith("/conversation/")
+            }
+          >
+            {activeConversations.length === 0 ? (
+              <SidebarMenuSubItem>
+                <span className="px-2 py-1.5 text-xs text-muted-foreground">No drafts yet</span>
+              </SidebarMenuSubItem>
+            ) : (
+              <>
+                {visibleConversations.map((conversation) => {
+                  const isActive = location.pathname === `/conversation/${conversation.id}`;
+                  return (
+                    <SidebarMenuSubItem key={conversation.id}>
+                      <div className="relative group/subitem">
+                        <SidebarMenuSubButton asChild isActive={isActive} className="group-hover/subitem:pr-8 group-focus-within/subitem:pr-8">
+                          <Link to={`/conversation/${conversation.id}`}>
+                            <span className="truncate">{conversation.name}</span>
                           </Link>
                         </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                    )}
-                  </>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className={subItemOverflowClasses}>
+                              <MoreHorizontal className="h-3.5 w-3.5" />
+                              <span className="sr-only">More options for {conversation.name}</span>
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent side="right" align="start">
+                            <DropdownMenuItem
+                              onClick={() =>
+                                dispatch({
+                                  type: "OPEN_RENAME_CONVERSATION",
+                                  payload: { conversationId: conversation.id, name: conversation.name },
+                                })
+                              }
+                            >
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Rename
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                const snapshot = { ...conversation };
+                                deleteConversation(conversation.id);
+                                toast.success("Conversation deleted", {
+                                  description: `"${conversation.name}" has been deleted.`,
+                                  action: {
+                                    label: "Undo",
+                                    onClick: () => {
+                                      restoreConversation(snapshot);
+                                      toast.success("Conversation restored");
+                                    },
+                                  },
+                                });
+                              }}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </SidebarMenuSubItem>
+                  );
+                })}
+                {hasMore && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={location.pathname === "/conversations"}>
+                      <Link to="/conversations" className="text-muted-foreground">
+                        <span>View all →</span>
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
                 )}
-              </SidebarMenuSub>
-            </SidebarMenuItem>
-          </SidebarMenu>
+              </>
+            )}
+          </CollapsibleSidebarSection>
 
           {/* Actions label + menu (kept as one header child to avoid SidebarHeader gap) */}
           <div className="mt-1 group-data-[collapsible=icon]:mt-0 flex flex-col gap-0">

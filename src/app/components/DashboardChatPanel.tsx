@@ -1,7 +1,8 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { Plus, ArrowRight, Mic, Square, Loader2, Upload, Image, Paperclip, MoreVertical, Trash2, ChevronRight } from "lucide-react";
+import { Plus, ArrowRight, Mic, Square, Loader2, Upload, Image, Paperclip, History, ChevronRight, Trash2, X } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
+import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { ResizeHandle } from "./ResizeHandle";
 import { useVoiceInput } from "../hooks/useVoiceInput";
@@ -20,12 +21,23 @@ import {
   EmptyTitle,
 } from "./ui/empty";
 import { toast } from "sonner";
-import { useDashboardChat, useDashboardMessages, type ChatMessage } from "../contexts/DashboardChatContext";
+import {
+  useDashboardChat,
+  useDashboardMessages,
+  useGlobalAiConversations,
+  useActiveGlobalAiConversationId,
+  useGlobalAiDraftDisplayName,
+  GLOBAL_AI_DEFAULT_CHAT_TITLE,
+  conversationNameFromPrompt,
+  type ChatMessage,
+  type GlobalAiConversation,
+} from "../contexts/DashboardChatContext";
 import { useAiAssistantExploreBridge } from "../contexts/AiAssistantExploreBridgeContext";
 import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 import { getChartIconForWidgetType } from "./ChartVariants";
-import { AiAssistantEmptyStateGraphic, AiAssistantHeaderIcon } from "./AiAssistantHeaderIcon";
+import { AiAssistantEmptyStateGraphic } from "./AiAssistantHeaderIcon";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { cn } from "./ui/utils";
 
 interface DashboardChatPanelProps {
   /** Route / page context id (saved id, OOTB id, etc.) — not used for message persistence in global mode */
@@ -80,35 +92,23 @@ const dashboardSuggestedQuestions: Record<string, string[]> = {
     "Which goals have the highest drop-off?",
     "Compare outcomes across bot versions",
   ],
-  "tool-usage": [
-    "Which tools are invoked most often?",
-    "Show tool latency trends",
-    "What's the tool success vs failure rate?",
-    "Compare tool usage across AI agents",
-  ],
-  "agent-ops": [
+  "ai-agents-overview": [
     "What's the current agent uptime?",
     "Show throughput trends this week",
     "Are there any agents with degraded health?",
     "Compare operational metrics across regions",
   ],
-  "self-improving-agents": [
-    "How many self-learning loops ran this week?",
-    "Show model improvement trends",
-    "What feedback was most impactful?",
-    "Compare agent performance before vs after learning",
+  "ai-agent-evaluation": [
+    "Which tools are invoked most often and how reliable are they?",
+    "How are self-learning loops affecting model quality?",
+    "What's the tool success vs failure rate this period?",
+    "Compare agent performance before vs after recent updates",
   ],
   "automation-opportunities": [
     "Which category has the highest automation ROI this period?",
     "What topics should we automate first under Billing & Payment?",
     "How much could we save if we fully automated bill explanation?",
     "Compare containment for card services vs billing inquiries",
-  ],
-  "ai-agent-vs-agent": [
-    "How does AI agent resolution compare to human agents?",
-    "Show handling time comparison trends",
-    "Which topics are better handled by AI vs humans?",
-    "Compare satisfaction scores between AI and agents",
   ],
   "knowledge-responses": [
     "What's the knowledge base coverage rate?",
@@ -194,32 +194,18 @@ const dashboardResponseHandlers: Record<string, (msg: string) => string | null> 
     if (msg.includes("compare") || msg.includes("version") || msg.includes("bot")) return "Bot v3.2 vs v3.1: overall goal completion +4.7%, average turns-to-resolve -0.6, and customer satisfaction +3.1%. The biggest improvement was in multi-step goals (+8.2% completion). V3.2's improved context memory appears to be the key driver.";
     return null;
   },
-  "tool-usage": (msg) => {
-    if (msg.includes("most") || msg.includes("often") || msg.includes("frequently")) return "The most invoked tools are: CRM Lookup (34%), Knowledge Search (28%), Order Status API (19%), and Ticket Creator (12%). CRM Lookup has increased 20% this month. Would you like latency details for any tool?";
-    if (msg.includes("latency") || msg.includes("slow")) return "Average tool latency is 245ms. The slowest is CRM Lookup at 380ms (up from 310ms last month), while Knowledge Search is fastest at 120ms. Want me to flag tools exceeding SLA thresholds?";
-    if (msg.includes("success") || msg.includes("failure") || msg.includes("rate")) return "Tool success rates: Knowledge Search 99.2%, Ticket Creator 98.7%, Order Status API 97.1%, CRM Lookup 94.8%. CRM Lookup failures are mostly timeout-related (3.1%) and auth token expiry (1.9%). The ops team has been alerted about the CRM connector. Want to see the trend?";
-    if (msg.includes("compare") || msg.includes("agent") || msg.includes("across")) return "Tool usage by AI agent: CustomerBot uses CRM Lookup most heavily (42% of its calls), SalesBot relies on Product Catalog API (38%), and SupportBot favors Knowledge Search (51%). Different agents show distinct tool preference patterns based on their conversation domains.";
-    return null;
-  },
-  "agent-ops": (msg) => {
+  "ai-agents-overview": (msg) => {
     if (msg.includes("uptime") || msg.includes("health")) return "Current agent fleet uptime: 99.7% (30-day rolling). Two agents experienced brief degradation last week \u2014 SalesBot had a 12-minute outage on Feb 18 (dependency failure) and TechSupportBot had elevated latency for ~25 minutes on Feb 20 (model warm-up). All agents are healthy now.";
     if (msg.includes("throughput") || msg.includes("trend")) return "Weekly throughput: 142,300 conversations processed, up 9% from last week. Peak throughput hit 892 concurrent conversations on Tuesday at 11:15 AM EST. Average response time is 1.8s, within the 2.5s SLA. Want a breakdown by agent or hour?";
     if (msg.includes("degraded") || msg.includes("alert")) return "No agents are currently in degraded state. However, TechSupportBot is approaching its memory threshold (82% utilized) and may need a restart within 48 hours. BillingBot's p99 latency has crept from 2.1s to 2.4s this week \u2014 still within SLA but trending upward. Want to set alerting thresholds?";
     if (msg.includes("compare") || msg.includes("region")) return "Regional breakdown: US-East handles 41% of traffic (avg 1.6s latency), US-West 28% (1.7s), EU-West 22% (1.9s), APAC 9% (2.2s). APAC latency is elevated due to model serving distance; edge deployment planned for next sprint.";
     return null;
   },
-  "self-improving-agents": (msg) => {
+  "ai-agent-evaluation": (msg) => {
+    if (msg.includes("tool") || msg.includes("invoke") || msg.includes("often")) return "The most invoked tools are: CRM Lookup (34%), Knowledge Search (28%), Order Status API (19%), and Ticket Creator (12%). Average tool latency is 245ms; Knowledge Search is fastest at 120ms while CRM Lookup is slowest at 380ms. Shall I correlate tool errors with CSAT?";
     if (msg.includes("loop") || msg.includes("learning") || msg.includes("how many")) return "This week: 47 self-learning loops completed across 5 agents. CustomerBot ran the most (14 loops), incorporating 2,340 feedback signals. Overall improvement yield: 72% of loops produced measurable accuracy gains, up from 63% last month. Want to see loop outcomes by agent?";
-    if (msg.includes("improvement") || msg.includes("trend") || msg.includes("model")) return "Model improvement trends: aggregate accuracy has improved 2.4% this quarter through self-learning. The biggest single-loop gain was CustomerBot's intent model (+1.8% after incorporating 1,200 correction signals). Diminishing returns are appearing for mature agents \u2014 SalesBot's last 3 loops yielded <0.1% each.";
-    if (msg.includes("feedback") || msg.includes("impactful")) return "Most impactful feedback sources: Agent corrections (42% of improvement signal), customer satisfaction ratings (28%), conversation outcome labels (19%), and explicit thumbs-up/down (11%). Agent corrections are 3x more impactful per signal than ratings. Want to see the feedback funnel?";
-    if (msg.includes("before") || msg.includes("after") || msg.includes("compare")) return "Before/after learning (last 30 days): CustomerBot accuracy 89.1% \u2192 91.8%, SupportBot 86.4% \u2192 88.2%, SalesBot 91.2% \u2192 91.5% (plateau). Average resolution turns decreased by 0.4 across all learning agents. Customer satisfaction improved 1.7 points post-learning.";
-    return null;
-  },
-  "ai-agent-vs-agent": (msg) => {
-    if (msg.includes("resolution") || msg.includes("compare")) return "AI agents resolve 68% of conversations without human escalation, with a 4.1/5 satisfaction score. Human agents handle escalated/complex cases with 4.6/5 satisfaction. Combined, the hybrid model resolves 94% of conversations. AI resolution rate has improved 12% this quarter.";
-    if (msg.includes("handling time") || msg.includes("time")) return "Average handling time: AI agents 2.3 minutes, human agents 8.7 minutes. AI-to-human handoffs add 1.4 minutes of transition overhead. When AI pre-processes before handoff, human handle time drops to 6.2 minutes. Total cost per conversation: AI $0.12, human $4.80, hybrid $1.95.";
-    if (msg.includes("topic") || msg.includes("better") || msg.includes("handled")) return "AI excels at: password resets (97% resolution), order status (95%), billing FAQ (93%), and returns processing (89%). Humans outperform on: complex complaints (AI 34% vs human 78%), contract negotiations, multi-product technical issues, and emotionally sensitive situations. Want the full topic comparison matrix?";
-    if (msg.includes("satisfaction") || msg.includes("score")) return "CSAT comparison: AI-only conversations 4.1/5, human-only 4.6/5, AI-with-handoff 4.3/5. Interestingly, AI scores higher than humans on speed-related satisfaction (4.7 vs 3.9) while humans lead on empathy (4.8 vs 3.6) and complex problem-solving (4.7 vs 3.2).";
+    if (msg.includes("success") || msg.includes("failure") || msg.includes("rate")) return "Tool success rates: Knowledge Search 99.2%, Ticket Creator 98.7%, Order Status API 97.1%, CRM Lookup 94.8%. CRM Lookup failures are mostly timeout-related (3.1%) and auth token expiry (1.9%). Evaluation dashboards flag any tool below 96% for follow-up.";
+    if (msg.includes("before") || msg.includes("after") || msg.includes("update") || msg.includes("compare")) return "Before/after recent updates (last 30 days): CustomerBot accuracy 89.1% \u2192 91.8%, SupportBot 86.4% \u2192 88.2%, SalesBot 91.2% \u2192 91.5% (plateau). Average resolution turns decreased by 0.4 across agents that received learning updates. Customer satisfaction improved 1.7 points in that cohort.";
     return null;
   },
   "knowledge-responses": (msg) => {
@@ -302,11 +288,45 @@ function generateAIResponse(userMessage: string, ootbTypeId?: string): string {
 // ─── Panel dimensions ────────────────────────────────────────────────────────
 
 const REM_PX = 16;
-const CHAT_PANEL_DEFAULT_WIDTH_REM = 400 / REM_PX; // 25rem
+const CHAT_PANEL_DEFAULT_WIDTH_REM = 22;
 const CHAT_PANEL_MIN_WIDTH_REM = 280 / REM_PX; // 17.5rem
 const CHAT_PANEL_MAX_WIDTH_REM = 600 / REM_PX; // 37.5rem
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
+
+function isSameCalendarDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function isYesterday(d: Date, now: Date): boolean {
+  const y = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  return isSameCalendarDay(d, y);
+}
+
+/** Relative time for history cards: minutes / hours on the same day, then "yesterday", then day count. */
+function formatHistoryRelativeTime(d: Date, now: Date = new Date()): string {
+  const diffMs = now.getTime() - d.getTime();
+  if (diffMs < 0) return "just now";
+  const minutesTotal = Math.floor(diffMs / 60_000);
+  if (isSameCalendarDay(d, now)) {
+    if (minutesTotal < 1) return "just now";
+    if (minutesTotal < 60) {
+      return minutesTotal === 1 ? "1 minute ago" : `${minutesTotal} minutes ago`;
+    }
+    const hours = Math.floor(minutesTotal / 60);
+    return hours === 1 ? "1 hour ago" : `${hours} hours ago`;
+  }
+  if (isYesterday(d, now)) return "yesterday";
+  const startD = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const startN = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dayDiff = Math.round((startN.getTime() - startD.getTime()) / 86_400_000);
+  if (dayDiff === 1) return "1 day ago";
+  return `${dayDiff} days ago`;
+}
 
 /** Conversation view: message list (single thread per dashboard) */
 function ThreadView({
@@ -369,10 +389,10 @@ function ThreadView({
   // Empty thread state with suggested prompts
   if (displayMessages.length === 0 && !isThinking) {
     return (
-      <div className="h-full min-h-0 p-6 flex flex-col items-center justify-center text-center">
+      <div className="h-full min-h-0 p-4 flex flex-col items-center justify-center text-center">
         <AiAssistantEmptyStateGraphic className="w-[12.5rem] h-[12.5rem] shrink-0" />
         <div className="mt-6 text-sm text-muted-foreground max-w-[28rem]">
-          Hi 👋 I'm your AI assistant, designed to help you. Not sure where to start? Try one of these below.
+          Hi 👋 I'm your AI assistant, how can I help you today?
         </div>
 
         {suggestedQuestions && suggestedQuestions.length > 0 && (
@@ -463,6 +483,104 @@ function ThreadView({
   );
 }
 
+function historyCardDisplayTitle(conversation: GlobalAiConversation): string {
+  const firstUser = conversation.messages.find((m) => m.role === "user" && m.content.trim());
+  const isDefaultName = conversation.name.trim() === GLOBAL_AI_DEFAULT_CHAT_TITLE;
+  if (conversation.usesAutoTitle && isDefaultName && firstUser) {
+    return conversationNameFromPrompt(firstUser.content);
+  }
+  return conversation.name;
+}
+
+function HistoryView({
+  conversations,
+  onSelectConversation,
+  onDeleteConversation,
+}: {
+  conversations: GlobalAiConversation[];
+  onSelectConversation: (conversationId: string) => void;
+  onDeleteConversation: (conversationId: string) => void;
+}) {
+  const [, setRelativeTimeTick] = useState(0);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setRelativeTimeTick((t) => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  if (conversations.length === 0) {
+    return (
+      <div className="h-full min-h-0 p-6 flex items-center justify-center text-center">
+        <div>
+          <p className="text-sm font-medium">No previous conversations</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Start a new chat and send a prompt to save it here.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full overflow-y-auto p-3 space-y-2">
+      {conversations.map((conversation) => {
+        const displayTitle = historyCardDisplayTitle(conversation);
+        return (
+          <div
+            key={conversation.id}
+            role="button"
+            tabIndex={0}
+            onClick={() => onSelectConversation(conversation.id)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onSelectConversation(conversation.id);
+              }
+            }}
+            className={cn(
+              "group w-full rounded-lg border border-border bg-background p-4 text-left transition-colors cursor-pointer outline-none hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+            )}
+          >
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+              <p
+                className="min-w-0 text-sm font-normal text-foreground truncate"
+                title={displayTitle}
+              >
+                {displayTitle}
+              </p>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "h-8 w-8 shrink-0",
+                      "opacity-0 transition-opacity group-hover:opacity-100",
+                      "focus-visible:opacity-100",
+                    )}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteConversation(conversation.id);
+                    }}
+                    aria-label="Delete conversation"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left">Delete conversation</TooltipContent>
+              </Tooltip>
+            </div>
+            <p className="mt-0.5 text-sm font-normal text-neutral-400">
+              {formatHistoryRelativeTime(conversation.updatedAt)}
+            </p>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function DashboardChatPanel({
@@ -473,6 +591,31 @@ export function DashboardChatPanel({
 }: DashboardChatPanelProps) {
   const dashboardChat = useDashboardChat();
   const { isThinking: exploreThinking, onSend: exploreOnSend } = useAiAssistantExploreBridge();
+  const conversations = useGlobalAiConversations();
+  const activeConversationId = useActiveGlobalAiConversationId();
+  const draftDisplayName = useGlobalAiDraftDisplayName();
+
+  const activeConversation = useMemo(
+    () => conversations.find((c) => c.id === activeConversationId),
+    [conversations, activeConversationId],
+  );
+
+  const [showHistory, setShowHistory] = useState(false);
+
+  /**
+   * While actively chatting (thread view) with an auto-titled thread, keep the header as "New Chat"
+   * until manual rename or leaving the thread (finalize). In history view, show the same derived title as cards.
+   */
+  const headerDisplayTitle = useMemo(() => {
+    if (!activeConversationId) return draftDisplayName;
+    const c = activeConversation;
+    if (!c) return GLOBAL_AI_DEFAULT_CHAT_TITLE;
+    const isDefaultName = c.name.trim() === GLOBAL_AI_DEFAULT_CHAT_TITLE;
+    if (c.usesAutoTitle && isDefaultName) {
+      return showHistory ? historyCardDisplayTitle(c) : GLOBAL_AI_DEFAULT_CHAT_TITLE;
+    }
+    return c.name;
+  }, [activeConversationId, activeConversation, draftDisplayName, showHistory]);
 
   // The OOTB type used for prompts / AI responses: explicit sourceOotbId > dashboardId
   const ootbTypeId = sourceOotbId || dashboardId;
@@ -483,6 +626,49 @@ export function DashboardChatPanel({
   const [internalIsThinking, setInternalIsThinking] = useState(false);
   const [panelWidthRem, setPanelWidthRem] = useState(CHAT_PANEL_DEFAULT_WIDTH_REM);
   const [isResizing, setIsResizing] = useState(false);
+  const [titleEditing, setTitleEditing] = useState(false);
+  const [titleEditValue, setTitleEditValue] = useState("");
+  const titleEditBaselineRef = useRef("");
+  const titleInputRef = useRef<HTMLInputElement | null>(null);
+  const chatScrollRef = useRef<HTMLDivElement | null>(null);
+  const historyScrollRef = useRef<HTMLDivElement | null>(null);
+  const [chatFade, setChatFade] = useState({ top: false, bottom: false });
+  const [historyFade, setHistoryFade] = useState({ top: false, bottom: false });
+
+  const messages = storedMessages;
+  const isThinking = exploreOnSend ? exploreThinking : internalIsThinking;
+
+  useEffect(() => {
+    if (!titleEditing) return;
+    titleInputRef.current?.focus();
+    titleInputRef.current?.select();
+  }, [titleEditing]);
+
+  const updateFadeForElement = useCallback(
+    (el: HTMLDivElement | null, setter: (next: { top: boolean; bottom: boolean }) => void) => {
+      if (!el) return;
+      const maxScroll = Math.max(0, el.scrollHeight - el.clientHeight);
+      const topVisible = el.scrollTop > 1;
+      const bottomVisible = el.scrollTop < maxScroll - 1;
+      setter((prev) =>
+        prev.top === topVisible && prev.bottom === bottomVisible
+          ? prev
+          : { top: topVisible, bottom: bottomVisible },
+      );
+    },
+    [],
+  );
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      if (showHistory) {
+        updateFadeForElement(historyScrollRef.current, setHistoryFade);
+      } else {
+        updateFadeForElement(chatScrollRef.current, setChatFade);
+      }
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [showHistory, messages.length, conversations.length, isThinking, updateFadeForElement]);
 
   const routeContextKey = `${dashboardId ?? ""}|${sourceOotbId ?? ""}`;
   const prevRouteContextKeyRef = useRef(routeContextKey);
@@ -514,9 +700,6 @@ export function DashboardChatPanel({
       }
     },
   });
-
-  const messages = storedMessages;
-  const isThinking = exploreOnSend ? exploreThinking : internalIsThinking;
 
   // Keep one consistent, general set of suggested questions across the app.
   const suggestedQuestions = useMemo(() => {
@@ -579,21 +762,43 @@ export function DashboardChatPanel({
     appendUserMessageWithReply(message);
   };
 
-  const handleClearConversation = useCallback(() => {
-    const snapshot = dashboardChat.getMessages(GLOBAL_AI_ASSISTANT_KEY);
-    dashboardChat.clearMessages(GLOBAL_AI_ASSISTANT_KEY);
-    toast.success("Conversation cleared", {
-      action: {
-        label: "Undo",
-        onClick: () => {
-          if (snapshot.length > 0) {
-            dashboardChat.setMessages(GLOBAL_AI_ASSISTANT_KEY, snapshot);
-          }
-          toast.success("Conversation restored");
-        },
-      },
-    });
+  const handleNewChat = useCallback(() => {
+    setInternalIsThinking(false);
+    setQuery("");
+    setShowHistory(false);
+    setTitleEditing(false);
+    dashboardChat.startNewGlobalAiDraft();
   }, [dashboardChat]);
+
+  const handleSelectConversation = useCallback((conversationId: string) => {
+    dashboardChat.setActiveGlobalAiConversation(conversationId);
+    setShowHistory(false);
+    setInternalIsThinking(false);
+    setTitleEditing(false);
+  }, [dashboardChat]);
+
+  const beginTitleEdit = useCallback(() => {
+    titleEditBaselineRef.current = headerDisplayTitle;
+    setTitleEditValue(headerDisplayTitle);
+    setTitleEditing(true);
+  }, [headerDisplayTitle]);
+
+  const commitTitleEdit = useCallback(() => {
+    const next = titleEditValue.trim() || GLOBAL_AI_DEFAULT_CHAT_TITLE;
+    const baseline = titleEditBaselineRef.current.trim() || GLOBAL_AI_DEFAULT_CHAT_TITLE;
+    const userChangedFromBaseline = next !== baseline;
+
+    if (activeConversationId) {
+      dashboardChat.updateGlobalAiConversationTitle(activeConversationId, next);
+    } else {
+      dashboardChat.setGlobalAiDraftDisplayName(next, { userSet: userChangedFromBaseline });
+    }
+    setTitleEditing(false);
+  }, [titleEditValue, activeConversationId, dashboardChat]);
+
+  const cancelTitleEdit = useCallback(() => {
+    setTitleEditing(false);
+  }, []);
 
   return (
     <div
@@ -610,153 +815,235 @@ export function DashboardChatPanel({
         onResizeEnd={handleResizeEnd}
       />
 
-      {/* Header */}
-      <div className="px-4 flex items-center justify-between shrink-0 h-[60px] border-b border-border bg-background">
-        <div className="flex items-center gap-4 min-w-0">
-          <AiAssistantHeaderIcon className="h-9 w-9 shrink-0" />
-          <h2 className="font-semibold">AI Assistant</h2>
-        </div>
-        <div className="flex items-center gap-1 shrink-0">
-          {!exploreOnSend && messages.length > 0 && (
-            <DropdownMenu>
+      {showHistory ? (
+        <>
+          {/* Solid header + fade strip below (no body behind the bar) */}
+          <div className="px-4 flex items-center justify-between shrink-0 gap-2 h-[60px] min-w-0 bg-page relative z-30">
+            <h2 className="min-w-0 flex-1 text-sm font-semibold tracking-tight text-foreground">Chat History</h2>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => {
+                    setShowHistory(false);
+                    setTitleEditing(false);
+                  }}
+                  aria-label="Close history and return to chat"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Back to chat</TooltipContent>
+            </Tooltip>
+          </div>
+          <div className="flex-1 min-h-0 relative overflow-hidden min-w-0">
+            <div
+              ref={historyScrollRef}
+              onScroll={() => updateFadeForElement(historyScrollRef.current, setHistoryFade)}
+              className="h-full overflow-y-auto overflow-x-hidden"
+            >
+              <HistoryView
+                conversations={conversations}
+                onSelectConversation={handleSelectConversation}
+                onDeleteConversation={(id) => {
+                  dashboardChat.deleteGlobalAiConversation(id);
+                  toast.success("Conversation deleted");
+                }}
+              />
+            </div>
+            <div
+              className={`pointer-events-none absolute inset-x-0 top-0 z-10 h-14 bg-gradient-to-b from-page from-[12%] via-page/80 via-45% to-page/0 to-100% transition-opacity ${historyFade.top ? "opacity-100" : "opacity-0"}`}
+              aria-hidden
+            />
+            <div
+              className={`pointer-events-none absolute inset-x-0 bottom-0 z-10 h-14 bg-gradient-to-t from-page from-[12%] via-page/80 via-45% to-page/0 to-100% transition-opacity ${historyFade.bottom ? "opacity-100" : "opacity-0"}`}
+              aria-hidden
+            />
+          </div>
+        </>
+      ) : (
+        <div className="flex-1 min-h-0 flex flex-col">
+          <div className="shrink-0 px-4 flex items-center justify-between gap-2 h-[60px] min-w-0 bg-page relative z-30">
+            <div className="min-w-0 flex-1">
+              {titleEditing ? (
+                <Input
+                  ref={titleInputRef}
+                  value={titleEditValue}
+                  onChange={(e) => setTitleEditValue(e.target.value)}
+                  onBlur={commitTitleEdit}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      commitTitleEdit();
+                    }
+                    if (e.key === "Escape") {
+                      e.preventDefault();
+                      cancelTitleEdit();
+                    }
+                  }}
+                  className="h-8 text-sm font-semibold bg-transparent border-dashed"
+                  aria-label="Chat title"
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={beginTitleEdit}
+                  className="text-left w-full min-w-0 truncate text-sm font-semibold text-foreground rounded-md px-2 py-1 -ml-2 border border-transparent transition-colors hover:bg-muted/80 hover:border-border/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  {headerDisplayTitle}
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-0.5 shrink-0">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="inline-flex">
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Conversation options">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                  </span>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleNewChat} aria-label="New Chat">
+                    <Plus className="h-4 w-4" />
+                  </Button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom">Options</TooltipContent>
+                <TooltipContent side="bottom">New Chat</TooltipContent>
               </Tooltip>
-              <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
-                  onSelect={() => handleClearConversation()}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Clear conversation
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
-      </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowHistory(true)} aria-label="Open History">
+                    <History className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Open History</TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
 
-      {/* Messages — single conversation; scrolls when content overflows */}
-      <div className="flex-1 overflow-y-auto min-h-0 p-4">
-        <ThreadView
-          messages={messages}
-          isThinking={isThinking}
-          suggestedQuestions={suggestedQuestions}
-          onSendSuggestion={handleSend}
-        />
-      </div>
-
-      {/* Input Area — always visible at bottom */}
-      <div className="p-4 shrink-0 border-t border-border bg-background">
-        <div className="rounded-3xl border bg-background text-foreground transition-shadow focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/20">
-          <div className="px-4 pt-3 pb-2">
-            <div className="space-y-2">
-              {pageContextLabel ? (
-                <Badge
-                  variant="secondary"
-                  className="max-w-full min-w-0 justify-start"
-                  aria-label={`Current page context: ${pageContextLabel}`}
-                >
-                  <span className="min-w-0 truncate">{pageContextLabel}</span>
-                </Badge>
-              ) : null}
-              <Textarea
-                placeholder={placeholder || "Ask a question\u2026"}
-                value={query + (chatVoice.isListening && chatVoice.interimText ? chatVoice.interimText : "")}
-                onChange={(e) => {
-                  // If the user starts typing while voice is active, stop recording
-                  if (chatVoice.isListening) {
-                    chatVoice.stop();
-                  }
-                  setQuery(e.target.value);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey && query.trim()) {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
-                rows={1}
-                className="min-h-9 max-h-40 overflow-y-auto border-0 focus-visible:ring-0 shadow-none text-sm px-1 py-2"
+          <div className="flex-1 min-h-0 relative overflow-hidden min-w-0">
+            <div
+              ref={chatScrollRef}
+              onScroll={() => updateFadeForElement(chatScrollRef.current, setChatFade)}
+              className="h-full overflow-y-auto overflow-x-hidden px-4 py-2"
+            >
+              <ThreadView
+                messages={messages}
+                isThinking={isThinking}
+                suggestedQuestions={suggestedQuestions}
+                onSendSuggestion={handleSend}
               />
+            </div>
+            {/* Overlays sit on top of scrolling content — fade uses page alpha, not `transparent` (cleaner blend) */}
+            <div
+              className={`pointer-events-none absolute inset-x-0 top-0 z-10 h-16 bg-gradient-to-b from-page from-[10%] via-page/85 via-40% to-page/0 to-100% transition-opacity ${chatFade.top ? "opacity-100" : "opacity-0"}`}
+              aria-hidden
+            />
+            <div
+              className={`pointer-events-none absolute inset-x-0 bottom-0 z-10 h-20 bg-gradient-to-t from-page from-[10%] via-page/85 via-40% to-page/0 to-100% transition-opacity ${chatFade.bottom ? "opacity-100" : "opacity-0"}`}
+              aria-hidden
+            />
+          </div>
 
-              <div className="flex items-center justify-between">
-                <DropdownMenu>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="inline-flex">
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-                            <Plus className="h-4 w-4" />
+          {/* Solid footer — composer on opaque page (no scroll content behind) */}
+          <div className="shrink-0 bg-page px-4 pb-3 pt-2 relative z-30">
+            <div className="rounded-3xl border bg-background text-foreground transition-shadow focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/20">
+              <div className="px-4 pt-3 pb-2">
+                <div className="space-y-2">
+                  {pageContextLabel ? (
+                    <Badge
+                      variant="secondary"
+                      className="max-w-full min-w-0 justify-start"
+                      aria-label={`Current page context: ${pageContextLabel}`}
+                    >
+                      <span className="min-w-0 truncate">{pageContextLabel}</span>
+                    </Badge>
+                  ) : null}
+                  <Textarea
+                    placeholder={placeholder || "Ask a question\u2026"}
+                    value={query + (chatVoice.isListening && chatVoice.interimText ? chatVoice.interimText : "")}
+                    onChange={(e) => {
+                      // If the user starts typing while voice is active, stop recording
+                      if (chatVoice.isListening) {
+                        chatVoice.stop();
+                      }
+                      setQuery(e.target.value);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey && query.trim()) {
+                        e.preventDefault();
+                        handleSend();
+                      }
+                    }}
+                    rows={1}
+                    className="min-h-9 max-h-40 overflow-y-auto border-0 focus-visible:ring-0 shadow-none text-sm px-1 py-2"
+                  />
+
+                  <div className="flex items-center justify-between">
+                    <DropdownMenu>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-flex">
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">Attach</TooltipContent>
+                      </Tooltip>
+                      <DropdownMenuContent align="start" side="top">
+                        <DropdownMenuItem onClick={() => toast.info("File upload coming soon")}>
+                          <Upload className="h-4 w-4 mr-2" />
+                          Upload file
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => toast.info("Image upload coming soon")}>
+                          <Image className="h-4 w-4 mr-2" />
+                          Add image
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => toast.info("CSV import coming soon")}>
+                          <Paperclip className="h-4 w-4 mr-2" />
+                          Attach data source
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <div className="flex items-center gap-1">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant={chatVoice.isListening ? "destructive" : query.trim() ? "default" : "outline"}
+                            className={`h-8 w-8 rounded-lg ${chatVoice.isListening ? "animate-pulse" : ""}`}
+                            onClick={() => {
+                              if (chatVoice.isListening) {
+                                chatVoice.stop();
+                              } else if (query.trim()) {
+                                handleSend();
+                              } else if (chatVoice.isSupported) {
+                                chatVoice.toggle();
+                              } else {
+                                toast.error("Voice input not supported", { description: "Your browser doesn't support speech recognition. Try Chrome or Edge." });
+                              }
+                            }}
+                          >
+                            {chatVoice.isListening ? (
+                              <Square className="h-4 w-4" />
+                            ) : query.trim() ? (
+                              <ArrowRight className="h-4 w-4" />
+                            ) : (
+                              <Mic className="h-4 w-4" />
+                            )}
                           </Button>
-                        </DropdownMenuTrigger>
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">Attach</TooltipContent>
-                  </Tooltip>
-                  <DropdownMenuContent align="start" side="top">
-                    <DropdownMenuItem onClick={() => toast.info("File upload coming soon")}>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload file
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => toast.info("Image upload coming soon")}>
-                      <Image className="h-4 w-4 mr-2" />
-                      Add image
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => toast.info("CSV import coming soon")}>
-                      <Paperclip className="h-4 w-4 mr-2" />
-                      Attach data source
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                <div className="flex items-center gap-1">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="icon"
-                        variant={chatVoice.isListening ? "destructive" : query.trim() ? "default" : "outline"}
-                        className={`h-8 w-8 rounded-lg ${chatVoice.isListening ? "animate-pulse" : ""}`}
-                        onClick={() => {
-                          if (chatVoice.isListening) {
-                            chatVoice.stop();
-                          } else if (query.trim()) {
-                            handleSend();
-                          } else if (chatVoice.isSupported) {
-                            chatVoice.toggle();
-                          } else {
-                            toast.error("Voice input not supported", { description: "Your browser doesn't support speech recognition. Try Chrome or Edge." });
-                          }
-                        }}
-                      >
-                        {chatVoice.isListening ? (
-                          <Square className="h-4 w-4" />
-                        ) : query.trim() ? (
-                          <ArrowRight className="h-4 w-4" />
-                        ) : (
-                          <Mic className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">
-                      {chatVoice.isListening ? "Stop recording" : query.trim() ? "Send" : "Voice input"}
-                    </TooltipContent>
-                  </Tooltip>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          {chatVoice.isListening ? "Stop recording" : query.trim() ? "Send" : "Voice input"}
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
     </div>
   );

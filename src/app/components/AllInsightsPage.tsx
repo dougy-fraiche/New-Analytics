@@ -30,7 +30,6 @@ import {
 import {
   generateGridLayout,
   buildChartConfig,
-  getChartIcon,
   UniversalChart,
   type ChartType,
   type DatasetConfig,
@@ -39,8 +38,7 @@ import { allOotbDashboards, standaloneCategories } from "../data/ootb-dashboards
 import { useProjects } from "../contexts/ProjectContext";
 import { WidgetAIProvider } from "../contexts/WidgetAIContext";
 import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
-import { WidgetAIPromptButton } from "./WidgetAIPromptButton";
-import { WidgetOverflowMenu } from "./WidgetOverflowMenu";
+import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
 import { WidgetAIExplanation } from "./WidgetAIExplanation";
 import { PageTransition } from "./PageTransition";
 import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
@@ -413,8 +411,6 @@ function InsightWidgetCard({ widget }: { widget: InsightWidget }) {
     widget.firstPanelIndex
   );
 
-  const Icon = getChartIcon(widget.chartType);
-
   const [expanded, setExpanded] = useState(false);
   const [visibleCount, setVisibleCount] = useState(widget.dashboards.length);
   const rowRef = useRef<HTMLDivElement>(null);
@@ -460,12 +456,10 @@ function InsightWidgetCard({ widget }: { widget: InsightWidget }) {
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <Icon className="h-4 w-4 text-primary shrink-0" />
             <CardTitle className="text-base truncate">{widget.title}</CardTitle>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            <WidgetAIPromptButton widgetTitle={widget.title} chartType={widget.chartType} />
-            <WidgetOverflowMenu widgetTitle={widget.title} chartType={widget.chartType} />
+            <WidgetAskAIAndOverflow widgetTitle={widget.title} chartType={widget.chartType} />
             <Badge variant="outline" className="text-xs">
               {CHART_TYPE_LABELS[widget.chartType] || widget.chartType}
             </Badge>

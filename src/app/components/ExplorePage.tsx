@@ -45,7 +45,7 @@ export function ExplorePage() {
 
   // ── Context hooks ─────────────────────────────────────────────────
   const { addConversation, conversations, addMessageToConversation } = useConversations();
-  const { appendMessage } = useDashboardChat();
+  const { appendMessage, startNewGlobalAiDraft, setGlobalAiDraftDisplayName } = useDashboardChat();
   const navigate = useNavigate();
   const params = useParams();
 
@@ -154,6 +154,8 @@ export function ExplorePage() {
       timestamp: new Date(),
     };
     addMessageToConversation(newConversation.id, userMessage);
+    startNewGlobalAiDraft();
+    setGlobalAiDraftDisplayName(name.trim(), { userSet: true });
     appendMessage(GLOBAL_AI_ASSISTANT_KEY, conversationMessageToGlobalChat(userMessage));
     setMessages([userMessage]);
     const messageToSend = query;
@@ -185,7 +187,15 @@ export function ExplorePage() {
       setMessages([userMessage, assistantMessage]);
       setIsThinking(false);
     }, 2000);
-  }, [query, addConversation, addMessageToConversation, appendMessage, navigate]);
+  }, [
+    query,
+    addConversation,
+    addMessageToConversation,
+    appendMessage,
+    navigate,
+    startNewGlobalAiDraft,
+    setGlobalAiDraftDisplayName,
+  ]);
 
   // ── Render ────────────────────────────────────────────────────────
   return (

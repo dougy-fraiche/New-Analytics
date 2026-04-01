@@ -1,5 +1,6 @@
 import {
-  PanelLeft,
+  PanelLeftClose,
+  PanelLeftOpen,
   Sun,
   Moon,
   Search,
@@ -54,7 +55,11 @@ export function TopNavBar({
               className="size-8"
               onClick={toggleSidebar}
             >
-              <PanelLeft className="size-4" />
+              {isCollapsed ? (
+                <PanelLeftOpen className="size-4" />
+              ) : (
+                <PanelLeftClose className="size-4" />
+              )}
               <span className="sr-only">{isCollapsed ? "Expand sidebar" : "Collapse sidebar"}</span>
             </Button>
           </TooltipTrigger>
@@ -97,7 +102,7 @@ export function TopNavBar({
       )}
 
       {/* Page-level actions slot (portaled into by child pages) + global actions */}
-      <div className="ml-auto flex items-center gap-0.5">
+      <div className="ml-auto flex items-center gap-1">
         {/* Page-level actions slot */}
         <div ref={onActionsSlotRef} className="flex items-center gap-1" />
 
@@ -139,14 +144,19 @@ export function TopNavBar({
           <TooltipTrigger asChild>
             <span className="inline-flex">
               <Button
-                variant="ghost"
-                size="icon"
-                className={`size-8 ${aiAssistantOpen ? "bg-accent text-accent-foreground" : ""}`}
+                variant="outline"
+                size="sm"
+                className={[
+                  "h-8 gap-2",
+                  "border-primary/40 text-primary hover:bg-primary/5 hover:text-primary",
+                  aiAssistantOpen ? "bg-primary/10 border-primary/60" : "",
+                ].join(" ")}
                 disabled={aiAssistantDisabled}
                 aria-pressed={aiAssistantOpen}
                 onClick={() => onAiAssistantOpenChange?.(!aiAssistantOpen)}
               >
                 <Sparkles className="h-4 w-4" />
+                <span>Ask AI</span>
                 <span className="sr-only">
                   {aiAssistantDisabled ? "AI assistant — not available on Explore" : aiAssistantOpen ? "Close AI assistant" : "Open AI assistant"}
                 </span>

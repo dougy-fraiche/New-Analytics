@@ -348,22 +348,6 @@ const dashboardSummaries: Record<string, AISummaryData> = {
     actionText:
       "Deploy an account verification AI agent to automate identity checks and add 23% containment to the biggest gap.",
   },
-  // ── Standalone OOTB: AI Agent vs Agent ───────────────────────────────────
-  "ai-agent-vs-agent": {
-    summary:
-      "End-to-end AI resolution is 74.2% vs 88.6% for human agents overall — but humans primarily receive escalations, so overlap-intent comparisons tell a tighter story. Highlights:",
-    bullets: [
-      { label: "AI resolution (E2E): 74.2%", detail: "For conversations fully handled by the AI agent without human takeover" },
-      { label: "Human resolution (all routed): 88.6%", detail: "Includes complex and escalated work — not a like-for-like cohort" },
-      { label: "Overlap intents — AI: 81.3% vs human: 86.9%", detail: "Where both handle similar intents, the gap narrows to 5.6 points" },
-      { label: "Hybrid model: ~94% resolved", detail: "AI first-line plus human escalation still clears most volume" },
-    ],
-    linkedActionId: 3,
-    opportunity:
-      "On comparable intents, AI trails human resolution by ~5.6 points — the biggest lever is equipping AI with the same knowledge and tool access humans use on escalations.",
-    actionText:
-      "Enable AI co-pilot-style tooling and knowledge surfacing for the AI agent on overlap intents to close the resolution gap while preserving fast containment.",
-  },
   // ── Automation Opportunities (standalone page) ─────────────────────────
   "automation-opportunities": {
     summary:
@@ -738,7 +722,7 @@ export function DashboardAISummary({
       <div className="space-y-3">
         {!hideSectionHeader && (
           <div className="flex items-center gap-3">
-            <h3 className="flex-1 tracking-tight">AI Insights</h3>
+            <h3 className="mt-8 flex-1 tracking-tight">AI Insights</h3>
             <div className="flex shrink-0 items-center gap-2">
               {generatedTimestampBadge}
               <Tooltip>
@@ -779,7 +763,12 @@ export function DashboardAISummary({
 
         <Card className="group/widget mb-8 gap-0 shadow-none transition-[box-shadow,border-color] hover:border-primary/30 hover:shadow-md">
           {insightsCollapsible ? (
-            <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 space-y-0 border-b border-border/60 p-4">
+            <CardHeader
+              className={cn(
+                "flex flex-row flex-wrap items-center justify-between gap-2 space-y-0 p-4",
+                insightsOpen && "border-b border-border/60",
+              )}
+            >
               <div className="flex min-w-0 flex-1 items-center gap-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -980,7 +969,7 @@ export function DashboardAISummary({
                                         {action.title}
                                       </span>
                                       <div
-                                        className="flex shrink-0 items-center gap-1"
+                                        className="flex shrink-0 items-center gap-0"
                                         onClick={(e) => e.stopPropagation()}
                                         onPointerDown={(e) => e.stopPropagation()}
                                       >

@@ -4,9 +4,8 @@ import { EChartsCanvas } from "./EChartsCanvas";
 import { buildInlineEChartsOption } from "./echartsChartOptions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
-import { WidgetOverflowMenu } from "./WidgetOverflowMenu";
 import { WidgetAIExplanation } from "./WidgetAIExplanation";
-import { WidgetAIPromptButton } from "./WidgetAIPromptButton";
+import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
 import type { WidgetData } from "../contexts/ConversationContext";
 
 interface InlineWidgetProps {
@@ -60,14 +59,7 @@ export function InlineWidget({ widget }: InlineWidgetProps) {
             <CardDescription className="text-xs">{widget.description}</CardDescription>
           </div>
           <div className="flex items-start gap-1 shrink-0">
-            <WidgetAIPromptButton
-              widgetTitle={widget.title}
-              chartType={widget.chartType}
-            />
-            <WidgetOverflowMenu
-              widgetTitle={widget.title}
-              chartType={widget.chartType}
-            />
+            <WidgetAskAIAndOverflow widgetTitle={widget.title} chartType={widget.chartType} />
           </div>
         </div>
       </CardHeader>

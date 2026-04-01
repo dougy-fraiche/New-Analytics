@@ -294,8 +294,8 @@ export const SEED_DASHBOARD_THREADS: Record<string, SeedThread[]> = {
     },
   ],
 
-  // ── agent-ops (2 threads) ──────────────────────────────────────────────────
-  "agent-ops": [
+  // ── ai-agents-overview (2 threads) ─────────────────────────────────────────
+  "ai-agents-overview": [
     {
       thread: {
         id: "seed-aops-1",
@@ -357,41 +357,51 @@ export const SEED_DASHBOARD_THREADS: Record<string, SeedThread[]> = {
     },
   ],
 
-  // ── ai-agent-vs-agent (1 thread — standalone category) ────────────────────
-  "ai-agent-vs-agent": [
+  // ── ai-agent-evaluation (2 threads) ────────────────────────────────────────
+  "ai-agent-evaluation": [
     {
       thread: {
-        id: "seed-ava-1",
-        title: "AI vs human agent resolution rate",
-        createdAt: new Date("2026-02-26T13:00:00"),
-        updatedAt: new Date("2026-02-26T13:02:41"),
+        id: "seed-aaeval-1",
+        title: "Tool reliability after the CRM connector change",
+        createdAt: new Date("2026-03-01T11:00:00"),
+        updatedAt: new Date("2026-03-01T11:01:05"),
       },
       messages: [
         {
-          id: "seed-ava-1-m1",
+          id: "seed-aaeval-1-m1",
           role: "user",
-          content: "How does AI agent resolution rate compare to human agents right now?",
-          timestamp: new Date("2026-02-26T13:00:00"),
+          content: "Did the CRM connector update improve or hurt tool success rates?",
+          timestamp: new Date("2026-03-01T11:00:00"),
         },
         {
-          id: "seed-ava-1-m2",
+          id: "seed-aaeval-1-m2",
           role: "assistant",
           content:
-            "For conversations the AI agent handles end-to-end, the resolution rate is 74.2%. Human agents resolve 88.6% of conversations, but the comparison isn't apples-to-apples — human agents primarily handle complex escalations the AI routed away. For overlap intents where both handle similar cases, AI resolution is 81.3% vs human 86.9%.",
-          timestamp: new Date("2026-02-26T13:00:22"),
+            "CRM Lookup success improved from 94.2% to 96.8% after the Mar 1 connector patch, with median latency down 42ms. Timeout errors dropped by roughly half; the remaining failures are almost all auth token expiry, which the platform team is scheduling to refresh more aggressively.",
+          timestamp: new Date("2026-03-01T11:01:05"),
         },
+      ],
+    },
+    {
+      thread: {
+        id: "seed-aaeval-2",
+        title: "Are learning loops still moving accuracy?",
+        createdAt: new Date("2026-03-12T15:20:00"),
+        updatedAt: new Date("2026-03-12T15:21:30"),
+      },
+      messages: [
         {
-          id: "seed-ava-1-m3",
+          id: "seed-aaeval-2-m1",
           role: "user",
-          content: "Where does the AI actually outperform humans?",
-          timestamp: new Date("2026-02-26T13:02:15"),
+          content: "Are self-learning loops still producing measurable accuracy gains this month?",
+          timestamp: new Date("2026-03-12T15:20:00"),
         },
         {
-          id: "seed-ava-1-m4",
+          id: "seed-aaeval-2-m2",
           role: "assistant",
           content:
-            "The AI outperforms human agents on three dimensions: response speed (median 2s vs 4.2 min), consistency (variance in resolution steps is 3× lower for AI), and after-hours handling (AI maintains 74% resolution at 2am; overnight human coverage resolves only 61%). CSAT scores are also nearly identical for routine transactional intents like order tracking and password resets.",
-          timestamp: new Date("2026-02-26T13:02:41"),
+            "Yes — 68% of completed loops this month moved at least one tracked metric by ≥0.5 points. The strongest signal is still agent-correction–driven retraining; customer thumbs alone rarely move the needle unless sample size exceeds ~800 per intent. Mature agents are starting to show diminishing returns — prioritize loops on intents with confidence below 80%.",
+          timestamp: new Date("2026-03-12T15:21:30"),
         },
       ],
     },

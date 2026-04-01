@@ -83,7 +83,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
 
   const [favorites, setFavorites] = useState<FavoriteDashboard[]>([
     { id: "agent-queries", name: "Agent Queries", path: "/dashboard/agent-queries" },
-    { id: "intent-nlu", name: "Intent & NLU", path: "/dashboard/intent-nlu" },
+    { id: "intent-nlu", name: "Intent & NLU", path: "/observability/ai-agents/intent-nlu" },
     { id: "knowledge-responses", name: "Knowledge Responses", path: "/dashboard/knowledge-responses" },
   ]);
 

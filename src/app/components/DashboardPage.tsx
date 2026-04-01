@@ -1,7 +1,21 @@
 import { useParams, useNavigate } from "react-router";
 import { useState, useEffect, useMemo } from "react";
-import { RotateCcw, Download, MoreVertical, Pencil, Pin, Copy, Settings, Clock, Trash2 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import {
+  RotateCcw,
+  Download,
+  MoreVertical,
+  Pencil,
+  Pin,
+  Copy,
+  Settings,
+  Clock,
+  Trash2,
+  TrendingDown,
+  TrendingUp,
+  CircleGauge,
+  LineChart,
+} from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader } from "./ui/card";
 import { Button } from "./ui/button";
 import {
   DropdownMenu,
@@ -36,10 +50,10 @@ import { allOotbDashboards, standaloneCategories } from "../data/ootb-dashboards
 import { WidgetAIProvider } from "../contexts/WidgetAIContext";
 import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
-import { WidgetAIPromptButton } from "./WidgetAIPromptButton";
-import { WidgetOverflowMenu } from "./WidgetOverflowMenu";
+import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
 import { PageTransition } from "./PageTransition";
 import { KpiSparkline, KPI_SPARKLINE_SERIES } from "./KpiSparkline";
+import { KpiMetricValueTitle } from "./KpiMetricValueTitle";
 import {
   DATE_RANGE_CUSTOM_OPTION,
   DATE_RANGE_LABELS,
@@ -472,7 +486,10 @@ export function DashboardPage() {
           ) : null}
           {/* Section heading */}
           <div className="flex items-center gap-4 flex-wrap">
-            <h2 className="tracking-tight">Key Performance Indicators</h2>
+            <h3 className="mt-8 flex items-center gap-2 tracking-tight">
+              <CircleGauge className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+              Key Performance Indicators
+            </h3>
           </div>
 
           {/* Metric Cards */}
@@ -484,27 +501,29 @@ export function DashboardPage() {
             }`}
           >
               <Card
-                className={`group/widget gap-2 transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30 ${highlightedKpiCards.has(0) ? anomalyCardClass : ""}`}
+                className={`group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30 ${highlightedKpiCards.has(0) ? anomalyCardClass : ""}`}
               >
                 <CardHeader className="pb-0">
                   <div className="flex items-center gap-2">
                     <CardDescription className="flex-1">Total Escalations</CardDescription>
-                    <WidgetAIPromptButton widgetTitle="Total Escalations" chartType="metric" />
-                    <WidgetOverflowMenu widgetTitle="Total Escalations" chartType="metric" />
+                    <WidgetAskAIAndOverflow widgetTitle="Total Escalations" chartType="metric" />
                   </div>
                   <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
-                    <CardTitle className="text-3xl tabular-nums leading-none">
-                      260
-                    </CardTitle>
-                    <Badge variant="destructive" className="shrink-0 text-xs">
-                      +12%
+                    <KpiMetricValueTitle value="260" />
+                    <Badge
+                      variant="secondary"
+                      className="shrink-0 border-transparent bg-emerald-600 text-xs text-white dark:bg-emerald-600 dark:text-white"
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        <TrendingUp className="h-3 w-3" />
+                        +12%
+                      </span>
                     </Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">
                   <KpiSparkline
                     values={[...KPI_SPARKLINE_SERIES.totalEscalations]}
-                    lineColor="var(--destructive)"
                     seriesName="Escalations"
                     formatValue={(v) => v.toLocaleString()}
                   />
@@ -512,27 +531,29 @@ export function DashboardPage() {
               </Card>
 
               <Card
-                className={`group/widget gap-2 transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30 ${highlightedKpiCards.has(1) ? anomalyCardClass : ""}`}
+                className={`group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30 ${highlightedKpiCards.has(1) ? anomalyCardClass : ""}`}
               >
                 <CardHeader className="pb-0">
                   <div className="flex items-center gap-2">
                     <CardDescription className="flex-1">Avg Resolution Time</CardDescription>
-                    <WidgetAIPromptButton widgetTitle="Avg Resolution Time" chartType="metric" />
-                    <WidgetOverflowMenu widgetTitle="Avg Resolution Time" chartType="metric" />
+                    <WidgetAskAIAndOverflow widgetTitle="Avg Resolution Time" chartType="metric" />
                   </div>
                   <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
-                    <CardTitle className="text-3xl tabular-nums leading-none">
-                      4.3h
-                    </CardTitle>
-                    <Badge variant="default" className="shrink-0 text-xs">
-                      -8%
+                    <KpiMetricValueTitle value="4.3h" />
+                    <Badge
+                      variant="secondary"
+                      className="shrink-0 border-transparent bg-red-600 text-xs text-white dark:bg-red-600 dark:text-white"
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        <TrendingDown className="h-3 w-3" />
+                        -8%
+                      </span>
                     </Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">
                   <KpiSparkline
                     values={[...KPI_SPARKLINE_SERIES.avgResolutionHours]}
-                    lineColor="var(--primary)"
                     seriesName="Avg. resolution"
                     formatValue={(v) => `${v.toFixed(1)} h`}
                   />
@@ -540,27 +561,29 @@ export function DashboardPage() {
               </Card>
 
               <Card
-                className={`group/widget gap-2 transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30 ${highlightedKpiCards.has(2) ? anomalyCardClass : ""}`}
+                className={`group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30 ${highlightedKpiCards.has(2) ? anomalyCardClass : ""}`}
               >
                 <CardHeader className="pb-0">
                   <div className="flex items-center gap-2">
                     <CardDescription className="flex-1">Customer Satisfaction</CardDescription>
-                    <WidgetAIPromptButton widgetTitle="Customer Satisfaction" chartType="metric" />
-                    <WidgetOverflowMenu widgetTitle="Customer Satisfaction" chartType="metric" />
+                    <WidgetAskAIAndOverflow widgetTitle="Customer Satisfaction" chartType="metric" />
                   </div>
                   <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
-                    <CardTitle className="text-3xl tabular-nums leading-none">
-                      94%
-                    </CardTitle>
-                    <Badge variant="default" className="shrink-0 text-xs">
-                      +2%
+                    <KpiMetricValueTitle value="94%" />
+                    <Badge
+                      variant="secondary"
+                      className="shrink-0 border-transparent bg-emerald-600 text-xs text-white dark:bg-emerald-600 dark:text-white"
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        <TrendingUp className="h-3 w-3" />
+                        +2%
+                      </span>
                     </Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">
                   <KpiSparkline
                     values={[...KPI_SPARKLINE_SERIES.customerSatisfactionPct]}
-                    lineColor="var(--primary)"
                     seriesName="Satisfaction"
                     formatValue={(v) => `${v.toFixed(1)}%`}
                   />
@@ -568,18 +591,15 @@ export function DashboardPage() {
               </Card>
 
               <Card
-                className={`group/widget gap-2 transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30 ${highlightedKpiCards.has(3) ? anomalyCardClass : ""}`}
+                className={`group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30 ${highlightedKpiCards.has(3) ? anomalyCardClass : ""}`}
               >
                 <CardHeader className="pb-0">
                   <div className="flex items-center gap-2">
                     <CardDescription className="flex-1">Resolution Rate</CardDescription>
-                    <WidgetAIPromptButton widgetTitle="Resolution Rate" chartType="metric" />
-                    <WidgetOverflowMenu widgetTitle="Resolution Rate" chartType="metric" />
+                    <WidgetAskAIAndOverflow widgetTitle="Resolution Rate" chartType="metric" />
                   </div>
                   <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
-                    <CardTitle className="text-3xl tabular-nums leading-none">
-                      87%
-                    </CardTitle>
+                    <KpiMetricValueTitle value="87%" />
                     <Badge variant="secondary" className="shrink-0 text-xs">
                       No change
                     </Badge>
@@ -588,13 +608,17 @@ export function DashboardPage() {
                 <CardContent className="pt-0">
                   <KpiSparkline
                     values={[...KPI_SPARKLINE_SERIES.resolutionRatePct]}
-                    lineColor="var(--muted-foreground)"
                     seriesName="Resolution rate"
                     formatValue={(v) => `${v.toFixed(1)}%`}
                   />
                 </CardContent>
               </Card>
           </div>
+
+          <h3 className="!mt-8 flex items-center gap-2 tracking-tight">
+            <LineChart className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+            Insights & Analysis
+          </h3>
 
           {/* Randomized Chart Grid */}
           <DashboardChartGrid

@@ -19,8 +19,10 @@ import { PortalContainerContext } from "../contexts/PortalContainerContext";
 import { CreateAIAgentJobsProvider } from "../contexts/CreateAIAgentJobsContext";
 import { CreateAIAgentJobsLayer } from "./CreateAIAgentJobsLayer";
 import { DashboardChatPanel } from "./DashboardChatPanel";
+import { GlobalAiExploreHistorySeed } from "./GlobalAiExploreHistorySeed";
 import { resolveAiAssistantRouteContext } from "../lib/resolve-ai-assistant-route-context";
 import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
+import { AiAssistantPanelControlProvider } from "../contexts/AiAssistantPanelControlContext";
 
 const AI_ASSISTANT_OPEN_STORAGE_KEY = "ai-assistant-panel-open";
 const WIDGET_AI_MESSAGE_SENT_EVENT = "widget-ai-message-sent";
@@ -57,6 +59,11 @@ function RootLayoutInner() {
       /* ignore */
     }
   }, []);
+
+  const openPanel = useCallback(() => {
+    if (isExploreHome) return;
+    setAiAssistantOpen(true);
+  }, [isExploreHome, setAiAssistantOpen]);
 
   useEffect(() => {
     if (isExploreHome) {
@@ -120,17 +127,17 @@ function RootLayoutInner() {
 
   // Generate breadcrumbs based on current route (memoized to avoid recomputation)
   const breadcrumbs = useMemo(() => {
-    // Root pages — no breadcrumb title needed (sidebar already indicates context)
+    // Root pages — keep a single breadcrumb visible
     if (location.pathname === "/") {
-      return [];
+      return [{ label: "Explore" }];
     }
 
     if (location.pathname === "/observability") {
-      return [];
+      return [{ label: "Observability" }];
     }
 
     if (location.pathname === "/automation-opportunities") {
-      return [];
+      return [{ label: "Automation Opportunities" }];
     }
 
     // Observability category folder
@@ -145,32 +152,32 @@ function RootLayoutInner() {
     }
 
     if (location.pathname === "/saved") {
-      return [];
+      return [{ label: "Saved" }];
     }
 
     // Pinned
     if (location.pathname === "/pinned") {
-      return [];
+      return [{ label: "Pinned" }];
     }
 
     // Recommended Actions
     if (location.pathname === "/recommended-actions") {
-      return [];
+      return [{ label: "Recommended Actions" }];
     }
 
     // Action History
     if (location.pathname === "/actions/history") {
-      return [];
+      return [{ label: "Action History" }];
     }
 
     // All Insights
     if (location.pathname === "/insights") {
-      return [];
+      return [{ label: "All Insights" }];
     }
 
     // Settings
     if (location.pathname === "/settings") {
-      return [];
+      return [{ label: "Settings" }];
     }
 
     // Draft Insights list (sub of Explore)
@@ -315,6 +322,8 @@ function RootLayoutInner() {
     <PortalContainerContext.Provider value={portalContainer}>
     <ChatPanelSlotContext.Provider value={chatPanelSlot}>
       <HeaderActionsSlotContext.Provider value={headerActionsSlot}>
+        <AiAssistantPanelControlProvider openPanel={openPanel}>
+        <GlobalAiExploreHistorySeed />
         <SidebarProvider className="h-screen w-full">
           <div className="flex h-full w-full">
             <AppSidebar />
@@ -340,12 +349,24 @@ function RootLayoutInner() {
                 {/* Global AI assistant mount; Explore hero (`/`) omits the panel */}
                 <div ref={setChatPanelSlot} className="min-w-0 flex shrink-0">
                   {!isExploreHome ? (
-                    <div className={aiAssistantOpen ? "" : "hidden"}>
-                      <DashboardChatPanel
-                        dashboardId={aiRouteContext.dashboardId}
-                        sourceOotbId={aiRouteContext.sourceOotbId}
-                        pageContextLabel={aiPageContextLabel}
-                      />
+                    <div
+                      className={[
+                        "relative flex shrink-0 overflow-hidden transition-[max-width] duration-200 ease-linear",
+                        aiAssistantOpen ? "max-w-[40rem]" : "max-w-0",
+                      ].join(" ")}
+                    >
+                      <div
+                        className={[
+                          "h-full shrink-0 transition-transform duration-200 ease-linear will-change-transform",
+                          aiAssistantOpen ? "translate-x-0" : "translate-x-full",
+                        ].join(" ")}
+                      >
+                        <DashboardChatPanel
+                          dashboardId={aiRouteContext.dashboardId}
+                          sourceOotbId={aiRouteContext.sourceOotbId}
+                          pageContextLabel={aiPageContextLabel}
+                        />
+                      </div>
                     </div>
                   ) : null}
                 </div>
@@ -364,6 +385,7 @@ function RootLayoutInner() {
           className="fixed inset-0 pointer-events-none overflow-visible z-[9999] [&>*]:pointer-events-auto"
         />
         <CreateAIAgentJobsLayer />
+        </AiAssistantPanelControlProvider>
       </HeaderActionsSlotContext.Provider>
     </ChatPanelSlotContext.Provider>
     </PortalContainerContext.Provider>

@@ -254,6 +254,10 @@
     --chart-3: var(--accent-yellow-400);
     --chart-4: var(--accent-magenta-300);
     --chart-5: var(--primary-500);
+    /**
+     * KPI mini line / area charts — Figma AI Agent (node 1:8029), Color/Primary/P500.
+     */
+    --kpi-line: #6e56cf;
     --radius: 0.45rem;
     --sidebar: var(--neutral-0);
     --sidebar-foreground: var(--neutral-800);
@@ -293,6 +297,7 @@
     --chart-3: var(--accent-yellow-400);
     --chart-4: var(--accent-magenta-300);
     --chart-5: var(--primary-400);
+    --kpi-line: #6e56cf;
     --sidebar: oklch(0.205 0 0);
     --sidebar-foreground: oklch(0.985 0 0);
     --sidebar-primary: var(--primary-400);

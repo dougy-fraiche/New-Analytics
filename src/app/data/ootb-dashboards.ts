@@ -6,13 +6,12 @@ import {
   Cog,
   CheckSquare,
   Target,
-  BarChart3,
-  Wrench,
-  RefreshCw,
   Users,
   BookOpen,
   Lightbulb,
   Cpu,
+  LayoutDashboard,
+  ClipboardCheck,
   type LucideIcon,
 } from "lucide-react";
 
@@ -28,6 +27,8 @@ export interface OotbCategory {
   id: string;
   name: string;
   icon: LucideIcon;
+  /** When set, shown under the category title for all tabs in this observability surface. */
+  pageDescription?: string;
   dashboards: OotbDashboard[];
 }
 
@@ -71,13 +72,15 @@ export const ootbCategories: OotbCategory[] = [
     id: "ai-agents",
     name: "AI Agents",
     icon: Bot,
+    pageDescription:
+      "End-to-end visibility for your AI agents: health and volume, goals and outcomes, evaluation quality, and intent/NLU performance.",
     dashboards: [
       {
-        id: "intent-nlu",
-        name: "Intent & NLU",
-        icon: Brain,
-        description: "Track intent recognition accuracy, NLU confidence, and classification metrics",
-        lastUpdated: "1 hour ago",
+        id: "ai-agents-overview",
+        name: "Overview",
+        icon: LayoutDashboard,
+        description: "High-level health, volume, and performance snapshot across your AI agents",
+        lastUpdated: "30 minutes ago",
       },
       {
         id: "goals-outcomes",
@@ -87,33 +90,20 @@ export const ootbCategories: OotbCategory[] = [
         lastUpdated: "2 hours ago",
       },
       {
-        id: "tool-usage",
-        name: "Tool Usage",
-        icon: Wrench,
-        description: "Analyze tool invocation patterns, success rates, and latency metrics",
-        lastUpdated: "5 hours ago",
+        id: "ai-agent-evaluation",
+        name: "AI Agent Evaluation",
+        icon: ClipboardCheck,
+        description: "Measure quality, tool use, learning loops, and continuous improvement signals",
+        lastUpdated: "1 hour ago",
       },
       {
-        id: "agent-ops",
-        name: "Agent Ops",
-        icon: BarChart3,
-        description: "Operational metrics for AI agent health, uptime, and throughput",
-        lastUpdated: "30 minutes ago",
-      },
-      {
-        id: "self-improving-agents",
-        name: "Self Improving Agents",
-        icon: RefreshCw,
-        description: "Track self-learning loops, model improvements, and feedback integration",
-        lastUpdated: "6 hours ago",
+        id: "intent-nlu",
+        name: "Intent & NLU",
+        icon: Brain,
+        description: "Track intent recognition accuracy, NLU confidence, and classification metrics",
+        lastUpdated: "1 hour ago",
       },
     ],
-  },
-  {
-    id: "ai-agent-vs-agent",
-    name: "AI Agent vs Agent",
-    icon: Users,
-    dashboards: [],
   },
   {
     id: "knowledge-performance",

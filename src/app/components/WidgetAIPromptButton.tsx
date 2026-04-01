@@ -7,6 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { useWidgetAI } from "../contexts/WidgetAIContext";
 import { useVoiceInput } from "../hooks/useVoiceInput";
 import { usePortalContainer } from "../contexts/PortalContainerContext";
+import { useOptionalAiAssistantPanelControl } from "../contexts/AiAssistantPanelControlContext";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { cn } from "./ui/utils";
@@ -90,6 +91,7 @@ export function WidgetAIPromptButton({
 }: WidgetAIPromptButtonProps) {
   const widgetAI = useWidgetAI();
   const portalContainer = usePortalContainer();
+  const assistantPanel = useOptionalAiAssistantPanelControl();
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined && controlledOnOpenChange !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
@@ -209,6 +211,7 @@ export function WidgetAIPromptButton({
 
   useEffect(() => {
     if (open) {
+      assistantPanel?.openPanel();
       const timer = setTimeout(() => inputRef.current?.focus(), 100);
       return () => clearTimeout(timer);
     } else {
@@ -216,7 +219,7 @@ export function WidgetAIPromptButton({
       voice.stop();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, voice.stop]);
+  }, [open, voice.stop, assistantPanel]);
 
   const handleSend = () => {
     if (!query.trim() || !widgetAI) return;

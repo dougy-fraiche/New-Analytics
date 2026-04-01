@@ -1,7 +1,19 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router";
-import { Calendar, Download, MoreVertical, Pin, Settings, Clock, RotateCcw } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import {
+  Calendar,
+  Download,
+  MoreVertical,
+  Pin,
+  Settings,
+  Clock,
+  RotateCcw,
+  TrendingDown,
+  TrendingUp,
+  CircleGauge,
+  LineChart,
+} from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import {
@@ -28,8 +40,7 @@ import { DashboardChartGrid } from "./ChartVariants";
 import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
 import { WidgetAIProvider } from "../contexts/WidgetAIContext";
 import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
-import { WidgetAIPromptButton } from "./WidgetAIPromptButton";
-import { WidgetOverflowMenu } from "./WidgetOverflowMenu";
+import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,7 +53,11 @@ import { useContainerBreakpoint } from "../hooks/useContainerBreakpoint";
 import { PageContent, PageHeader, pageHeaderTabsFooterClassName } from "./PageChrome";
 import { PageTransition } from "./PageTransition";
 import { KpiSparkline, KPI_SPARKLINE_SERIES } from "./KpiSparkline";
+import { KpiMetricValueTitle } from "./KpiMetricValueTitle";
 import { LabeledFilterInline, LabeledSelectValue } from "./HeaderFilters";
+import { AIAgentsOverviewTab } from "./AIAgentsOverviewTab";
+import { AIAgentsEvaluationTab } from "./AIAgentsEvaluationTab";
+import { AIAgentsIntentNluTab } from "./AIAgentsIntentNluTab";
 import {
   DATE_RANGE_CUSTOM_OPTION,
   DATE_RANGE_LABELS,
@@ -104,45 +119,6 @@ export function ObservabilityCategoryPage() {
 
   const category = ootbCategories.find((c) => c.id === categoryId);
 
-  if (!category) {
-    return (
-      <div className="flex items-center justify-center h-full p-8">
-        <div className="text-center">
-          <h1 className="text-4xl mb-2">404</h1>
-          <p className="text-muted-foreground">Category not found</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Standalone categories (no sub-dashboards) — redirect to the dashboard page
-  if (category.dashboards.length === 0) {
-    // Navigate to the standalone dashboard
-    navigate(`/dashboard/${category.id}`, { replace: true });
-    return null;
-  }
-
-  // Determine the active dashboard tab
-  const defaultDashboard = category.dashboards[0];
-  const activeDashboardId = urlDashboardId && category.dashboards.some((d) => d.id === urlDashboardId)
-    ? urlDashboardId
-    : defaultDashboard.id;
-
-  const activeDashboard = category.dashboards.find((d) => d.id === activeDashboardId) || defaultDashboard;
-
-  const handleTabChange = (tabValue: string) => {
-    // Navigate to update the URL
-    if (tabValue === defaultDashboard.id) {
-      navigate(`/observability/${categoryId}`, { replace: true });
-    } else {
-      navigate(`/observability/${categoryId}/${tabValue}`, { replace: true });
-    }
-  };
-
-  // Pin helpers
-  const favoriteId = activeDashboard.id;
-  const favoritePath = `/dashboard/${activeDashboard.id}`;
-  const currentlyPinned = isFavorite(favoriteId);
   const { ref: dashboardContentRef, isBelowBreakpoint: isCompactDashboard } =
     useContainerBreakpoint<HTMLDivElement>(768);
   const [dateRange, setDateRange] = useState<DateRangeOption>(DEFAULT_FILTERS.dateRange);
@@ -156,6 +132,56 @@ export function ObservabilityCategoryPage() {
       product !== DEFAULT_FILTERS.product
     );
   }, [dateRange, team, product]);
+
+  const standaloneCategoryId =
+    category && category.dashboards.length === 0 ? category.id : null;
+
+  useEffect(() => {
+    if (standaloneCategoryId) {
+      navigate(`/dashboard/${standaloneCategoryId}`, { replace: true });
+    }
+  }, [standaloneCategoryId, navigate]);
+
+  if (!category) {
+    return (
+      <div className="flex items-center justify-center h-full p-8">
+        <div className="text-center">
+          <h1 className="text-4xl mb-2">404</h1>
+          <p className="text-muted-foreground">Category not found</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (standaloneCategoryId) {
+    return null;
+  }
+
+  // Determine the active dashboard tab
+  const defaultDashboard = category.dashboards[0];
+  const activeDashboardId = urlDashboardId && category.dashboards.some((d) => d.id === urlDashboardId)
+    ? urlDashboardId
+    : defaultDashboard.id;
+
+  const activeDashboard = category.dashboards.find((d) => d.id === activeDashboardId) || defaultDashboard;
+  const headerSubtitle = category.pageDescription ?? activeDashboard.description;
+
+  const handleTabChange = (tabValue: string) => {
+    // Navigate to update the URL
+    if (tabValue === defaultDashboard.id) {
+      navigate(`/observability/${categoryId}`, { replace: true });
+    } else {
+      navigate(`/observability/${categoryId}/${tabValue}`, { replace: true });
+    }
+  };
+
+  // Pin helpers — deep-link into Observability so favorites open the same context as this page.
+  const favoriteId = activeDashboard.id;
+  const favoritePath =
+    activeDashboard.id === defaultDashboard.id
+      ? `/observability/${categoryId}`
+      : `/observability/${categoryId}/${activeDashboard.id}`;
+  const currentlyPinned = isFavorite(favoriteId);
 
   return (
     <WidgetAIProvider persistKey={GLOBAL_AI_ASSISTANT_KEY} ootbTypeId={activeDashboardId}>
@@ -213,7 +239,7 @@ export function ObservabilityCategoryPage() {
                 </div>
               </div>
               <p className="text-muted-foreground mt-1">
-                {activeDashboard.description}
+                {headerSubtitle}
               </p>
             </div>
             <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -302,8 +328,28 @@ export function ObservabilityCategoryPage() {
             />
             {category.dashboards.map((dashboard) => (
               <TabsContent key={dashboard.id} value={dashboard.id} className="space-y-4 mt-2">
+                {dashboard.id === "ai-agents-overview" ? (
+                  <AIAgentsOverviewTab
+                    isCompactDashboard={isCompactDashboard}
+                    showWidgetOverflowMenu={false}
+                  />
+                ) : dashboard.id === "ai-agent-evaluation" ? (
+                  <AIAgentsEvaluationTab
+                    isCompactDashboard={isCompactDashboard}
+                    showWidgetOverflowMenu={false}
+                  />
+                ) : dashboard.id === "intent-nlu" ? (
+                  <AIAgentsIntentNluTab
+                    isCompactDashboard={isCompactDashboard}
+                    showWidgetOverflowMenu={false}
+                  />
+                ) : (
+                  <>
                 {/* KPI Section Header */}
-                <h2 className="tracking-tight">Key Performance Indicators</h2>
+                <h3 className="mt-8 flex items-center gap-2 tracking-tight">
+                  <CircleGauge className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+                  Key Performance Indicators
+                </h3>
 
                 {/* Metric Cards */}
                 <div
@@ -313,95 +359,114 @@ export function ObservabilityCategoryPage() {
                       : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
                   }`}
                 >
-                  <Card className="group/widget gap-2 transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
+                  <Card className="group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
                     <CardHeader className="pb-0">
                       <div className="flex items-center gap-2">
                         <CardDescription className="flex-1">Total Escalations</CardDescription>
-                        <WidgetAIPromptButton widgetTitle="Total Escalations" chartType="metric" />
-                        <WidgetOverflowMenu widgetTitle="Total Escalations" chartType="metric" />
+                        <WidgetAskAIAndOverflow
+                          widgetTitle="Total Escalations"
+                          chartType="metric"
+                          showOverflowMenu={false}
+                        />
                       </div>
                       <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
-                        <CardTitle className="text-3xl tabular-nums leading-none">
-                          260
-                        </CardTitle>
-                        <Badge variant="destructive" className="shrink-0 text-xs">
-                          +12%
+                        <KpiMetricValueTitle value="260" />
+                        <Badge
+                          variant="secondary"
+                          className="shrink-0 border-transparent bg-emerald-600 text-xs text-white dark:bg-emerald-600 dark:text-white"
+                        >
+                          <span className="inline-flex items-center gap-1">
+                            <TrendingUp className="h-3 w-3" />
+                            +12%
+                          </span>
                         </Badge>
                       </div>
                     </CardHeader>
                     <CardContent className="pt-0">
                       <KpiSparkline
                         values={[...KPI_SPARKLINE_SERIES.totalEscalations]}
-                        lineColor="var(--destructive)"
                         seriesName="Escalations"
                         formatValue={(v) => v.toLocaleString()}
                       />
                     </CardContent>
                   </Card>
 
-                  <Card className="group/widget gap-2 transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
+                  <Card className="group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
                     <CardHeader className="pb-0">
                       <div className="flex items-center gap-2">
                         <CardDescription className="flex-1">Avg Resolution Time</CardDescription>
-                        <WidgetAIPromptButton widgetTitle="Avg Resolution Time" chartType="metric" />
-                        <WidgetOverflowMenu widgetTitle="Avg Resolution Time" chartType="metric" />
+                        <WidgetAskAIAndOverflow
+                          widgetTitle="Avg Resolution Time"
+                          chartType="metric"
+                          showOverflowMenu={false}
+                        />
                       </div>
                       <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
-                        <CardTitle className="text-3xl tabular-nums leading-none">
-                          4.3h
-                        </CardTitle>
-                        <Badge variant="default" className="shrink-0 text-xs">
-                          -8%
+                        <KpiMetricValueTitle value="4.3h" />
+                        <Badge
+                          variant="secondary"
+                          className="shrink-0 border-transparent bg-red-600 text-xs text-white dark:bg-red-600 dark:text-white"
+                        >
+                          <span className="inline-flex items-center gap-1">
+                            <TrendingDown className="h-3 w-3" />
+                            -8%
+                          </span>
                         </Badge>
                       </div>
                     </CardHeader>
                     <CardContent className="pt-0">
                       <KpiSparkline
                         values={[...KPI_SPARKLINE_SERIES.avgResolutionHours]}
-                        lineColor="var(--primary)"
                         seriesName="Avg. resolution"
                         formatValue={(v) => `${v.toFixed(1)} h`}
                       />
                     </CardContent>
                   </Card>
 
-                  <Card className="group/widget gap-2 transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
+                  <Card className="group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
                     <CardHeader className="pb-0">
                       <div className="flex items-center gap-2">
                         <CardDescription className="flex-1">Customer Satisfaction</CardDescription>
-                        <WidgetAIPromptButton widgetTitle="Customer Satisfaction" chartType="metric" />
-                        <WidgetOverflowMenu widgetTitle="Customer Satisfaction" chartType="metric" />
+                        <WidgetAskAIAndOverflow
+                          widgetTitle="Customer Satisfaction"
+                          chartType="metric"
+                          showOverflowMenu={false}
+                        />
                       </div>
                       <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
-                        <CardTitle className="text-3xl tabular-nums leading-none">
-                          94%
-                        </CardTitle>
-                        <Badge variant="default" className="shrink-0 text-xs">
-                          +2%
+                        <KpiMetricValueTitle value="94%" />
+                        <Badge
+                          variant="secondary"
+                          className="shrink-0 border-transparent bg-emerald-600 text-xs text-white dark:bg-emerald-600 dark:text-white"
+                        >
+                          <span className="inline-flex items-center gap-1">
+                            <TrendingUp className="h-3 w-3" />
+                            +2%
+                          </span>
                         </Badge>
                       </div>
                     </CardHeader>
                     <CardContent className="pt-0">
                       <KpiSparkline
                         values={[...KPI_SPARKLINE_SERIES.customerSatisfactionPct]}
-                        lineColor="var(--primary)"
                         seriesName="Satisfaction"
                         formatValue={(v) => `${v.toFixed(1)}%`}
                       />
                     </CardContent>
                   </Card>
 
-                  <Card className="group/widget gap-2 transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
+                  <Card className="group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
                     <CardHeader className="pb-0">
                       <div className="flex items-center gap-2">
                         <CardDescription className="flex-1">Resolution Rate</CardDescription>
-                        <WidgetAIPromptButton widgetTitle="Resolution Rate" chartType="metric" />
-                        <WidgetOverflowMenu widgetTitle="Resolution Rate" chartType="metric" />
+                        <WidgetAskAIAndOverflow
+                          widgetTitle="Resolution Rate"
+                          chartType="metric"
+                          showOverflowMenu={false}
+                        />
                       </div>
                       <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
-                        <CardTitle className="text-3xl tabular-nums leading-none">
-                          87%
-                        </CardTitle>
+                        <KpiMetricValueTitle value="87%" />
                         <Badge variant="secondary" className="shrink-0 text-xs">
                           No change
                         </Badge>
@@ -410,13 +475,17 @@ export function ObservabilityCategoryPage() {
                     <CardContent className="pt-0">
                       <KpiSparkline
                         values={[...KPI_SPARKLINE_SERIES.resolutionRatePct]}
-                        lineColor="var(--muted-foreground)"
                         seriesName="Resolution rate"
                         formatValue={(v) => `${v.toFixed(1)}%`}
                       />
                     </CardContent>
                   </Card>
                 </div>
+
+                <h3 className="!mt-8 flex items-center gap-2 tracking-tight">
+                  <LineChart className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+                  Insights & Analysis
+                </h3>
 
                 {/* Chart Grid — unique per dashboard */}
                 <DashboardChartGrid
@@ -429,6 +498,7 @@ export function ObservabilityCategoryPage() {
                     yKey: "thisPeriod",
                     y2Key: "lastPeriod",
                   }}
+                  showWidgetOverflowMenu={false}
                 />
 
                 {/* Data Table */}
@@ -456,6 +526,8 @@ export function ObservabilityCategoryPage() {
                     ))}
                   </TableBody>
                 </Table>
+                  </>
+                )}
               </TabsContent>
             ))}
           </div>
