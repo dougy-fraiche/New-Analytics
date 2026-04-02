@@ -1,5 +1,30 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { Plus, ArrowRight, Mic, Square, Loader2, Upload, Image, Paperclip, History, ChevronRight, Trash2, X } from "lucide-react";
+import {
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  useMemo,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from "react";
+import {
+  Plus,
+  ArrowRight,
+  Mic,
+  Square,
+  Loader2,
+  Upload,
+  Image,
+  Paperclip,
+  History,
+  ChevronRight,
+  ChevronDown,
+  Trash2,
+  X,
+  Check,
+  ExternalLink,
+} from "lucide-react";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -34,10 +59,15 @@ import {
 } from "../contexts/DashboardChatContext";
 import { useAiAssistantExploreBridge } from "../contexts/AiAssistantExploreBridgeContext";
 import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
+import { Link, useLocation } from "react-router";
 import { getChartIconForWidgetType } from "./ChartVariants";
 import { AiAssistantEmptyStateGraphic } from "./AiAssistantHeaderIcon";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { cn } from "./ui/utils";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
+import { buildMockAssistantFields } from "../lib/mock-assistant-structure";
+import { runPhasedAssistantReply } from "../lib/run-phased-assistant-reply";
+import type { AssistantMessageSource, AssistantReplyPayload } from "../types/conversation-types";
 
 interface DashboardChatPanelProps {
   /** Route / page context id (saved id, OOTB id, etc.) — not used for message persistence in global mode */
@@ -245,7 +275,17 @@ const dashboardResponseHandlers: Record<string, (msg: string) => string | null> 
   },
 };
 
-function generateAIResponse(userMessage: string, ootbTypeId?: string): string {
+function generateAIResponse(
+  userMessage: string,
+  ootbTypeId?: string,
+  pageContext?: { pageLabel?: string; pagePath?: string },
+): AssistantReplyPayload {
+  const meta = () =>
+    buildMockAssistantFields(userMessage, {
+      ootbTypeId,
+      pageLabel: pageContext?.pageLabel,
+      pagePath: pageContext?.pagePath,
+    });
   const lowerMessage = userMessage.toLowerCase();
 
   // Try dashboard-specific handler first
@@ -253,36 +293,64 @@ function generateAIResponse(userMessage: string, ootbTypeId?: string): string {
     const handler = dashboardResponseHandlers[ootbTypeId];
     if (handler) {
       const specific = handler(lowerMessage);
-      if (specific) return specific;
+      if (specific) return { content: specific, ...meta() };
     }
   }
 
   // Generic fallbacks
   if (lowerMessage.includes("escalation") || lowerMessage.includes("trend")) {
-    return "Based on the current dashboard data, I can see that escalation rates have increased by 8% over the last month. The primary drivers appear to be technical support issues. Would you like me to filter the dashboard to show specific team performance or break this down by product category?";
+    return {
+      content:
+        "From what you're viewing, escalation rates look about 8% higher over the last month. The main driver seems to be technical support. Want to narrow by team or product, or change the time range?",
+      ...meta(),
+    };
   }
 
   if (lowerMessage.includes("filter") || lowerMessage.includes("show")) {
-    return "I can help you filter this dashboard. You can view data by team (Tier 1, Tier 2, Technical), by date range (Last 7 days, Last 30 days, Last 90 days, This quarter, This year), or by product. What specific view would you like to see?";
+    return {
+      content:
+        "I can help you adjust what you see. Try team (Tier 1, Tier 2, Technical), a date range (last 7 / 30 / 90 days, this quarter, this year), or product. What slice matters most right now?",
+      ...meta(),
+    };
   }
 
   if (lowerMessage.includes("export") || lowerMessage.includes("download")) {
-    return "I can help you export this data. You can download the current view as a PDF report or export the raw data as CSV. The export will include all currently applied filters. Which format would you prefer?";
+    return {
+      content:
+        "I can help you export this data. You can download the current view as a PDF report or export the raw data as CSV. The export will include all currently applied filters. Which format would you prefer?",
+      ...meta(),
+    };
   }
 
   if (lowerMessage.includes("why") || lowerMessage.includes("reason")) {
-    return "Looking at the patterns in this dashboard, the main contributing factors appear to be increased complexity in technical queries and a recent product update that generated support tickets. I can create a detailed analysis if you'd like to investigate further.";
+    return {
+      content:
+        "From the patterns here, the main drivers look like more complex technical queries and a recent product change that drove support volume. I can go deeper on any slice if you want.",
+      ...meta(),
+    };
   }
 
   if (lowerMessage.includes("compare") || lowerMessage.includes("last month")) {
-    return "Comparing to last month: overall volume is up 11%, resolution time improved by 8%, and satisfaction remained steady at 94%. The most notable shift is a 15% increase in AI-handled conversations, which is reducing average cost per interaction. Want me to visualize the month-over-month delta?";
+    return {
+      content:
+        "Comparing to last month: overall volume is up 11%, resolution time improved by 8%, and satisfaction remained steady at 94%. The most notable shift is a 15% increase in AI-handled conversations, which is reducing average cost per interaction. Want me to visualize the month-over-month delta?",
+      ...meta(),
+    };
   }
 
   if (lowerMessage.includes("metric") || lowerMessage.includes("important") || lowerMessage.includes("key")) {
-    return "The key metrics on this dashboard are trending positively overall. Resolution rate is at 87% (+2%), average handle time is 4.3h (-8%), and satisfaction is 94% (+2%). The area that needs attention is the escalation rate, which has increased 12%. Would you like me to dig into the escalation drivers?";
+    return {
+      content:
+        "The key metrics here look solid overall: resolution rate about 87% (+2%), handle time near 4.3h (-8%), satisfaction around 94% (+2%). Escalations are up ~12% — worth a closer look. Want to dig into what’s driving that?",
+      ...meta(),
+    };
   }
 
-  return "I'm here to help you understand this dashboard data. I can explain metrics, suggest filters, identify trends, or help you export specific views. What would you like to know more about?";
+  return {
+    content:
+      "I can explain what you’re seeing, suggest filters or comparisons, spot trends, or help export what’s on screen. What should we tackle first?",
+    ...meta(),
+  };
 }
 
 // ─── Panel dimensions ────────────────────────────────────────────────────────
@@ -326,6 +394,238 @@ function formatHistoryRelativeTime(d: Date, now: Date = new Date()): string {
   const dayDiff = Math.round((startN.getTime() - startD.getTime()) / 86_400_000);
   if (dayDiff === 1) return "1 day ago";
   return `${dayDiff} days ago`;
+}
+
+function formatInlineBold(text: string): ReactNode[] {
+  const segments = text.split(/(\*\*[^*]+\*\*)/g);
+  return segments.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return (
+        <strong key={i} className="font-semibold text-foreground">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
+
+function AssistantTextContent({ text }: { text: string }) {
+  const blocks = text.trim().split(/\n\n+/);
+  return (
+    <div className="space-y-3 text-sm text-foreground">
+      {blocks.map((block, bi) => (
+        <div key={bi} className="leading-relaxed space-y-1">
+          {block.split("\n").map((line, li) => (
+            <p key={li} className={li > 0 ? "mt-1" : undefined}>
+              {formatInlineBold(line)}
+            </p>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function assistantAwaitingAnswer(msg: ChatMessage): boolean {
+  return msg.role === "assistant" && !msg.content.trim();
+}
+
+function AssistantMessageBlocks({
+  msg,
+  onJumpToSource,
+}: {
+  msg: ChatMessage;
+  onJumpToSource: (source: AssistantMessageSource) => void;
+}) {
+  const awaiting = assistantAwaitingAnswer(msg);
+  const hasAnswer = msg.content.trim().length > 0;
+  const showProvenance =
+    hasAnswer &&
+    (((msg.toolSteps?.length ?? 0) > 0 && msg.toolSteps!.every((s) => s.status === "done")) ||
+      Boolean(msg.reasoning?.trim()));
+
+  const chipClass =
+    "inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs max-w-full min-w-0 shrink-0";
+
+  const sourcesBlock =
+    msg.sources && msg.sources.length > 0 ? (
+      <div className="flex flex-row flex-wrap gap-1.5 items-center">
+        {msg.sources.map((source, i) => {
+          const jumpable = Boolean(source.widgetRef || source.widgetAnchorId);
+          const url = source.url?.trim();
+          const isExternalUrl = Boolean(url && /^https?:\/\//i.test(url));
+          const isAppPath = Boolean(url && url.startsWith("/"));
+
+          if (url && isExternalUrl && !jumpable) {
+            return (
+              <a
+                key={i}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(chipClass, "text-primary hover:bg-muted/50")}
+                title={source.snippet}
+              >
+                <span className="truncate min-w-0">{source.label}</span>
+                <ExternalLink className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
+              </a>
+            );
+          }
+
+          if (url && isAppPath && !jumpable) {
+            return (
+              <Link
+                key={i}
+                to={url}
+                className={cn(chipClass, "text-primary hover:bg-muted/50")}
+                title={source.snippet}
+              >
+                <span className="truncate min-w-0">{source.label}</span>
+                <ExternalLink className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
+              </Link>
+            );
+          }
+
+          if (jumpable) {
+            return (
+              <button
+                key={i}
+                type="button"
+                className={cn(chipClass, "text-left text-foreground hover:bg-muted/50")}
+                onClick={() => onJumpToSource(source)}
+                title={source.snippet}
+              >
+                <span className="truncate min-w-0">{source.label}</span>
+              </button>
+            );
+          }
+
+          return (
+            <span
+              key={i}
+              className={cn(chipClass, "text-muted-foreground border-dashed border-border/80")}
+              title={source.snippet}
+            >
+              <span className="truncate min-w-0">{source.label}</span>
+            </span>
+          );
+        })}
+      </div>
+    ) : null;
+
+  return (
+    <div className="w-full space-y-3">
+      {awaiting ? (
+        msg.toolSteps && msg.toolSteps.length > 0 ? (
+          <div className="space-y-2.5 rounded-md border border-border/60 bg-muted/20 px-2.5 py-2">
+            {msg.toolSteps.map((step, i) => (
+              <div key={i} className="flex items-start gap-2 text-xs">
+                {step.status === "done" ? (
+                  <Check className="h-3.5 w-3.5 shrink-0 text-primary mt-0.5" aria-hidden />
+                ) : (
+                  <Loader2
+                    className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground mt-0.5"
+                    aria-hidden
+                  />
+                )}
+                <div className="min-w-0">
+                  <p className="font-medium text-foreground/90 leading-snug">{step.label}</p>
+                  {step.detail ? (
+                    <p className="mt-0.5 text-[11px] text-muted-foreground leading-relaxed">
+                      {step.detail}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            ))}
+            {msg.reasoning?.trim() ? (
+              <p className="text-[11px] text-muted-foreground leading-relaxed border-t border-border/50 pt-2 mt-1">
+                {msg.reasoning}
+              </p>
+            ) : null}
+          </div>
+        ) : msg.reasoning?.trim() ? (
+          <div className="space-y-2 rounded-md border border-border/60 bg-muted/20 px-2.5 py-2">
+            <p className="text-xs text-muted-foreground leading-relaxed">{msg.reasoning}</p>
+            <div className="flex items-center gap-2 border-t border-border/50 pt-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" aria-hidden />
+              <span>Preparing reply…</span>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" aria-hidden />
+            <span>Starting…</span>
+          </div>
+        )
+      ) : null}
+
+      {showProvenance ? (
+        <Collapsible
+          defaultOpen={false}
+          className="inline-flex max-w-full flex-col items-start"
+        >
+          <CollapsibleTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              className={cn(
+                "h-auto min-h-8 shrink-0 justify-between gap-2 px-2.5 py-2 text-left text-xs font-medium text-muted-foreground hover:text-foreground",
+                "w-fit max-w-full data-[state=open]:[&>svg]:rotate-180",
+              )}
+            >
+              <span>Reasoning</span>
+              <ChevronDown
+                className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-200"
+                aria-hidden
+              />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-1 w-max max-w-full min-w-0 rounded-md border border-border/60 bg-muted/15 px-2.5 pb-2.5 pt-2 space-y-3">
+            {msg.reasoning?.trim() ? (
+              <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                {msg.reasoning}
+              </p>
+            ) : msg.toolSteps && msg.toolSteps.length > 0 ? (
+              <ul className="space-y-2 text-xs text-muted-foreground">
+                {msg.toolSteps.map((step, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <Check className="h-3.5 w-3.5 shrink-0 text-primary mt-0.5" aria-hidden />
+                    <div>
+                      <span className="text-foreground/90 font-medium">{step.label}</span>
+                      {step.detail ? (
+                        <p className="mt-0.5 text-[11px] leading-relaxed">{step.detail}</p>
+                      ) : null}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </CollapsibleContent>
+        </Collapsible>
+      ) : null}
+
+      {hasAnswer ? <AssistantTextContent text={msg.content} /> : null}
+
+      {hasAnswer ? sourcesBlock : null}
+    </div>
+  );
+}
+
+/**
+ * Changes when any visible turn updates — including phased assistant patches that keep the same
+ * message count (tool steps, reasoning, answer text, sources).
+ */
+function messageStreamScrollSignature(msg: ChatMessage): string {
+  if (msg.role === "user") {
+    return `u:${msg.id}:${msg.content.length}`;
+  }
+  const stepSig =
+    msg.toolSteps
+      ?.map((s) => `${s.status[0]}:${s.label.length}:${(s.detail ?? "").length}`)
+      .join("|") ?? "";
+  return `a:${msg.id}:${msg.content.length}:${msg.reasoning?.length ?? 0}:${stepSig}:${msg.sources?.length ?? 0}`;
 }
 
 /** Conversation view: message list (single thread per dashboard) */
@@ -381,10 +681,38 @@ function ThreadView({
     }, 1200);
   }, []);
 
-  // Auto-scroll to bottom when messages change or thinking starts
+  const jumpToAssistantSource = useCallback(
+    (source: AssistantMessageSource) => {
+      const ref = source.widgetRef ?? source.label;
+      jumpToSourceCard(ref, source.widgetAnchorId);
+    },
+    [jumpToSourceCard],
+  );
+
+  const scrollStreamKey = useMemo(
+    () =>
+      `${isThinking ? 1 : 0}|${displayMessages.map(messageStreamScrollSignature).join("¦")}`,
+    [displayMessages, isThinking],
+  );
+
+  // Auto-scroll when the thread grows or the in-flight assistant message updates (phased reply).
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [displayMessages.length, isThinking]);
+    let raf1 = 0;
+    let raf2 = 0;
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+      });
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  }, [scrollStreamKey]);
+
+  const lastDisplay = displayMessages[displayMessages.length - 1];
+  const assistantProcessingInThread =
+    lastDisplay?.role === "assistant" && !lastDisplay.content.trim();
 
   // Empty thread state with suggested prompts
   if (displayMessages.length === 0 && !isThinking) {
@@ -465,19 +793,19 @@ function ThreadView({
             </div>
           ) : (
             <div className="w-full">
-              <p className="text-sm">{msg.content}</p>
+              <AssistantMessageBlocks msg={msg} onJumpToSource={jumpToAssistantSource} />
             </div>
           )}
         </div>
       ))}
-      {isThinking && (
+      {isThinking && !assistantProcessingInThread ? (
         <div className="flex justify-start">
           <div className="flex items-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             <p className="text-sm text-muted-foreground">Analyzing...</p>
           </div>
         </div>
-      )}
+      ) : null}
       <div ref={bottomRef} />
     </div>
   );
@@ -590,6 +918,7 @@ export function DashboardChatPanel({
   pageContextLabel,
 }: DashboardChatPanelProps) {
   const dashboardChat = useDashboardChat();
+  const location = useLocation();
   const { isThinking: exploreThinking, onSend: exploreOnSend } = useAiAssistantExploreBridge();
   const conversations = useGlobalAiConversations();
   const activeConversationId = useActiveGlobalAiConversationId();
@@ -630,6 +959,8 @@ export function DashboardChatPanel({
   const [titleEditValue, setTitleEditValue] = useState("");
   const titleEditBaselineRef = useRef("");
   const titleInputRef = useRef<HTMLInputElement | null>(null);
+  /** Bumps to cancel in-flight phased assistant replies (new chat, switch thread, route change). */
+  const phaseGenerationRef = useRef(0);
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
   const historyScrollRef = useRef<HTMLDivElement | null>(null);
   const [chatFade, setChatFade] = useState({ top: false, bottom: false });
@@ -645,7 +976,10 @@ export function DashboardChatPanel({
   }, [titleEditing]);
 
   const updateFadeForElement = useCallback(
-    (el: HTMLDivElement | null, setter: (next: { top: boolean; bottom: boolean }) => void) => {
+    (
+      el: HTMLDivElement | null,
+      setter: Dispatch<SetStateAction<{ top: boolean; bottom: boolean }>>,
+    ) => {
       if (!el) return;
       const maxScroll = Math.max(0, el.scrollHeight - el.clientHeight);
       const topVisible = el.scrollTop > 1;
@@ -675,6 +1009,7 @@ export function DashboardChatPanel({
   useEffect(() => {
     if (prevRouteContextKeyRef.current !== routeContextKey) {
       prevRouteContextKeyRef.current = routeContextKey;
+      phaseGenerationRef.current += 1;
       setQuery("");
       setInternalIsThinking(false);
     }
@@ -734,19 +1069,31 @@ export function DashboardChatPanel({
       dashboardChat.appendMessage(GLOBAL_AI_ASSISTANT_KEY, userMessage);
       setInternalIsThinking(true);
 
-      setTimeout(() => {
-        const aiResponse = generateAIResponse(message, ootbTypeId);
-        const assistantMessage: ChatMessage = {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          content: aiResponse,
-          timestamp: new Date(),
-        };
-        dashboardChat.appendMessage(GLOBAL_AI_ASSISTANT_KEY, assistantMessage);
-        setInternalIsThinking(false);
-      }, 1500);
+      const gen = ++phaseGenerationRef.current;
+      const assistantId = crypto.randomUUID();
+      const finalPayload = generateAIResponse(message, ootbTypeId, {
+        pageLabel: pageContextLabel?.trim() || undefined,
+        pagePath: `${location.pathname}${location.search}`,
+      });
+      const stub: ChatMessage = {
+        id: assistantId,
+        role: "assistant",
+        content: "",
+        timestamp: new Date(),
+      };
+      dashboardChat.appendMessage(GLOBAL_AI_ASSISTANT_KEY, stub);
+      setInternalIsThinking(false);
+
+      void runPhasedAssistantReply({
+        final: finalPayload,
+        isCancelled: () => gen !== phaseGenerationRef.current,
+        patch: (partial) => {
+          if (gen !== phaseGenerationRef.current) return;
+          dashboardChat.patchMessage(GLOBAL_AI_ASSISTANT_KEY, assistantId, partial);
+        },
+      });
     },
-    [dashboardChat, ootbTypeId],
+    [dashboardChat, ootbTypeId, pageContextLabel, location.pathname, location.search],
   );
 
   const handleSend = (message: string = query) => {
@@ -763,6 +1110,7 @@ export function DashboardChatPanel({
   };
 
   const handleNewChat = useCallback(() => {
+    phaseGenerationRef.current += 1;
     setInternalIsThinking(false);
     setQuery("");
     setShowHistory(false);
@@ -771,6 +1119,7 @@ export function DashboardChatPanel({
   }, [dashboardChat]);
 
   const handleSelectConversation = useCallback((conversationId: string) => {
+    phaseGenerationRef.current += 1;
     dashboardChat.setActiveGlobalAiConversation(conversationId);
     setShowHistory(false);
     setInternalIsThinking(false);

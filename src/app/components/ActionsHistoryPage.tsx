@@ -58,6 +58,8 @@ interface ActionRecord {
   triggeredBy: string;
   startedAt: string;
   completedAt: string | null;
+  /** Expected or realized outcome of this deployment (e.g. containment, savings). */
+  impact: string;
   details: string;
 }
 
@@ -70,6 +72,7 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "John Doe",
     startedAt: "Feb 20, 2026 09:14 AM",
     completedAt: "Feb 20, 2026 09:16 AM",
+    impact: "+23% containment (target)",
     details: "Deployed AI agent to handle account verification requests in Tier-1 queue.",
   },
   {
@@ -80,6 +83,7 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "Emily Rodriguez",
     startedAt: "Feb 20, 2026 08:45 AM",
     completedAt: "Feb 20, 2026 08:45 AM",
+    impact: "−12% repeat contacts on reset intent",
     details: "Updated article #KB-1042 with new 2FA reset flow instructions.",
   },
   {
@@ -90,6 +94,7 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "System (Scheduled)",
     startedAt: "Feb 20, 2026 08:00 AM",
     completedAt: null,
+    impact: "+4% routing accuracy (projected)",
     details: "Retraining escalation prediction model with last 30 days of labeled data.",
   },
   {
@@ -100,6 +105,7 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "Sarah Johnson",
     startedAt: "Feb 19, 2026 04:30 PM",
     completedAt: "Feb 19, 2026 04:31 PM",
+    impact: "Leadership visibility / planning",
     details: "Exported PDF report for Q4 2025 customer support analytics.",
   },
   {
@@ -110,6 +116,7 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "Michael Chen",
     startedAt: "Feb 19, 2026 02:10 PM",
     completedAt: "Feb 19, 2026 02:10 PM",
+    impact: "−3 min AHT in billing (intended)",
     details: "Attempted to reassign 47 billing tickets to Tier-2. Failed: target queue at capacity.",
   },
   {
@@ -120,6 +127,7 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "John Doe",
     startedAt: "Feb 19, 2026 11:00 AM",
     completedAt: "Feb 19, 2026 11:00 AM",
+    impact: "−38% AHT for technical queue",
     details: "Enabled AI Copilot suggestions for all agents in the Technical Support team.",
   },
   {
@@ -130,6 +138,7 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "System (Scheduled)",
     startedAt: "Feb 21, 2026 06:00 AM",
     completedAt: null,
+    impact: "Faster leadership review cycles",
     details: "Scheduled weekly digest email for all team leads.",
   },
   {
@@ -140,6 +149,7 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "System (Automated)",
     startedAt: "Feb 18, 2026 12:00 AM",
     completedAt: "Feb 18, 2026 12:02 AM",
+    impact: "Compliance + storage efficiency",
     details: "Archived 312 conversations older than 90 days with resolved status.",
   },
   {
@@ -150,6 +160,7 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "System (Scheduled)",
     startedAt: "Feb 18, 2026 03:00 AM",
     completedAt: "Feb 18, 2026 03:04 AM",
+    impact: "Fewer identity / context errors",
     details: "Synced 1,847 contact records from Salesforce CRM.",
   },
   {
@@ -160,6 +171,7 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "David Kim",
     startedAt: "Feb 17, 2026 03:45 PM",
     completedAt: "Feb 17, 2026 03:45 PM",
+    impact: "−12% escalations (intended)",
     details: "Routing rule conflict detected. Rule overlaps with existing priority escalation rule.",
   },
 ];
@@ -188,6 +200,7 @@ export function ActionsHistoryPage() {
       !searchQuery ||
       action.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       action.details.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      action.impact.toLowerCase().includes(searchQuery.toLowerCase()) ||
       action.triggeredBy.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || action.status === statusFilter;
     const matchesType = typeFilter === "all" || action.type === typeFilter;
@@ -463,6 +476,7 @@ export function ActionsHistoryPage() {
                 <TableHead>Status</TableHead>
                 <TableHead>Triggered By</TableHead>
                 <TableHead>Started</TableHead>
+                <TableHead>Impact</TableHead>
                 <TableHead className={tableOverflowMenuColumnClassName}>
                   <span className="sr-only">Actions</span>
                 </TableHead>
@@ -509,6 +523,9 @@ export function ActionsHistoryPage() {
                       <TableCell className="text-sm">{action.triggeredBy}</TableCell>
                       <TableCell>
                         <div className="text-sm text-muted-foreground">{action.startedAt}</div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-foreground">{action.impact}</span>
                       </TableCell>
                       <TableCell className={tableOverflowMenuColumnClassName}>
                         <Tooltip>

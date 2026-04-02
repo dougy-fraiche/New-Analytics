@@ -15,6 +15,10 @@ export function conversationMessageToGlobalChat(msg: Message): ChatMessage {
     widgetRef: msg.widgetRef,
     widgetKpiLabel: msg.widgetKpiLabel,
     widgetIconType: msg.widgetIconType,
+    widgetAnchorId: msg.widgetAnchorId,
+    reasoning: msg.reasoning,
+    sources: msg.sources,
+    toolSteps: msg.toolSteps,
   };
   if (msg.role === "assistant" && msg.dashboardData) {
     return base;

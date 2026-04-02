@@ -1,4 +1,6 @@
 import { createContext, useContext, ReactNode, useCallback, useRef } from "react";
+import { buildMockAssistantFields } from "../lib/mock-assistant-structure";
+import { runPhasedAssistantReply } from "../lib/run-phased-assistant-reply";
 import { useDashboardChat, type ChatMessage } from "./DashboardChatContext";
 
 /** Dispatched after a widget prompt is appended so the assistant panel can react (e.g. focus). */
@@ -77,6 +79,7 @@ export function WidgetAIProvider({
   const dashboardChat = useDashboardChat();
   const ootbTypeIdRef = useRef(ootbTypeId);
   ootbTypeIdRef.current = ootbTypeId;
+  const widgetPhaseGenerationRef = useRef(0);
 
   const sendWidgetPrompt = useCallback(
     (
@@ -113,25 +116,35 @@ export function WidgetAIProvider({
 
       dashboardChat.appendMessage(persistKey, userMessage);
 
-      // Generate AI response after delay
-      setTimeout(() => {
-        let responseText: string;
+      const gen = ++widgetPhaseGenerationRef.current;
+      let responseText: string;
+      if (generateResponse) {
+        responseText = generateResponse(message);
+      } else {
+        responseText = defaultWidgetResponse(widgetTitle, message, selectedKpiLabel);
+      }
+      const structured = buildMockAssistantFields(message, {
+        ootbTypeId: ootbTypeIdRef.current,
+        widgetTitle,
+        widgetAnchorId,
+      });
+      const assistantId = crypto.randomUUID();
+      const stub: ChatMessage = {
+        id: assistantId,
+        role: "assistant",
+        content: "",
+        timestamp: new Date(),
+      };
+      dashboardChat.appendMessage(persistKey, stub);
 
-        if (generateResponse) {
-          responseText = generateResponse(message);
-        } else {
-          responseText = defaultWidgetResponse(widgetTitle, message, selectedKpiLabel);
-        }
-
-        const assistantMessage: ChatMessage = {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          content: responseText,
-          timestamp: new Date(),
-        };
-
-        dashboardChat.appendMessage(persistKey, assistantMessage);
-      }, 1500);
+      void runPhasedAssistantReply({
+        final: { content: responseText, ...structured },
+        isCancelled: () => gen !== widgetPhaseGenerationRef.current,
+        patch: (partial) => {
+          if (gen !== widgetPhaseGenerationRef.current) return;
+          dashboardChat.patchMessage(persistKey, assistantId, partial);
+        },
+      });
     },
     [persistKey, dashboardChat, generateResponse, onWidgetPrompt],
   );

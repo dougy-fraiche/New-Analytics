@@ -27,3 +27,47 @@ export interface WidgetMessageMeta {
   widgetIconType?: string;
   widgetAnchorId?: string;
 }
+
+/** Citation or grounding reference shown below an assistant message. */
+export interface AssistantMessageSource {
+  /** Short label shown in the UI (and used to match dashboard cards when `widgetRef` is unset). */
+  label: string;
+  url?: string;
+  /** When set, scroll/highlight uses this element id first. */
+  widgetAnchorId?: string;
+  /** Title of the dashboard widget to find via card title match (preferred over parsing `label`). */
+  widgetRef?: string;
+  snippet?: string;
+}
+
+export type AssistantToolStepStatus = "done" | "running";
+
+export interface AssistantToolStep {
+  label: string;
+  status: AssistantToolStepStatus;
+  /** One-line note shown when the step completes or inside the disclosure. */
+  detail?: string;
+}
+
+/**
+ * Optional structured fields on assistant turns (mock data today; map streamed LLM parts here later).
+ * When wiring Vercel AI SDK / AI Gateway, merge `text` chunks into `content` and map reasoning,
+ * source-url / citation, and tool-invocation parts into these fields.
+ */
+export interface AssistantStructuredFields {
+  reasoning?: string;
+  sources?: AssistantMessageSource[];
+  toolSteps?: AssistantToolStep[];
+}
+
+/**
+ * Assistant reply body used by dashboard mock generators and future HTTP/stream handlers.
+ *
+ * **Streaming (e.g. Vercel AI SDK / AI Gateway):** append text deltas into `content`; map extended
+ * thinking / reasoning streams to `reasoning`; map citation or `source-url`-style parts to
+ * `sources`; map tool-call progress to `toolSteps` (`running` until settled, then `done`).
+ * The assistant panel (`DashboardChatPanel` → `AssistantMessageBlocks`) already renders these fields.
+ */
+export type AssistantReplyPayload = AssistantStructuredFields & {
+  content: string;
+};

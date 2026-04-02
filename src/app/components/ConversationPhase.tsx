@@ -51,6 +51,7 @@ import { useKeyboardShortcut } from "../hooks/useKeyboardShortcuts";
 import { useDashboardChat } from "../contexts/DashboardChatContext";
 import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 import { conversationMessageToGlobalChat } from "../lib/conversation-message-to-global-chat";
+import { runPhasedExploreAssistantReply } from "../lib/run-phased-explore-assistant-reply";
 import {
   useAiAssistantExploreBridge,
   type ExploreWidgetPromptMeta,
@@ -107,11 +108,18 @@ export function ConversationPhase({
   containerRef,
 }: ConversationPhaseProps) {
   // ── External hooks ────────────────────────────────────────────────
-  const { conversations, addMessageToConversation, renameConversation, deleteConversation, restoreConversation } = useConversations();
+  const {
+    conversations,
+    addMessageToConversation,
+    patchMessageInConversation,
+    renameConversation,
+    deleteConversation,
+    restoreConversation,
+  } = useConversations();
   const { projects, addDashboardToProject, addProject, addStandaloneDashboard } = useProjects();
   const navigate = useNavigate();
   const headerActionsSlot = useHeaderActionsSlot();
-  const { appendMessage } = useDashboardChat();
+  const { appendMessage, patchMessage } = useDashboardChat();
   const { setExploreBridge } = useAiAssistantExploreBridge();
 
   // ── Local state ───────────────────────────────────────────────────
@@ -158,6 +166,8 @@ export function ConversationPhase({
   const conversationIdRef = useRef(currentConversationId);
   conversationIdRef.current = currentConversationId;
 
+  const explorePhaseGenerationRef = useRef(0);
+
   const handleUserMessage = useCallback(
     (
       message: string,
@@ -180,31 +190,39 @@ export function ConversationPhase({
       onQueryChange("");
       setIsThinking(true);
 
-      setTimeout(() => {
-        const stillOnSameConversation = conversationIdRef.current === targetConversationId;
+      const gen = ++explorePhaseGenerationRef.current;
+      const assistantId = crypto.randomUUID();
+      const aiResponse = generateAIResponse(message);
+      const stub: Message = {
+        id: assistantId,
+        role: "assistant",
+        content: "",
+        timestamp: new Date(),
+      };
+      addMessageToConversation(targetConversationId, stub);
+      appendMessage(GLOBAL_AI_ASSISTANT_KEY, conversationMessageToGlobalChat(stub));
+      setMessages((prev) => [...prev, stub]);
+      setIsThinking(false);
 
-        const aiResponse = generateAIResponse(message);
-        const assistantMessage: Message = {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          content: aiResponse.content,
-          timestamp: new Date(),
-          widgetData: aiResponse.widgetData,
-          dashboardData: aiResponse.dashboardData,
-        };
-        addMessageToConversation(targetConversationId, assistantMessage);
-        appendMessage(GLOBAL_AI_ASSISTANT_KEY, conversationMessageToGlobalChat(assistantMessage));
-
-        if (stillOnSameConversation) {
-          setMessages((prev) => [...prev, assistantMessage]);
-          setIsThinking(false);
-        }
-      }, 2000);
+      void runPhasedExploreAssistantReply({
+        conversationId: targetConversationId,
+        assistantId,
+        final: aiResponse,
+        isCancelled: () =>
+          gen !== explorePhaseGenerationRef.current ||
+          conversationIdRef.current !== targetConversationId,
+        patchMessageInConversation,
+        patchGlobalMessage: (messageId, partial) =>
+          patchMessage(GLOBAL_AI_ASSISTANT_KEY, messageId, partial),
+        syncLocalMessages: (updater) => setMessages(updater),
+      });
     },
     [
       currentConversationId,
       addMessageToConversation,
       appendMessage,
+      patchMessage,
+      patchMessageInConversation,
       setMessages,
       onQueryChange,
       setIsThinking,

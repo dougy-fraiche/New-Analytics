@@ -1,5 +1,7 @@
 import { BarChart3, FileText, TrendingUp } from "lucide-react";
 import type { DashboardData, WidgetData } from "../contexts/ConversationContext";
+import { buildMockAssistantFields } from "../lib/mock-assistant-structure";
+import type { AssistantReplyPayload } from "../types/conversation-types";
 
 // ── Hero / Input constants ────────────────────────────────────────────
 
@@ -419,7 +421,13 @@ export const generateWidgetData = (userMessage: string): WidgetData => {
 
 // ── AI response generation ────────────────────────────────────────────
 
-export const generateAIResponse = (userMessage: string): { content: string; dashboardData?: DashboardData; widgetData?: WidgetData } => {
+export type ExploreAIResponse = AssistantReplyPayload & {
+  dashboardData?: DashboardData;
+  widgetData?: WidgetData;
+};
+
+export const generateAIResponse = (userMessage: string): ExploreAIResponse => {
+  const mock = () => buildMockAssistantFields(userMessage);
   const lowerMessage = userMessage.toLowerCase();
   const wantsWidget = lowerMessage.includes("widget") || lowerMessage.includes("insight");
   const wantsDashboard = lowerMessage.includes("dashboard");
@@ -430,6 +438,7 @@ export const generateAIResponse = (userMessage: string): { content: string; dash
     return {
       content: "Based on the data from the last 30 days, I've analyzed the agent escalation trends. The escalation rate has increased by 8% to 12.4%, primarily driven by complex technical issues in the product support category. The peak escalation times are between 2-4 PM EST. Would you like me to break this down by support tier or product category?",
       widgetData,
+      ...mock(),
     };
   }
 
@@ -437,6 +446,7 @@ export const generateAIResponse = (userMessage: string): { content: string; dash
     return {
       content: "I've analyzed the knowledge article performance data. The top 5 articles that drive resolution account for 45% of all self-service resolutions. 'How to reset your password' leads with 2,847 views and an 89% resolution rate. However, I noticed 3 articles with high traffic but low resolution rates that may need updates. Shall I provide more details?",
       widgetData,
+      ...mock(),
     };
   }
 
@@ -444,6 +454,7 @@ export const generateAIResponse = (userMessage: string): { content: string; dash
     return {
       content: "Comparing Copilot usage with resolution rates shows a strong positive correlation. Teams with >70% Copilot adoption have an average resolution rate of 84%, compared to 68% for teams with lower adoption. The data suggests that Copilot is most effective for tier-1 support issues. Would you like to see this broken down by team or issue category?",
       widgetData,
+      ...mock(),
     };
   }
 
@@ -452,6 +463,7 @@ export const generateAIResponse = (userMessage: string): { content: string; dash
     return {
       content: `I've generated a "${title}" based on your request. You can view and interact with it in the panel on the right. Save it to keep it in your collection, or close the panel to continue our conversation.`,
       widgetData,
+      ...mock(),
       dashboardData: {
         id: `dash-${Date.now()}`,
         title,
@@ -488,10 +500,12 @@ export const generateAIResponse = (userMessage: string): { content: string; dash
     return {
       content: "Here's an insight based on your request. The data shows notable patterns in the metrics you're tracking. Let me know if you'd like me to explore specific aspects further or generate a full dashboard.",
       widgetData,
+      ...mock(),
     };
   }
 
   return {
     content: "I've analyzed your request regarding customer support data. The insights show interesting patterns in user behavior and support performance. Let me know if you'd like me to dive deeper into any specific metrics or create a custom dashboard for tracking these trends.",
+    ...mock(),
   };
 };

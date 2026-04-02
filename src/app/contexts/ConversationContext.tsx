@@ -1,5 +1,10 @@
 import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
-import type { ChartRow, DashboardData, WidgetMessageMeta } from "../types/conversation-types";
+import type {
+  AssistantStructuredFields,
+  ChartRow,
+  DashboardData,
+  WidgetMessageMeta,
+} from "../types/conversation-types";
 
 // Context for managing conversations and messages across the Explore page
 export type { DashboardData };
@@ -17,7 +22,7 @@ export interface WidgetData {
   yKey: string;
 }
 
-export interface Message extends WidgetMessageMeta {
+export interface Message extends WidgetMessageMeta, AssistantStructuredFields {
   id: string;
   role: "user" | "assistant";
   content: string;
@@ -40,6 +45,11 @@ interface ConversationContextType {
   addConversation: (name: string) => Conversation;
   setActiveConversationId: (id: string | null) => void;
   addMessageToConversation: (conversationId: string, message: Message) => void;
+  patchMessageInConversation: (
+    conversationId: string,
+    messageId: string,
+    partial: Partial<Message>,
+  ) => void;
   getConversationMessages: (conversationId: string) => Message[];
   renameConversation: (conversationId: string, newName: string) => void;
   archiveConversation: (conversationId: string) => void;
@@ -399,6 +409,24 @@ export function ConversationProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const patchMessageInConversation = useCallback(
+    (conversationId: string, messageId: string, partial: Partial<Message>) => {
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.id !== conversationId
+            ? conv
+            : {
+                ...conv,
+                messages: conv.messages.map((m) =>
+                  m.id === messageId ? { ...m, ...partial } : m,
+                ),
+              },
+        ),
+      );
+    },
+    [],
+  );
+
   const getConversationMessages = useCallback((conversationId: string): Message[] => {
     const conversation = conversationMap.get(conversationId);
     return conversation?.messages || [];
@@ -450,6 +478,7 @@ export function ConversationProvider({ children }: { children: ReactNode }) {
       addConversation,
       setActiveConversationId,
       addMessageToConversation,
+      patchMessageInConversation,
       getConversationMessages,
       renameConversation,
       archiveConversation,
@@ -463,6 +492,7 @@ export function ConversationProvider({ children }: { children: ReactNode }) {
       addConversation,
       setActiveConversationId,
       addMessageToConversation,
+      patchMessageInConversation,
       getConversationMessages,
       renameConversation,
       archiveConversation,

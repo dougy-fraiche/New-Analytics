@@ -6,6 +6,7 @@ import { useConversations, type Message } from "../contexts/ConversationContext"
 import { useDashboardChat } from "../contexts/DashboardChatContext";
 import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 import { conversationMessageToGlobalChat } from "../lib/conversation-message-to-global-chat";
+import { runPhasedExploreAssistantReply } from "../lib/run-phased-explore-assistant-reply";
 import { useVoiceInput } from "../hooks/useVoiceInput";
 import { generateConversationName, generateAIResponse } from "../data/explore-data";
 
@@ -44,8 +45,10 @@ export function ExplorePage() {
   const heroInputBarRef = useRef<HTMLDivElement>(null);
 
   // ── Context hooks ─────────────────────────────────────────────────
-  const { addConversation, conversations, addMessageToConversation } = useConversations();
-  const { appendMessage, startNewGlobalAiDraft, setGlobalAiDraftDisplayName } = useDashboardChat();
+  const { addConversation, conversations, addMessageToConversation, patchMessageInConversation } =
+    useConversations();
+  const { appendMessage, patchMessage, startNewGlobalAiDraft, setGlobalAiDraftDisplayName } =
+    useDashboardChat();
   const navigate = useNavigate();
   const params = useParams();
 
@@ -107,6 +110,7 @@ export function ExplorePage() {
   useEffect(() => { conversationsRef.current = conversations; });
 
   const lastSyncedIdRef = useRef<string | null>(null);
+  const exploreFirstMessagePhaseRef = useRef(0);
 
   useEffect(() => {
     const conversationId = params.conversationId ?? null;
@@ -163,35 +167,42 @@ export function ExplorePage() {
     try { sessionStorage.removeItem(DRAFT_KEY); } catch {}
     setIsThinking(true);
 
-    // Capture the conversation ID for the async callback
     const targetConversationId = newConversation.id;
+    const gen = ++exploreFirstMessagePhaseRef.current;
+    const assistantId = crypto.randomUUID();
+    const aiResponse = generateAIResponse(messageToSend);
+    const stub: Message = {
+      id: assistantId,
+      role: "assistant",
+      content: "",
+      timestamp: new Date(),
+    };
+    addMessageToConversation(targetConversationId, stub);
+    appendMessage(GLOBAL_AI_ASSISTANT_KEY, conversationMessageToGlobalChat(stub));
+    setMessages([userMessage, stub]);
+    setIsThinking(false);
 
     queueMicrotask(() => {
       navigate(`/conversation/${newConversation.id}`);
     });
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse = generateAIResponse(messageToSend);
-      const assistantMessage: Message = {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content: aiResponse.content,
-        timestamp: new Date(),
-        widgetData: aiResponse.widgetData,
-        dashboardData: aiResponse.dashboardData,
-      };
-      // Always persist to the correct conversation
-      addMessageToConversation(targetConversationId, assistantMessage);
-      appendMessage(GLOBAL_AI_ASSISTANT_KEY, conversationMessageToGlobalChat(assistantMessage));
-      setMessages([userMessage, assistantMessage]);
-      setIsThinking(false);
-    }, 2000);
+    void runPhasedExploreAssistantReply({
+      conversationId: targetConversationId,
+      assistantId,
+      final: aiResponse,
+      isCancelled: () => gen !== exploreFirstMessagePhaseRef.current,
+      patchMessageInConversation,
+      patchGlobalMessage: (messageId, partial) =>
+        patchMessage(GLOBAL_AI_ASSISTANT_KEY, messageId, partial),
+      syncLocalMessages: (updater) => setMessages(updater),
+    });
   }, [
     query,
     addConversation,
     addMessageToConversation,
     appendMessage,
+    patchMessage,
+    patchMessageInConversation,
     navigate,
     startNewGlobalAiDraft,
     setGlobalAiDraftDisplayName,

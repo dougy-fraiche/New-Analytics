@@ -1,10 +1,10 @@
 import { createContext, useContext, useCallback, useRef, useSyncExternalStore, useMemo, ReactNode } from "react";
 import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
-import type { DashboardData, WidgetMessageMeta } from "../types/conversation-types";
+import type { AssistantStructuredFields, DashboardData, WidgetMessageMeta } from "../types/conversation-types";
 import type { Conversation } from "./ConversationContext";
 import { conversationMessageToGlobalChat } from "../lib/conversation-message-to-global-chat";
 
-export interface ChatMessage extends WidgetMessageMeta {
+export interface ChatMessage extends WidgetMessageMeta, AssistantStructuredFields {
   id: string;
   role: "user" | "assistant";
   content: string;
@@ -136,6 +136,40 @@ class ChatStore {
       return;
     }
     this.data[key] = [...(this.data[key] ?? []), message];
+    this.notify(key);
+  };
+
+  patchMessage = (key: string, messageId: string, partial: Partial<ChatMessage>) => {
+    const mapMessages = (messages: ChatMessage[]) => {
+      const idx = messages.findIndex((m) => m.id === messageId);
+      if (idx === -1) return messages;
+      const next = [...messages];
+      next[idx] = { ...next[idx]!, ...partial };
+      return next;
+    };
+
+    if (key === GLOBAL_AI_ASSISTANT_KEY) {
+      const active = this.getActiveGlobalConversation();
+      if (active) {
+        this.globalConversations = this.globalConversations.map((conversation) =>
+          conversation.id === active.id
+            ? {
+                ...conversation,
+                messages: mapMessages(conversation.messages),
+                updatedAt: new Date(),
+              }
+            : conversation,
+        );
+        this.sortGlobalConversations();
+        this.notifyGlobalConversations();
+      } else {
+        this.globalDraftMessages = mapMessages(this.globalDraftMessages);
+      }
+      this.notify(key);
+      return;
+    }
+    const cur = this.data[key] ?? [];
+    this.data[key] = mapMessages(cur);
     this.notify(key);
   };
 
@@ -330,6 +364,7 @@ interface DashboardChatContextType {
   getMessages: (dashboardKey: string) => ChatMessage[];
   setMessages: (dashboardKey: string, messages: ChatMessage[]) => void;
   appendMessage: (dashboardKey: string, message: ChatMessage) => void;
+  patchMessage: (dashboardKey: string, messageId: string, partial: Partial<ChatMessage>) => void;
   clearMessages: (dashboardKey: string) => void;
   getGlobalAiConversations: () => GlobalAiConversation[];
   getActiveGlobalAiConversationId: () => string | null;
@@ -358,6 +393,7 @@ export function DashboardChatProvider({ children }: { children: ReactNode }) {
       getMessages: store.getMessages,
       setMessages: store.setMessages,
       appendMessage: store.appendMessage,
+      patchMessage: store.patchMessage,
       clearMessages: store.clearMessages,
       getGlobalAiConversations: store.getGlobalAiConversations,
       getActiveGlobalAiConversationId: store.getActiveGlobalAiConversationId,
