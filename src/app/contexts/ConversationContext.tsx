@@ -29,6 +29,7 @@ export interface Message extends WidgetMessageMeta, AssistantStructuredFields {
   timestamp: Date;
   dashboardData?: DashboardData;
   widgetData?: WidgetData;
+  isTypingContent?: boolean;
 }
 
 export interface Conversation {

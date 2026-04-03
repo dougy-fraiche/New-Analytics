@@ -454,3 +454,38 @@
 @utility animate-folder-flash {
   animation: folder-flash 1.2s ease-out forwards;
 }
+
+/* Contained sheet (panel-scoped): fast slide with slight overshoot on open. */
+@keyframes sheet-contained-in-from-right {
+  0% {
+    transform: translateX(100%);
+    opacity: 0.96;
+  }
+  70% {
+    transform: translateX(-10px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes sheet-contained-out-to-right {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0.96;
+  }
+}
+
+@utility animate-sheet-contained-in-right {
+  animation: sheet-contained-in-from-right 0.24s cubic-bezier(0.25, 0.85, 0.35, 1.02) both;
+}
+
+@utility animate-sheet-contained-out-right {
+  animation: sheet-contained-out-to-right 0.14s ease-in both;
+}

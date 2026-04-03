@@ -78,7 +78,6 @@ const router = createBrowserRouter([
       { path: "saved", ...lazyRoute(() => import("./components/SavedFoldersPage"), "SavedFoldersPage") },
       { path: "saved/:folderId", ...lazyRoute(() => import("./components/SavedFoldersPage"), "SavedFoldersPage") },
       { path: "saved/:folderId/dashboard/:dashboardId", ...lazyRoute(() => import("./components/DashboardPage"), "DashboardPage") },
-      { path: "pinned", ...lazyRoute(() => import("./components/FavoritesPage"), "FavoritesPage") },
       { path: "recommended-actions", ...lazyRoute(() => import("./components/RecommendedActionsPage"), "RecommendedActionsPage") },
       { path: "actions/history", ...lazyRoute(() => import("./components/ActionsHistoryPage"), "ActionsHistoryPage") },
       { path: "insights", ...lazyRoute(() => import("./components/AllInsightsPage"), "AllInsightsPage") },
@@ -93,7 +92,7 @@ const router = createBrowserRouter([
 
 export default function App() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} forcedTheme="light">
       <RouterProvider router={router} />
     </ThemeProvider>
   );

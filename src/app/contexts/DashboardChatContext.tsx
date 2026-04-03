@@ -10,6 +10,8 @@ export interface ChatMessage extends WidgetMessageMeta, AssistantStructuredField
   content: string;
   timestamp: Date;
   dashboardData?: DashboardData;
+  /** True while the mock runner is revealing assistant `content` (typewriter / streaming). */
+  isTypingContent?: boolean;
 }
 
 type Listener = () => void;
@@ -27,6 +29,8 @@ export interface GlobalAiConversation {
   messages: ChatMessage[];
   /** When true, leaving this chat may replace `name` with text from the first user message if still default. */
   usesAutoTitle?: boolean;
+  /** Explore draft thread id (`/conversation/:id`) when this history row mirrors or was started from Explore. */
+  exploreDraftId?: string;
 }
 
 export function conversationNameFromPrompt(prompt: string): string {
@@ -112,7 +116,11 @@ class ChatStore {
     this.notify(key);
   };
 
-  appendMessage = (key: string, message: ChatMessage) => {
+  appendMessage = (
+    key: string,
+    message: ChatMessage,
+    meta?: { exploreDraftId?: string },
+  ) => {
     if (key === GLOBAL_AI_ASSISTANT_KEY) {
       const active = this.getActiveGlobalConversation();
       if (active) {
@@ -128,7 +136,7 @@ class ChatStore {
         this.sortGlobalConversations();
         this.notifyGlobalConversations();
       } else if (message.role === "user") {
-        this.createGlobalConversationFromFirstUserMessage(message);
+        this.createGlobalConversationFromFirstUserMessage(message, meta?.exploreDraftId);
       } else {
         this.globalDraftMessages = [...this.globalDraftMessages, message];
       }
@@ -275,6 +283,7 @@ class ChatStore {
         messages.length > 0 ? messages[messages.length - 1]!.timestamp : c.createdAt;
       return {
         id: `gai-${c.id}`,
+        exploreDraftId: c.id,
         name: c.name,
         usesAutoTitle: false,
         createdAt: c.createdAt,
@@ -309,12 +318,16 @@ class ChatStore {
     }
   }
 
-  private createGlobalConversationFromFirstUserMessage(message: ChatMessage) {
+  private createGlobalConversationFromFirstUserMessage(
+    message: ChatMessage,
+    exploreDraftId?: string,
+  ) {
     const now = new Date();
     const displayName = this.globalDraftDisplayName.trim() || GLOBAL_AI_DEFAULT_CHAT_TITLE;
     const usesAutoTitle = !this.globalDraftDisplayNameUserSet && displayName === GLOBAL_AI_DEFAULT_CHAT_TITLE;
     const convo: GlobalAiConversation = {
       id: crypto.randomUUID(),
+      ...(exploreDraftId ? { exploreDraftId } : {}),
       name: displayName,
       usesAutoTitle,
       createdAt: now,
@@ -363,7 +376,11 @@ class ChatStore {
 interface DashboardChatContextType {
   getMessages: (dashboardKey: string) => ChatMessage[];
   setMessages: (dashboardKey: string, messages: ChatMessage[]) => void;
-  appendMessage: (dashboardKey: string, message: ChatMessage) => void;
+  appendMessage: (
+    dashboardKey: string,
+    message: ChatMessage,
+    meta?: { exploreDraftId?: string },
+  ) => void;
   patchMessage: (dashboardKey: string, messageId: string, partial: Partial<ChatMessage>) => void;
   clearMessages: (dashboardKey: string) => void;
   getGlobalAiConversations: () => GlobalAiConversation[];

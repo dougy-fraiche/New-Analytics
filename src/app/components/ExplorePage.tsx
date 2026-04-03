@@ -3,7 +3,11 @@ import { useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 
 import { useConversations, type Message } from "../contexts/ConversationContext";
-import { useDashboardChat } from "../contexts/DashboardChatContext";
+import {
+  useDashboardChat,
+  useGlobalAiConversations,
+  useActiveGlobalAiConversationId,
+} from "../contexts/DashboardChatContext";
 import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 import { conversationMessageToGlobalChat } from "../lib/conversation-message-to-global-chat";
 import { runPhasedExploreAssistantReply } from "../lib/run-phased-explore-assistant-reply";
@@ -47,10 +51,17 @@ export function ExplorePage() {
   // ── Context hooks ─────────────────────────────────────────────────
   const { addConversation, conversations, addMessageToConversation, patchMessageInConversation } =
     useConversations();
-  const { appendMessage, patchMessage, startNewGlobalAiDraft, setGlobalAiDraftDisplayName } =
-    useDashboardChat();
+  const {
+    appendMessage,
+    patchMessage,
+    startNewGlobalAiDraft,
+    setGlobalAiDraftDisplayName,
+    setActiveGlobalAiConversation,
+  } = useDashboardChat();
   const navigate = useNavigate();
   const params = useParams();
+  const globalAiConversations = useGlobalAiConversations();
+  const activeGlobalAiId = useActiveGlobalAiConversationId();
 
   // Derive active conversation ID directly from URL params
   const currentConversationId = params.conversationId ?? null;
@@ -132,6 +143,17 @@ export function ExplorePage() {
     }
   }, [params.conversationId]);
 
+  /** Keep the assistant panel thread aligned with the Explore draft in the URL. */
+  useEffect(() => {
+    const id = params.conversationId;
+    if (!id) return;
+    const match = globalAiConversations.find(
+      (c) => c.exploreDraftId === id || c.id === `gai-${id}`,
+    );
+    if (!match || match.id === activeGlobalAiId) return;
+    setActiveGlobalAiConversation(match.id);
+  }, [params.conversationId, globalAiConversations, activeGlobalAiId, setActiveGlobalAiConversation]);
+
   // ── Explore phase handlers ────────────────────────────────────────
   const handleActionClick = useCallback((label: string, prompts: string[]) => {
     setQuery(label);
@@ -160,7 +182,9 @@ export function ExplorePage() {
     addMessageToConversation(newConversation.id, userMessage);
     startNewGlobalAiDraft();
     setGlobalAiDraftDisplayName(name.trim(), { userSet: true });
-    appendMessage(GLOBAL_AI_ASSISTANT_KEY, conversationMessageToGlobalChat(userMessage));
+    appendMessage(GLOBAL_AI_ASSISTANT_KEY, conversationMessageToGlobalChat(userMessage), {
+      exploreDraftId: newConversation.id,
+    });
     setMessages([userMessage]);
     const messageToSend = query;
     setQuery("");

@@ -10,7 +10,6 @@ import {
   X,
   Activity,
   Bot,
-  Pin,
   Sparkles,
   Settings,
   Bookmark,
@@ -181,10 +180,6 @@ export function SearchOverlay({ open, onOpenChange }: SearchOverlayProps) {
               >
                 <Bot className="mr-2 h-4 w-4" />
                 <span>Automation Opportunities</span>
-              </CommandItem>
-              <CommandItem value="Pinned" onSelect={() => handleSelect(ROUTES.PINNED, "Pinned")}>
-                <Pin className="mr-2 h-4 w-4" />
-                <span>Pinned</span>
               </CommandItem>
               <CommandItem value="Saved" onSelect={() => handleSelect(ROUTES.SAVED, "Saved")}>
                 <Bookmark className="mr-2 h-4 w-4" />

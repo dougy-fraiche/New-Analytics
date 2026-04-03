@@ -23,7 +23,7 @@ import {
   Trash2,
   X,
   Check,
-  ExternalLink,
+  Sparkles,
 } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
@@ -59,15 +59,15 @@ import {
 } from "../contexts/DashboardChatContext";
 import { useAiAssistantExploreBridge } from "../contexts/AiAssistantExploreBridgeContext";
 import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
-import { Link, useLocation } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { getChartIconForWidgetType } from "./ChartVariants";
-import { AiAssistantEmptyStateGraphic } from "./AiAssistantHeaderIcon";
+import { Sheet, SheetContent, SheetTitle } from "./ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { cn } from "./ui/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
 import { buildMockAssistantFields } from "../lib/mock-assistant-structure";
 import { runPhasedAssistantReply } from "../lib/run-phased-assistant-reply";
-import type { AssistantMessageSource, AssistantReplyPayload } from "../types/conversation-types";
+import type { AssistantReplyPayload } from "../types/conversation-types";
 
 interface DashboardChatPanelProps {
   /** Route / page context id (saved id, OOTB id, etc.) — not used for message persistence in global mode */
@@ -410,19 +410,54 @@ function formatInlineBold(text: string): ReactNode[] {
   });
 }
 
-function AssistantTextContent({ text }: { text: string }) {
-  const blocks = text.trim().split(/\n\n+/);
+function StreamingCursor() {
+  return (
+    <span
+      className="inline-block h-[1.05em] w-0.5 translate-y-[0.12em] bg-foreground/75 align-baseline animate-pulse rounded-[1px]"
+      aria-hidden
+    />
+  );
+}
+
+function AssistantTextContent({
+  text,
+  showTypingCursor,
+}: {
+  text: string;
+  showTypingCursor?: boolean;
+}) {
+  const hasVisibleText = text.trim().length > 0;
+  if (!hasVisibleText && showTypingCursor) {
+    return (
+      <div className="min-h-[1.25rem] text-sm text-foreground flex items-center">
+        <StreamingCursor />
+      </div>
+    );
+  }
+  if (!hasVisibleText) {
+    return null;
+  }
+
+  const blocks = text.split(/\n\n+/);
   return (
     <div className="space-y-3 text-sm text-foreground">
-      {blocks.map((block, bi) => (
-        <div key={bi} className="leading-relaxed space-y-1">
-          {block.split("\n").map((line, li) => (
-            <p key={li} className={li > 0 ? "mt-1" : undefined}>
-              {formatInlineBold(line)}
-            </p>
-          ))}
-        </div>
-      ))}
+      {blocks.map((block, bi) => {
+        const lines = block.split("\n");
+        const isLastBlock = bi === blocks.length - 1;
+        return (
+          <div key={bi} className="leading-relaxed space-y-1">
+            {lines.map((line, li) => {
+              const isLastLine = isLastBlock && li === lines.length - 1;
+              return (
+                <p key={li} className={li > 0 ? "mt-1" : undefined}>
+                  {formatInlineBold(line)}
+                  {isLastLine && showTypingCursor ? <StreamingCursor /> : null}
+                </p>
+              );
+            })}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -431,88 +466,11 @@ function assistantAwaitingAnswer(msg: ChatMessage): boolean {
   return msg.role === "assistant" && !msg.content.trim();
 }
 
-function AssistantMessageBlocks({
-  msg,
-  onJumpToSource,
-}: {
-  msg: ChatMessage;
-  onJumpToSource: (source: AssistantMessageSource) => void;
-}) {
+function AssistantMessageBlocks({ msg }: { msg: ChatMessage }) {
   const awaiting = assistantAwaitingAnswer(msg);
-  const hasAnswer = msg.content.trim().length > 0;
+  const showBody = msg.content.trim().length > 0 || Boolean(msg.isTypingContent);
   const showProvenance =
-    hasAnswer &&
-    (((msg.toolSteps?.length ?? 0) > 0 && msg.toolSteps!.every((s) => s.status === "done")) ||
-      Boolean(msg.reasoning?.trim()));
-
-  const chipClass =
-    "inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs max-w-full min-w-0 shrink-0";
-
-  const sourcesBlock =
-    msg.sources && msg.sources.length > 0 ? (
-      <div className="flex flex-row flex-wrap gap-1.5 items-center">
-        {msg.sources.map((source, i) => {
-          const jumpable = Boolean(source.widgetRef || source.widgetAnchorId);
-          const url = source.url?.trim();
-          const isExternalUrl = Boolean(url && /^https?:\/\//i.test(url));
-          const isAppPath = Boolean(url && url.startsWith("/"));
-
-          if (url && isExternalUrl && !jumpable) {
-            return (
-              <a
-                key={i}
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={cn(chipClass, "text-primary hover:bg-muted/50")}
-                title={source.snippet}
-              >
-                <span className="truncate min-w-0">{source.label}</span>
-                <ExternalLink className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
-              </a>
-            );
-          }
-
-          if (url && isAppPath && !jumpable) {
-            return (
-              <Link
-                key={i}
-                to={url}
-                className={cn(chipClass, "text-primary hover:bg-muted/50")}
-                title={source.snippet}
-              >
-                <span className="truncate min-w-0">{source.label}</span>
-                <ExternalLink className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
-              </Link>
-            );
-          }
-
-          if (jumpable) {
-            return (
-              <button
-                key={i}
-                type="button"
-                className={cn(chipClass, "text-left text-foreground hover:bg-muted/50")}
-                onClick={() => onJumpToSource(source)}
-                title={source.snippet}
-              >
-                <span className="truncate min-w-0">{source.label}</span>
-              </button>
-            );
-          }
-
-          return (
-            <span
-              key={i}
-              className={cn(chipClass, "text-muted-foreground border-dashed border-border/80")}
-              title={source.snippet}
-            >
-              <span className="truncate min-w-0">{source.label}</span>
-            </span>
-          );
-        })}
-      </div>
-    ) : null;
+    Boolean(msg.reasoning?.trim()) && !(msg.toolSteps && msg.toolSteps.length > 0);
 
   return (
     <div className="w-full space-y-3">
@@ -539,45 +497,34 @@ function AssistantMessageBlocks({
                 </div>
               </div>
             ))}
-            {msg.reasoning?.trim() ? (
-              <p className="text-[11px] text-muted-foreground leading-relaxed border-t border-border/50 pt-2 mt-1">
-                {msg.reasoning}
-              </p>
-            ) : null}
           </div>
-        ) : msg.reasoning?.trim() ? (
-          <div className="space-y-2 rounded-md border border-border/60 bg-muted/20 px-2.5 py-2">
-            <p className="text-xs text-muted-foreground leading-relaxed">{msg.reasoning}</p>
-            <div className="flex items-center gap-2 border-t border-border/50 pt-2 text-xs text-muted-foreground">
-              <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" aria-hidden />
-              <span>Preparing reply…</span>
-            </div>
-          </div>
-        ) : (
+        ) : !msg.reasoning?.trim() && !msg.isTypingContent ? (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" aria-hidden />
             <span>Starting…</span>
           </div>
-        )
+        ) : null
       ) : null}
 
       {showProvenance ? (
-        <Collapsible
-          defaultOpen={false}
-          className="inline-flex max-w-full flex-col items-start"
-        >
+        <Collapsible defaultOpen={false} className="w-full max-w-full">
           <CollapsibleTrigger asChild>
             <Button
               type="button"
-              variant="ghost"
+              variant="link"
               className={cn(
-                "h-auto min-h-8 shrink-0 justify-between gap-2 px-2.5 py-2 text-left text-xs font-medium text-muted-foreground hover:text-foreground",
-                "w-fit max-w-full data-[state=open]:[&>svg]:rotate-180",
+                "m-0 h-auto min-h-0 w-full justify-start gap-1.5 rounded-none p-0 text-left text-sm font-normal",
+                /* default Button size adds has-[>svg]:px-3 — removes extra indent so label aligns with body */
+                "has-[>svg]:p-0",
+                "text-muted-foreground underline-offset-4 hover:text-foreground hover:underline",
+                "data-[state=open]:text-foreground data-[state=open]:no-underline",
+                "focus-visible:ring-1 focus-visible:ring-ring/50 focus-visible:ring-offset-0",
+                "data-[state=open]:[&>svg]:rotate-180",
               )}
             >
               <span>Reasoning</span>
               <ChevronDown
-                className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-200"
+                className="h-3.5 w-3.5 shrink-0 opacity-70 transition-transform duration-200"
                 aria-hidden
               />
             </Button>
@@ -606,9 +553,9 @@ function AssistantMessageBlocks({
         </Collapsible>
       ) : null}
 
-      {hasAnswer ? <AssistantTextContent text={msg.content} /> : null}
-
-      {hasAnswer ? sourcesBlock : null}
+      {showBody ? (
+        <AssistantTextContent text={msg.content} showTypingCursor={msg.isTypingContent} />
+      ) : null}
     </div>
   );
 }
@@ -625,7 +572,7 @@ function messageStreamScrollSignature(msg: ChatMessage): string {
     msg.toolSteps
       ?.map((s) => `${s.status[0]}:${s.label.length}:${(s.detail ?? "").length}`)
       .join("|") ?? "";
-  return `a:${msg.id}:${msg.content.length}:${msg.reasoning?.length ?? 0}:${stepSig}:${msg.sources?.length ?? 0}`;
+  return `a:${msg.id}:${msg.content.length}:${msg.reasoning?.length ?? 0}:${stepSig}:${msg.sources?.length ?? 0}:ty${msg.isTypingContent ? 1 : 0}`;
 }
 
 /** Conversation view: message list (single thread per dashboard) */
@@ -681,14 +628,6 @@ function ThreadView({
     }, 1200);
   }, []);
 
-  const jumpToAssistantSource = useCallback(
-    (source: AssistantMessageSource) => {
-      const ref = source.widgetRef ?? source.label;
-      jumpToSourceCard(ref, source.widgetAnchorId);
-    },
-    [jumpToSourceCard],
-  );
-
   const scrollStreamKey = useMemo(
     () =>
       `${isThinking ? 1 : 0}|${displayMessages.map(messageStreamScrollSignature).join("¦")}`,
@@ -718,7 +657,7 @@ function ThreadView({
   if (displayMessages.length === 0 && !isThinking) {
     return (
       <div className="h-full min-h-0 p-4 flex flex-col items-center justify-center text-center">
-        <AiAssistantEmptyStateGraphic className="w-[12.5rem] h-[12.5rem] shrink-0" />
+        <Sparkles className="h-12 w-12 shrink-0 text-primary" aria-hidden />
         <div className="mt-6 text-sm text-muted-foreground max-w-[28rem]">
           Hi 👋 I'm your AI assistant, how can I help you today?
         </div>
@@ -751,49 +690,47 @@ function ThreadView({
           className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
         >
           {msg.role === "user" ? (
-            <div className="max-w-[85%] bg-primary text-primary-foreground rounded-lg px-3 py-2">
+            <div className="max-w-[85%] rounded-lg bg-neutral-0 px-3 py-2 text-neutral-800 shadow-sm">
               {msg.widgetRef ? (
-                <div className="rounded-md border border-primary-foreground/20 bg-primary-foreground/10 px-2 py-1.5 mb-2 text-left">
-                  <div className="flex items-start justify-between gap-2 min-w-0">
-                    <div className="min-w-0 flex-1 space-y-0.5">
-                      <p className="text-[10px] uppercase tracking-wide text-primary-foreground/70">
-                        Source
-                      </p>
-                      <div className="flex items-start gap-1.5 min-w-0">
-                        {(() => {
-                          const IconComp = msg.widgetIconType
-                            ? getChartIconForWidgetType(msg.widgetIconType)
-                            : null;
-                          return IconComp ? <IconComp className="h-3.5 w-3.5 shrink-0 mt-0.5" /> : null;
-                        })()}
-                        <div className="min-w-0">
-                          <p className="text-xs font-medium truncate">{msg.widgetRef}</p>
-                          {msg.widgetKpiLabel ? (
-                            <p className="text-[11px] text-primary-foreground/80 truncate mt-0.5">
-                              Selected:{" "}
-                              <span className="font-medium text-primary-foreground">
-                                {msg.widgetKpiLabel}
-                              </span>
-                            </p>
-                          ) : null}
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      className="shrink-0 text-[10px] font-medium underline-offset-2 hover:underline text-primary-foreground/90"
-                      onClick={() => jumpToSourceCard(msg.widgetRef!, msg.widgetAnchorId)}
-                    >
-                      View
-                    </button>
-                  </div>
-                </div>
+                <Badge
+                  asChild
+                  variant="secondary"
+                  className="mb-2 h-auto max-w-full min-w-0 flex-col items-stretch justify-start gap-1 whitespace-normal py-1 text-left shadow-none transition-colors hover:bg-secondary/90 focus-visible:ring-2 focus-visible:ring-ring/40"
+                >
+                  <button
+                    type="button"
+                    onClick={() => jumpToSourceCard(msg.widgetRef!, msg.widgetAnchorId)}
+                    aria-label={`Go to ${msg.widgetRef}`}
+                    className="inline-flex w-full min-w-0 cursor-pointer flex-col items-stretch gap-1 text-left outline-none"
+                  >
+                    <span className="inline-flex min-w-0 w-full items-center gap-1">
+                      {(() => {
+                        const IconComp = msg.widgetIconType
+                          ? getChartIconForWidgetType(msg.widgetIconType)
+                          : null;
+                        return IconComp ? (
+                          <IconComp
+                            className="h-3 w-3 shrink-0 opacity-80"
+                            aria-hidden
+                          />
+                        ) : null;
+                      })()}
+                      <span className="min-w-0 truncate">{msg.widgetRef}</span>
+                    </span>
+                    {msg.widgetKpiLabel ? (
+                      <span className="w-full truncate text-left opacity-80">
+                        Selected:{" "}
+                        <span className="font-medium opacity-100">{msg.widgetKpiLabel}</span>
+                      </span>
+                    ) : null}
+                  </button>
+                </Badge>
               ) : null}
               <p className="text-sm">{msg.content}</p>
             </div>
           ) : (
             <div className="w-full">
-              <AssistantMessageBlocks msg={msg} onJumpToSource={jumpToAssistantSource} />
+              <AssistantMessageBlocks msg={msg} />
             </div>
           )}
         </div>
@@ -919,6 +856,7 @@ export function DashboardChatPanel({
 }: DashboardChatPanelProps) {
   const dashboardChat = useDashboardChat();
   const location = useLocation();
+  const navigate = useNavigate();
   const { isThinking: exploreThinking, onSend: exploreOnSend } = useAiAssistantExploreBridge();
   const conversations = useGlobalAiConversations();
   const activeConversationId = useActiveGlobalAiConversationId();
@@ -930,10 +868,11 @@ export function DashboardChatPanel({
   );
 
   const [showHistory, setShowHistory] = useState(false);
+  const [panelPortalEl, setPanelPortalEl] = useState<HTMLDivElement | null>(null);
 
   /**
    * While actively chatting (thread view) with an auto-titled thread, keep the header as "New Chat"
-   * until manual rename or leaving the thread (finalize). In history view, show the same derived title as cards.
+   * until manual rename or leaving the thread (finalize).
    */
   const headerDisplayTitle = useMemo(() => {
     if (!activeConversationId) return draftDisplayName;
@@ -941,10 +880,10 @@ export function DashboardChatPanel({
     if (!c) return GLOBAL_AI_DEFAULT_CHAT_TITLE;
     const isDefaultName = c.name.trim() === GLOBAL_AI_DEFAULT_CHAT_TITLE;
     if (c.usesAutoTitle && isDefaultName) {
-      return showHistory ? historyCardDisplayTitle(c) : GLOBAL_AI_DEFAULT_CHAT_TITLE;
+      return GLOBAL_AI_DEFAULT_CHAT_TITLE;
     }
     return c.name;
-  }, [activeConversationId, activeConversation, draftDisplayName, showHistory]);
+  }, [activeConversationId, activeConversation, draftDisplayName]);
 
   // The OOTB type used for prompts / AI responses: explicit sourceOotbId > dashboardId
   const ootbTypeId = sourceOotbId || dashboardId;
@@ -1118,13 +1057,23 @@ export function DashboardChatPanel({
     dashboardChat.startNewGlobalAiDraft();
   }, [dashboardChat]);
 
-  const handleSelectConversation = useCallback((conversationId: string) => {
-    phaseGenerationRef.current += 1;
-    dashboardChat.setActiveGlobalAiConversation(conversationId);
-    setShowHistory(false);
-    setInternalIsThinking(false);
-    setTitleEditing(false);
-  }, [dashboardChat]);
+  const handleSelectConversation = useCallback(
+    (conversationId: string) => {
+      phaseGenerationRef.current += 1;
+      dashboardChat.setActiveGlobalAiConversation(conversationId);
+      setShowHistory(false);
+      setInternalIsThinking(false);
+      setTitleEditing(false);
+      const row = conversations.find((c) => c.id === conversationId);
+      const draftId =
+        row?.exploreDraftId ??
+        (conversationId.startsWith("gai-") ? conversationId.slice(4) : null);
+      if (draftId) {
+        navigate(`/conversation/${draftId}`);
+      }
+    },
+    [conversations, dashboardChat, navigate],
+  );
 
   const beginTitleEdit = useCallback(() => {
     titleEditBaselineRef.current = headerDisplayTitle;
@@ -1151,6 +1100,7 @@ export function DashboardChatPanel({
 
   return (
     <div
+      ref={setPanelPortalEl}
       data-chat-panel-root="true"
       className="h-full flex flex-col bg-page relative shrink-0 border-l border-border"
       style={{ width: `${panelWidthRem}rem`, transition: isResizing ? 'none' : 'width 200ms ease' }}
@@ -1164,58 +1114,9 @@ export function DashboardChatPanel({
         onResizeEnd={handleResizeEnd}
       />
 
-      {showHistory ? (
-        <>
-          {/* Solid header + fade strip below (no body behind the bar) */}
-          <div className="px-4 flex items-center justify-between shrink-0 gap-2 h-[60px] min-w-0 bg-page relative z-30">
-            <h2 className="min-w-0 flex-1 text-sm font-semibold tracking-tight text-foreground">Chat History</h2>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 shrink-0"
-                  onClick={() => {
-                    setShowHistory(false);
-                    setTitleEditing(false);
-                  }}
-                  aria-label="Close history and return to chat"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Back to chat</TooltipContent>
-            </Tooltip>
-          </div>
-          <div className="flex-1 min-h-0 relative overflow-hidden min-w-0">
-            <div
-              ref={historyScrollRef}
-              onScroll={() => updateFadeForElement(historyScrollRef.current, setHistoryFade)}
-              className="h-full overflow-y-auto overflow-x-hidden"
-            >
-              <HistoryView
-                conversations={conversations}
-                onSelectConversation={handleSelectConversation}
-                onDeleteConversation={(id) => {
-                  dashboardChat.deleteGlobalAiConversation(id);
-                  toast.success("Conversation deleted");
-                }}
-              />
-            </div>
-            <div
-              className={`pointer-events-none absolute inset-x-0 top-0 z-10 h-14 bg-gradient-to-b from-page from-[12%] via-page/80 via-45% to-page/0 to-100% transition-opacity ${historyFade.top ? "opacity-100" : "opacity-0"}`}
-              aria-hidden
-            />
-            <div
-              className={`pointer-events-none absolute inset-x-0 bottom-0 z-10 h-14 bg-gradient-to-t from-page from-[12%] via-page/80 via-45% to-page/0 to-100% transition-opacity ${historyFade.bottom ? "opacity-100" : "opacity-0"}`}
-              aria-hidden
-            />
-          </div>
-        </>
-      ) : (
-        <div className="flex-1 min-h-0 flex flex-col">
-          <div className="shrink-0 px-4 flex items-center justify-between gap-2 h-[60px] min-w-0 bg-page relative z-30">
-            <div className="min-w-0 flex-1">
+      <div className="flex-1 min-h-0 flex flex-col min-w-0">
+        <div className="shrink-0 px-4 flex items-center justify-between gap-2 h-[60px] min-w-0 bg-page relative z-30">
+        <div className="min-w-0 flex-1">
               {titleEditing ? (
                 <Input
                   ref={titleInputRef}
@@ -1263,34 +1164,32 @@ export function DashboardChatPanel({
                 <TooltipContent side="bottom">Open History</TooltipContent>
               </Tooltip>
             </div>
-          </div>
+        </div>
 
-          <div className="flex-1 min-h-0 relative overflow-hidden min-w-0">
-            <div
-              ref={chatScrollRef}
-              onScroll={() => updateFadeForElement(chatScrollRef.current, setChatFade)}
-              className="h-full overflow-y-auto overflow-x-hidden px-4 py-2"
-            >
-              <ThreadView
-                messages={messages}
-                isThinking={isThinking}
-                suggestedQuestions={suggestedQuestions}
-                onSendSuggestion={handleSend}
-              />
-            </div>
-            {/* Overlays sit on top of scrolling content — fade uses page alpha, not `transparent` (cleaner blend) */}
-            <div
-              className={`pointer-events-none absolute inset-x-0 top-0 z-10 h-16 bg-gradient-to-b from-page from-[10%] via-page/85 via-40% to-page/0 to-100% transition-opacity ${chatFade.top ? "opacity-100" : "opacity-0"}`}
-              aria-hidden
-            />
-            <div
-              className={`pointer-events-none absolute inset-x-0 bottom-0 z-10 h-20 bg-gradient-to-t from-page from-[10%] via-page/85 via-40% to-page/0 to-100% transition-opacity ${chatFade.bottom ? "opacity-100" : "opacity-0"}`}
-              aria-hidden
+        <div className="flex-1 min-h-0 relative overflow-hidden min-w-0">
+          <div
+            ref={chatScrollRef}
+            onScroll={() => updateFadeForElement(chatScrollRef.current, setChatFade)}
+            className="h-full overflow-y-auto overflow-x-hidden px-4 py-2"
+          >
+            <ThreadView
+              messages={messages}
+              isThinking={isThinking}
+              suggestedQuestions={suggestedQuestions}
+              onSendSuggestion={handleSend}
             />
           </div>
+          <div
+            className={`pointer-events-none absolute inset-x-0 top-0 z-10 h-16 bg-gradient-to-b from-page from-[10%] via-page/85 via-40% to-page/0 to-100% transition-opacity ${chatFade.top ? "opacity-100" : "opacity-0"}`}
+            aria-hidden
+          />
+          <div
+            className={`pointer-events-none absolute inset-x-0 bottom-0 z-10 h-20 bg-gradient-to-t from-page from-[10%] via-page/85 via-40% to-page/0 to-100% transition-opacity ${chatFade.bottom ? "opacity-100" : "opacity-0"}`}
+            aria-hidden
+          />
+        </div>
 
-          {/* Solid footer — composer on opaque page (no scroll content behind) */}
-          <div className="shrink-0 bg-page px-4 pb-3 pt-2 relative z-30">
+        <div className="shrink-0 bg-page px-4 pb-3 pt-2 relative z-30">
             <div className="rounded-3xl border bg-background text-foreground transition-shadow focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/20">
               <div className="px-4 pt-3 pb-2">
                 <div className="space-y-2">
@@ -1392,8 +1291,72 @@ export function DashboardChatPanel({
             </div>
           </div>
         </div>
-      )}
 
+      <Sheet
+        open={showHistory}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowHistory(false);
+            setTitleEditing(false);
+          }
+        }}
+      >
+        <SheetContent
+          variant="contained"
+          side="right"
+          portalContainer={panelPortalEl}
+          hideCloseButton
+          aria-describedby={undefined}
+          className="bg-neutral-0 border-border"
+        >
+          <div className="shrink-0 px-4 flex items-center justify-between gap-2 h-[60px] min-w-0 border-b border-border bg-neutral-0">
+            <SheetTitle className="min-w-0 flex-1 text-sm font-semibold tracking-tight text-foreground text-left">
+              Chat History
+            </SheetTitle>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => {
+                    setShowHistory(false);
+                    setTitleEditing(false);
+                  }}
+                  aria-label="Close history and return to chat"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Back to chat</TooltipContent>
+            </Tooltip>
+          </div>
+          <div className="flex-1 min-h-0 relative overflow-hidden min-w-0">
+            <div
+              ref={historyScrollRef}
+              onScroll={() => updateFadeForElement(historyScrollRef.current, setHistoryFade)}
+              className="h-full overflow-y-auto overflow-x-hidden"
+            >
+              <HistoryView
+                conversations={conversations}
+                onSelectConversation={handleSelectConversation}
+                onDeleteConversation={(id) => {
+                  dashboardChat.deleteGlobalAiConversation(id);
+                  toast.success("Conversation deleted");
+                }}
+              />
+            </div>
+            <div
+              className={`pointer-events-none absolute inset-x-0 top-0 z-10 h-14 bg-gradient-to-b from-neutral-0 from-[12%] via-neutral-0/80 via-45% to-transparent to-100% transition-opacity ${historyFade.top ? "opacity-100" : "opacity-0"}`}
+              aria-hidden
+            />
+            <div
+              className={`pointer-events-none absolute inset-x-0 bottom-0 z-10 h-14 bg-gradient-to-t from-neutral-0 from-[12%] via-neutral-0/80 via-45% to-transparent to-100% transition-opacity ${historyFade.bottom ? "opacity-100" : "opacity-0"}`}
+              aria-hidden
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

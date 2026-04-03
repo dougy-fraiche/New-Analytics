@@ -211,7 +211,6 @@ export function WidgetAIPromptButton({
 
   useEffect(() => {
     if (open) {
-      assistantPanel?.openPanel();
       const timer = setTimeout(() => inputRef.current?.focus(), 100);
       return () => clearTimeout(timer);
     } else {
@@ -219,7 +218,7 @@ export function WidgetAIPromptButton({
       voice.stop();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, voice.stop, assistantPanel]);
+  }, [open, voice.stop]);
 
   const handleSend = () => {
     if (!query.trim() || !widgetAI) return;
@@ -232,6 +231,7 @@ export function WidgetAIPromptButton({
     );
     setQuery("");
     setOpen(false);
+    assistantPanel?.openPanel();
   };
 
   if (!widgetAI) return null;
@@ -330,6 +330,7 @@ export function WidgetAIPromptButton({
                 selectedKpiLabel,
               );
               setOpen(false);
+              assistantPanel?.openPanel();
             }}
             className="text-xs px-2 py-1 rounded-md bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
           >

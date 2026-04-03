@@ -294,7 +294,7 @@ export function SettingsPage() {
               <p className="text-2xl tabular-nums">24 <span className="text-sm text-muted-foreground">/ Unlimited</span></p>
             </div>
             <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Actions Deployed</p>
+              <p className="text-sm text-muted-foreground">Action history</p>
               <p className="text-2xl tabular-nums">156 <span className="text-sm text-muted-foreground">this month</span></p>
             </div>
             <div className="space-y-1">

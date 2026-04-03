@@ -1,10 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import { Pin, PinOff, Search, RotateCcw } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Search, RotateCcw } from "lucide-react";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
-import { Checkbox } from "./ui/checkbox";
 import {
   Table,
   TableBody,
@@ -15,9 +13,6 @@ import {
 } from "./ui/table";
 import { PageContent, PageHeader } from "./PageChrome";
 import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
-import { useProjects } from "../contexts/ProjectContext";
-import { toast } from "sonner";
-import { BulkActionBar } from "./BulkActionBar";
 import { Input } from "./ui/input";
 import {
   Select,
@@ -27,16 +22,9 @@ import {
 } from "./ui/select";
 import { LabeledSelectValue } from "./HeaderFilters";
 import { PageTransition } from "./PageTransition";
-import {
-  ootbCategories,
-  allOotbDashboards,
-  standaloneCategories,
-  totalOotbDashboardCount,
-} from "../data/ootb-dashboards";
+import { ootbCategories, totalOotbDashboardCount } from "../data/ootb-dashboards";
 
 export function ObservabilityPage() {
-  const { isFavorite, toggleFavorite } = useProjects();
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
 
@@ -65,59 +53,6 @@ export function ObservabilityPage() {
     );
   });
 
-  const toggleSelected = (id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const toggleAll = () => {
-    if (selectedIds.size === filteredItems.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(filteredItems.map((d) => d.id)));
-    }
-  };
-
-  const clearSelection = () => setSelectedIds(new Set());
-
-  const handleBulkPin = () => {
-    const ids = Array.from(selectedIds);
-    let added = 0;
-    ids.forEach((id) => {
-      const d = allItems.find((item) => item.id === id);
-      if (d && !isFavorite(d.id)) {
-        toggleFavorite({ id: d.id, name: d.name, path: `/dashboard/${d.id}` });
-        added++;
-      }
-    });
-    clearSelection();
-    toast.success(`Pinned ${added} dashboard${added !== 1 ? "s" : ""}`);
-  };
-
-  const handleBulkUnpin = () => {
-    const ids = Array.from(selectedIds);
-    let removed = 0;
-    ids.forEach((id) => {
-      const d = allItems.find((item) => item.id === id);
-      if (d && isFavorite(d.id)) {
-        toggleFavorite({ id: d.id, name: d.name, path: `/dashboard/${d.id}` });
-        removed++;
-      }
-    });
-    clearSelection();
-    toast.success(`Unpinned ${removed} dashboard${removed !== 1 ? "s" : ""}`);
-  };
-
-  const allChecked = filteredItems.length > 0 && selectedIds.size === filteredItems.length;
-  const someChecked = selectedIds.size > 0 && selectedIds.size < filteredItems.length;
-
-  const selectedList = Array.from(selectedIds);
-  const selectedFavCount = selectedList.filter((id) => isFavorite(id)).length;
-  const selectedNonPinCount = selectedList.length - selectedFavCount;
   const hasActiveFilters = searchQuery.length > 0 || categoryFilter !== "all";
 
   return (
@@ -185,46 +120,10 @@ export function ObservabilityPage() {
             "Out-of-the-box dashboards providing comprehensive insights into your conversational analytics platform",
         }}
       />
-      {/* All Dashboards Table */}
       <div className="space-y-3">
-          <BulkActionBar
-            selectedCount={selectedIds.size}
-            totalCount={filteredItems.length}
-            onClearSelection={clearSelection}
-          >
-            {selectedNonPinCount > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={handleBulkPin}
-              >
-                <Pin className="h-3.5 w-3.5 mr-1.5" />
-                Pin
-              </Button>
-            )}
-            {selectedFavCount > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={handleBulkUnpin}
-              >
-                <PinOff className="h-3.5 w-3.5 mr-1.5" />
-                Unpin
-              </Button>
-            )}
-          </BulkActionBar>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[40px]">
-                  <Checkbox
-                    checked={allChecked ? true : someChecked ? "indeterminate" : false}
-                    onCheckedChange={toggleAll}
-                    aria-label="Select all"
-                  />
-                </TableHead>
                 <TableHead>Dashboard</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Category</TableHead>
@@ -234,7 +133,7 @@ export function ObservabilityPage() {
             <TableBody>
               {filteredItems.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
+                  <TableCell colSpan={4} className="text-center py-12 text-muted-foreground">
                     No dashboards match your search.
                   </TableCell>
                 </TableRow>
@@ -244,15 +143,7 @@ export function ObservabilityPage() {
                     <TableRow
                       key={item.id}
                       className="group h-[3rem]"
-                      data-state={selectedIds.has(item.id) ? "selected" : undefined}
                     >
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedIds.has(item.id)}
-                          onCheckedChange={() => toggleSelected(item.id)}
-                          aria-label={`Select ${item.name}`}
-                        />
-                      </TableCell>
                       <TableCell>
                         <Link
                           to={item.path}

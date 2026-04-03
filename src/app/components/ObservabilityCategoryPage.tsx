@@ -4,7 +4,6 @@ import {
   Calendar,
   Download,
   MoreVertical,
-  Pin,
   Settings,
   Clock,
   RotateCcw,
@@ -34,7 +33,6 @@ import {
 } from "./ui/table";
 import { Separator } from "./ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
-import { useProjects } from "../contexts/ProjectContext";
 import { ootbCategories } from "../data/ootb-dashboards";
 import { DashboardChartGrid } from "./ChartVariants";
 import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
@@ -47,7 +45,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { useContainerBreakpoint } from "../hooks/useContainerBreakpoint";
 import { PageContent, PageHeader, pageHeaderTabsFooterClassName } from "./PageChrome";
@@ -115,7 +112,6 @@ const tableData = [
 export function ObservabilityCategoryPage() {
   const { categoryId, dashboardId: urlDashboardId } = useParams();
   const navigate = useNavigate();
-  const { isFavorite, toggleFavorite } = useProjects();
 
   const category = ootbCategories.find((c) => c.id === categoryId);
 
@@ -175,14 +171,6 @@ export function ObservabilityCategoryPage() {
     }
   };
 
-  // Pin helpers — deep-link into Observability so favorites open the same context as this page.
-  const favoriteId = activeDashboard.id;
-  const favoritePath =
-    activeDashboard.id === defaultDashboard.id
-      ? `/observability/${categoryId}`
-      : `/observability/${categoryId}/${activeDashboard.id}`;
-  const currentlyPinned = isFavorite(favoriteId);
-
   return (
     <WidgetAIProvider persistKey={GLOBAL_AI_ASSISTANT_KEY} ootbTypeId={activeDashboardId}>
       <Tabs value={activeDashboardId} onValueChange={handleTabChange} className="flex flex-col h-full min-h-0">
@@ -192,22 +180,6 @@ export function ObservabilityCategoryPage() {
               <div className="flex items-center gap-2">
                 <h1 className="text-3xl tracking-tight">{category.name}</h1>
                 <div className="ml-auto flex items-center gap-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => {
-                          toggleFavorite({ id: favoriteId, name: activeDashboard.name, path: favoritePath });
-                          toast.success(currentlyPinned ? "Unpinned" : "Pinned");
-                        }}
-                      >
-                        <Pin className={`h-4 w-4 ${currentlyPinned ? "fill-current text-primary" : ""}`} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">{currentlyPinned ? "Unpin" : "Pin"}</TooltipContent>
-                  </Tooltip>
                   <DropdownMenu>
                     <Tooltip>
                       <TooltipTrigger asChild>

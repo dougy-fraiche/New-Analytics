@@ -7,10 +7,7 @@ import {
   LayoutDashboard,
   FolderPlus,
   FolderInput,
-  Zap,
-  Rocket,
-  Pin,
-  PinOff,
+  History,
   Bookmark,
   ChartLine,
   Settings,
@@ -64,7 +61,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { Badge } from "./ui/badge";
 import { useConversations } from "../contexts/ConversationContext";
 import { useProjects, type Dashboard } from "../contexts/ProjectContext";
 import { toast } from "sonner";
@@ -218,8 +214,6 @@ export function AppSidebar() {
     standaloneDashboards,
     deleteStandaloneDashboard,
     restoreStandaloneDashboard,
-    favorites,
-    toggleFavorite,
   } = useProjects();
 
   // Dialog state (extracted into hook + reducer)
@@ -228,7 +222,6 @@ export function AppSidebar() {
 
   // Persisted collapse states
   const [exploreOpen, setExploreOpen] = usePersistedState("sidebar-explore-open", true);
-  const [pinnedOpen, setPinnedOpen] = usePersistedState("sidebar-pinned-open", true);
   const [observabilityOpen, setObservabilityOpen] = usePersistedState("sidebar-observability-open", true);
   const [savedOpen, setSavedOpen] = usePersistedState("sidebar-saved-open", true);
   const [folderOpenState, setFolderOpenState] = usePersistedState<Record<string, boolean>>("sidebar-folders-open", {});
@@ -244,15 +237,6 @@ export function AppSidebar() {
 
   // ── Keyboard shortcuts ─────────────────────────────────────────────────
   useKeyboardShortcut([
-    {
-      id: "sidebar:toggle-pinned",
-      key: "F",
-      shift: true,
-      handler: (e: KeyboardEvent) => {
-        e.preventDefault();
-        setPinnedOpen((prev) => !prev);
-      },
-    },
     {
       id: "sidebar:toggle-observability",
       key: "O",
@@ -289,9 +273,9 @@ export function AppSidebar() {
   return (
     <>
       <Sidebar collapsible="icon">
-        <SidebarHeader className="pt-4 pb-0">
+        <SidebarHeader className="pt-4 pb-2">
           {/* App switcher dropdown */}
-          <SidebarMenu className="mb-4">
+          <SidebarMenu className="mb-0">
             <SidebarMenuItem>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -303,12 +287,9 @@ export function AppSidebar() {
                     <img
                       src="/app-icon.svg"
                       alt="New Analytics"
-                      className="size-6 shrink-0 object-contain"
+                      className="size-8 shrink-0 object-contain"
                     />
-                    <span
-                      className="truncate flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden"
-                      style={{ fontWeight: 600 }}
-                    >
+                    <span className="truncate flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
                       New Analytics
                     </span>
                     <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 text-muted-foreground group-data-[collapsible=icon]:hidden" />
@@ -341,7 +322,9 @@ export function AppSidebar() {
               </DropdownMenu>
             </SidebarMenuItem>
           </SidebarMenu>
+        </SidebarHeader>
 
+        <SidebarContent className="gap-1 pt-2 group-data-[collapsible=icon]:pt-4">
           {/* Explore — collapsible draft threads (`E` still navigates to Explore via RootLayout) */}
           <CollapsibleSidebarSection
             icon={Compass}
@@ -427,114 +410,24 @@ export function AppSidebar() {
             )}
           </CollapsibleSidebarSection>
 
-          {/* Actions label + menu (kept as one header child to avoid SidebarHeader gap) */}
-          <div className="mt-1 group-data-[collapsible=icon]:mt-0 flex flex-col gap-0">
+          <div className="flex flex-col gap-0">
             <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">Actions</SidebarGroupLabel>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={location.pathname === "/recommended-actions"} tooltip="Recommended">
-                  <Link to="/recommended-actions">
-                    <Zap />
-                    <span className="flex-1">Recommended</span>
-                    <Badge
-                      variant="destructive"
-                      className="ml-auto h-5 min-w-5 px-1.5 rounded-full group-data-[collapsible=icon]:hidden"
-                    >
-                      3
-                    </Badge>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={location.pathname === "/actions/history"} tooltip="Deployed">
+                <SidebarMenuButton asChild isActive={location.pathname === "/actions/history"} tooltip="History">
                   <Link to="/actions/history">
-                    <Rocket />
-                    <span>Deployed</span>
+                    <History />
+                    <span>History</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
           </div>
-        </SidebarHeader>
 
-        <SidebarContent className="gap-1 pt-0 group-data-[collapsible=icon]:pt-0">
           {/* Dashboards heading */}
           <div className="pt-2 group-data-[collapsible=icon]:pt-0">
             <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">Dashboards</SidebarGroupLabel>
           </div>
-
-          {/* Pinned */}
-          <CollapsibleSidebarSection
-            icon={Pin}
-            label="Pinned"
-            path="/pinned"
-            open={pinnedOpen}
-            onToggle={setPinnedOpen}
-          >
-            {favorites.length === 0 ? (
-              <SidebarMenuSubItem>
-                <span className="px-2 py-1.5 text-xs text-muted-foreground">No pinned items yet</span>
-              </SidebarMenuSubItem>
-            ) : (
-              <>
-                {(favorites.length > 5 ? favorites.slice(0, 5) : favorites).map((fav) => {
-                  const isActive = location.pathname === fav.path;
-                  const isProjectDashboard = fav.id.includes("/");
-                  const folderPath = isProjectDashboard ? `/saved/${fav.id.split("/")[0]}` : null;
-                  return (
-                    <SidebarMenuSubItem key={`fav-${fav.id}`}>
-                      <div className="relative group/subitem">
-                        <SidebarMenuSubButton asChild isActive={isActive} className="group-hover/subitem:pr-8 group-focus-within/subitem:pr-8">
-                          <Link to={fav.path}>
-                            <span className="truncate">{fav.name}</span>
-                          </Link>
-                        </SidebarMenuSubButton>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button className={subItemOverflowClasses}>
-                              <MoreHorizontal className="h-3.5 w-3.5" />
-                              <span className="sr-only">More options for {fav.name}</span>
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent side="right" align="start">
-                            {folderPath && (
-                              <>
-                                <DropdownMenuItem onClick={() => navigate(folderPath)}>
-                                  <FolderOpen className="h-4 w-4 mr-2" />
-                                  Show in folder
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                              </>
-                            )}
-                            <DropdownMenuItem
-                              onClick={() => {
-                                toggleFavorite(fav);
-                                toast.success("Unpinned", {
-                                  description: `"${fav.name}" has been unpinned.`,
-                                });
-                              }}
-                            >
-                              <PinOff className="h-4 w-4 mr-2" />
-                              Unpin
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </SidebarMenuSubItem>
-                  );
-                })}
-                {favorites.length > 5 && (
-                  <SidebarMenuSubItem>
-                    <SidebarMenuSubButton asChild>
-                      <Link to="/pinned" className="text-muted-foreground">
-                        <span>View all →</span>
-                      </Link>
-                    </SidebarMenuSubButton>
-                  </SidebarMenuSubItem>
-                )}
-              </>
-            )}
-          </CollapsibleSidebarSection>
 
           <div className="py-0">
             <SidebarMenu>
@@ -802,7 +695,7 @@ export function AppSidebar() {
                 <UserDropdownMenuTrigger asChild>
                   <SidebarMenuButton
                     size="lg"
-                    className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                    className="font-normal data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                   >
                     <Avatar className="h-8 w-8 rounded-full">
                       <AvatarImage src="https://images.unsplash.com/photo-1672685667592-0392f458f46f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBtYW4lMjBoZWFkc2hvdCUyMHBvcnRyYWl0fGVufDF8fHx8MTc3MzY4NjY2MHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral" alt="John Doe" className="rounded-full object-cover" />
@@ -811,8 +704,8 @@ export function AppSidebar() {
                       </AvatarFallback>
                     </Avatar>
                     <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate" style={{ fontWeight: 500 }}>John Doe</span>
-                      <span className="truncate text-xs text-muted-foreground">john.doe@company.com</span>
+                      <span className="truncate font-medium">John Doe</span>
+                      <span className="truncate text-xs font-normal text-muted-foreground">john.doe@company.com</span>
                     </div>
                     <ChevronDown className="ml-auto size-4" />
                   </SidebarMenuButton>

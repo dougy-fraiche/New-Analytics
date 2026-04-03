@@ -93,63 +93,61 @@ export function ExplorePhase({
       <div
         ref={exploreSurfaceRef}
         key="explore"
-        className="explore-page-gradient flex min-h-0 flex-1 flex-col"
+        className="explore-page-gradient flex min-h-0 flex-1 flex-col overflow-y-auto"
       >
-        <PageContent className="shrink-0 px-4 pt-8 md:px-8">
-          <div className="w-full px-4 py-16 md:px-8">
-            <div className="relative mx-auto flex w-full max-w-[50rem] flex-col items-stretch gap-6 text-center">
-              <h1
-                className="animate-gradient-text w-full text-[32px] font-semibold leading-[48px] tracking-tight"
-                style={{ fontWeight: 600 }}
-              >
-                {heroHeading}
-              </h1>
+        <PageContent className="flex h-full max-h-[800px] shrink-0 flex-col items-center justify-center px-4 pt-24 pb-24 md:px-8">
+          <div className="relative mx-auto flex w-full max-w-[64rem] flex-col items-stretch gap-6 text-center">
+            <h1
+              className="animate-gradient-text w-full text-[32px] font-semibold leading-[48px] tracking-tight"
+              style={{ fontWeight: 600 }}
+            >
+              {heroHeading}
+            </h1>
 
-              <div
-                ref={heroInputBarRef as LegacyRef<HTMLDivElement>}
-                className="w-full"
-                style={{ visibility: isInputAnimating ? "hidden" : "visible" }}
-              >
-                <ChatInputBar
-                  variant="hero"
-                  query={query}
-                  voice={voice}
-                  inputRef={inputRef}
-                  onQueryChange={onQueryChange}
-                  onSend={() => {
-                    onShowTypeahead(false);
-                    onSend();
-                  }}
-                  showTypeahead={showTypeahead}
-                  onShowTypeahead={onShowTypeahead}
-                  forcedSuggestions={forcedSuggestions}
-                  onForcedSuggestionsChange={onForcedSuggestionsChange}
-                />
-              </div>
+            <div
+              ref={heroInputBarRef as LegacyRef<HTMLDivElement>}
+              className="w-full"
+              style={{ visibility: isInputAnimating ? "hidden" : "visible" }}
+            >
+              <ChatInputBar
+                variant="hero"
+                query={query}
+                voice={voice}
+                inputRef={inputRef}
+                onQueryChange={onQueryChange}
+                onSend={() => {
+                  onShowTypeahead(false);
+                  onSend();
+                }}
+                showTypeahead={showTypeahead}
+                onShowTypeahead={onShowTypeahead}
+                forcedSuggestions={forcedSuggestions}
+                onForcedSuggestionsChange={onForcedSuggestionsChange}
+              />
+            </div>
 
-              <div className="flex flex-wrap items-center justify-center gap-2">
-                {suggestedActions.map((action) => {
-                  const Icon = action.icon;
-                  return (
-                    <Button
-                      key={action.id}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onActionClick(action.label, action.prompts)}
-                      className="gap-2"
-                    >
-                      <Icon className="h-4 w-4" />
-                      {action.label}
-                    </Button>
-                  );
-                })}
-              </div>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {suggestedActions.map((action) => {
+                const Icon = action.icon;
+                return (
+                  <Button
+                    key={action.id}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onActionClick(action.label, action.prompts)}
+                    className="gap-2"
+                  >
+                    <Icon className="h-4 w-4" />
+                    {action.label}
+                  </Button>
+                );
+              })}
             </div>
           </div>
         </PageContent>
 
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          <PageContent className="flex flex-col items-center px-4 pb-8 pt-14 md:px-8">
+        <div className="mt-auto shrink-0 px-8 pb-8">
+          <PageContent className="flex flex-col items-center rounded-xl border border-border/60 bg-background p-8 shadow-sm">
             <div className="mx-auto w-full">
               <div className="mb-4 flex items-center justify-between">
                 <div>

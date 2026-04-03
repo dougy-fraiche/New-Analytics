@@ -98,6 +98,11 @@ export function buildMockAssistantFields(
       status: "done",
       detail: "Grounded the reply in on-screen context and doc-style citations.",
     },
+    {
+      label: "Preparing reply",
+      status: "done",
+      detail: "Formatting the response for clarity and double-checking tone.",
+    },
   ];
 
   return { reasoning, sources, toolSteps };

@@ -155,19 +155,14 @@ function RootLayoutInner() {
       return [{ label: "Saved" }];
     }
 
-    // Pinned
-    if (location.pathname === "/pinned") {
-      return [{ label: "Pinned" }];
-    }
-
     // Recommended Actions
     if (location.pathname === "/recommended-actions") {
       return [{ label: "Recommended Actions" }];
     }
 
-    // Action History
+    // Actions history
     if (location.pathname === "/actions/history") {
-      return [{ label: "Action History" }];
+      return [{ label: "History" }];
     }
 
     // All Insights
@@ -285,12 +280,10 @@ function RootLayoutInner() {
       label = "Observability";
     } else if (location.pathname === "/saved") {
       label = "Saved";
-    } else if (location.pathname === "/pinned") {
-      label = "Pinned";
     } else if (location.pathname === "/recommended-actions") {
       label = "Recommended Actions";
     } else if (location.pathname === "/actions/history") {
-      label = "Action History";
+      label = "History";
     } else if (location.pathname === "/settings") {
       label = "Settings";
     }
@@ -327,49 +320,54 @@ function RootLayoutInner() {
         <SidebarProvider className="h-screen w-full">
           <div className="flex h-full w-full">
             <AppSidebar />
-            <div className="flex flex-1 flex-col min-w-0 min-h-0">
-              <TopNavBar
-                onSearchClick={() => setSearchOpen(true)}
-                breadcrumbs={breadcrumbs}
-                onActionsSlotRef={setHeaderActionsSlot}
-                aiAssistantOpen={aiAssistantOpen}
-                onAiAssistantOpenChange={setAiAssistantOpen}
-                aiAssistantDisabled={isExploreHome}
-              />
-              <div data-panel-container className="flex flex-1 min-w-0 min-h-0">
-                <div className="flex-1 flex flex-col min-w-0" style={{ minWidth: "min(420px, 100%)" }}>
-                  <main className={`flex-1 ${isFullHeightPage ? 'flex flex-col min-h-0 overflow-hidden' : 'overflow-auto'}`}>
-                    <div
-                      className={`w-full min-h-0 ${isFullHeightPage ? 'flex flex-1 min-h-0 flex-col' : ''}`}
-                    >
-                      <Outlet />
-                    </div>
-                  </main>
-                </div>
-                {/* Global AI assistant mount; Explore hero (`/`) omits the panel */}
-                <div ref={setChatPanelSlot} className="min-w-0 flex shrink-0">
-                  {!isExploreHome ? (
+            {/* Row: [top nav + page content] | AI assistant — panel sits at the far right; nav/content shrink when open */}
+            <div className="flex min-h-0 min-w-0 flex-1 flex-row">
+              <div
+                data-panel-container
+                className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+                style={{ minWidth: "min(420px, 100%)" }}
+              >
+                <TopNavBar
+                  onSearchClick={() => setSearchOpen(true)}
+                  breadcrumbs={breadcrumbs}
+                  onActionsSlotRef={setHeaderActionsSlot}
+                  aiAssistantOpen={aiAssistantOpen}
+                  onAiAssistantOpenChange={setAiAssistantOpen}
+                  aiAssistantDisabled={isExploreHome}
+                />
+                <main
+                  className={`min-h-0 flex-1 ${isFullHeightPage ? "flex min-h-0 flex-col overflow-hidden" : "overflow-auto"}`}
+                >
+                  <div
+                    className={`w-full min-h-0 ${isFullHeightPage ? "flex min-h-0 flex-1 flex-col" : ""}`}
+                  >
+                    <Outlet />
+                  </div>
+                </main>
+              </div>
+              {/* Global AI assistant mount; Explore hero (`/`) omits the panel */}
+              <div ref={setChatPanelSlot} className="flex h-full min-h-0 shrink-0 self-stretch">
+                {!isExploreHome ? (
+                  <div
+                    className={[
+                      "relative flex h-full min-h-0 shrink-0 overflow-hidden transition-[max-width] duration-200 ease-linear",
+                      aiAssistantOpen ? "max-w-[40rem]" : "max-w-0",
+                    ].join(" ")}
+                  >
                     <div
                       className={[
-                        "relative flex shrink-0 overflow-hidden transition-[max-width] duration-200 ease-linear",
-                        aiAssistantOpen ? "max-w-[40rem]" : "max-w-0",
+                        "h-full min-h-0 shrink-0 transition-transform duration-200 ease-linear will-change-transform",
+                        aiAssistantOpen ? "translate-x-0" : "translate-x-full",
                       ].join(" ")}
                     >
-                      <div
-                        className={[
-                          "h-full shrink-0 transition-transform duration-200 ease-linear will-change-transform",
-                          aiAssistantOpen ? "translate-x-0" : "translate-x-full",
-                        ].join(" ")}
-                      >
-                        <DashboardChatPanel
-                          dashboardId={aiRouteContext.dashboardId}
-                          sourceOotbId={aiRouteContext.sourceOotbId}
-                          pageContextLabel={aiPageContextLabel}
-                        />
-                      </div>
+                      <DashboardChatPanel
+                        dashboardId={aiRouteContext.dashboardId}
+                        sourceOotbId={aiRouteContext.sourceOotbId}
+                        pageContextLabel={aiPageContextLabel}
+                      />
                     </div>
-                  ) : null}
-                </div>
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>

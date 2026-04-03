@@ -148,20 +148,22 @@ export const MessageList = memo(function MessageList({
             className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
             {msg.role === "user" ? (
-              <div className="max-w-[85%] bg-primary text-primary-foreground rounded-2xl px-4 py-3">
+              <div className="max-w-[85%] rounded-2xl bg-neutral-0 px-4 py-3 text-neutral-800 shadow-sm">
                 {msg.widgetRef && (
-                  <span className="inline-flex flex-col items-start gap-0.5 text-left text-xs px-1.5 py-0.5 rounded-md mb-1.5 bg-primary-foreground/15 text-primary-foreground/85 max-w-full">
-                    <span className="inline-flex items-center gap-1 min-w-0">
+                  <span className="mb-1.5 inline-flex max-w-full flex-col items-start gap-0.5 rounded-md bg-neutral-50 px-1.5 py-0.5 text-left text-xs text-neutral-800">
+                    <span className="inline-flex min-w-0 items-center gap-1">
                       {(() => {
                         const IconComp = msg.widgetIconType
                           ? getChartIconForWidgetType(msg.widgetIconType)
                           : null;
-                        return IconComp ? <IconComp className="h-3 w-3 shrink-0" /> : null;
+                        return IconComp ? (
+                          <IconComp className="h-3 w-3 shrink-0 text-neutral-600" />
+                        ) : null;
                       })()}
                       <span className="truncate font-medium">{msg.widgetRef}</span>
                     </span>
                     {msg.widgetKpiLabel ? (
-                      <span className="text-[10px] opacity-90 truncate w-full">
+                      <span className="w-full truncate text-[10px] text-neutral-600">
                         Selected: {msg.widgetKpiLabel}
                       </span>
                     ) : null}

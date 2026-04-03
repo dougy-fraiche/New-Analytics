@@ -3,9 +3,6 @@ import { cn } from "@/lib/utils";
 
 const FIGMA_AI_ASSISTANT_MARK_URL =
   "https://www.figma.com/api/mcp/asset/044c8658-cbf7-4495-93ee-f57bee329b32";
-const FIGMA_AI_ASSISTANT_EMPTY_STATE_URL =
-  "https://www.figma.com/api/mcp/asset/ac286d90-67cf-48ad-9c35-476b5c5fe7d7";
-
 export function AiAssistantHeaderIcon({ className }: { className?: string }) {
   const clipId = useId().replace(/:/g, "");
   return (
@@ -46,24 +43,5 @@ export function AiAssistantHeaderIcon({ className }: { className?: string }) {
         />
       </g>
     </svg>
-  );
-}
-
-export function AiAssistantEmptyStateGraphic({ className }: { className?: string }) {
-  return (
-    <div
-      className={cn(
-        "relative flex items-center justify-center rounded-full border-[3px] border-white bg-transparent p-[3px] shadow-[0px_8px_32px_0px_rgba(143,115,227,0.3),0px_2px_8px_0px_rgba(143,115,227,0.2)]",
-        className,
-      )}
-      aria-hidden="true"
-    >
-      <img
-        src={FIGMA_AI_ASSISTANT_EMPTY_STATE_URL}
-        alt=""
-        className="h-[81%] w-[81%] rounded-full object-cover"
-        draggable={false}
-      />
-    </div>
   );
 }

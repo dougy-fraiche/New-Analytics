@@ -19,6 +19,7 @@ export function conversationMessageToGlobalChat(msg: Message): ChatMessage {
     reasoning: msg.reasoning,
     sources: msg.sources,
     toolSteps: msg.toolSteps,
+    isTypingContent: msg.isTypingContent,
   };
   if (msg.role === "assistant" && msg.dashboardData) {
     return base;

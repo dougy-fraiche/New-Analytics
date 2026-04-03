@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useMemo, ReactNode } from "react";
 
-// Context for managing projects, dashboards, and favorites across the app
+// Context for managing projects and dashboards across the app
 export interface Dashboard {
   id: string;
   name: string;
@@ -9,13 +9,6 @@ export interface Dashboard {
   kpis: string[];
   /** Optional reference to the source OOTB dashboard type (e.g. "agent-queries") for inheriting chat prompts */
   sourceOotbId?: string;
-}
-
-export interface FavoriteDashboard {
-  /** Unique key – composite of projectId/dashboardId or just dashboardId for featured */
-  id: string;
-  name: string;
-  path: string;
 }
 
 export interface Project {
@@ -42,11 +35,6 @@ interface ProjectContextType {
   restoreStandaloneDashboard: (dashboard: Dashboard) => void;
   moveStandaloneToFolder: (dashboardId: string, toProjectId: string) => void;
   moveDashboardToStandalone: (fromProjectId: string, dashboardId: string) => void;
-  favorites: FavoriteDashboard[];
-  toggleFavorite: (fav: FavoriteDashboard) => void;
-  removeFavorites: (ids: string[]) => void;
-  restoreFavorites: (favs: FavoriteDashboard[]) => void;
-  isFavorite: (id: string) => boolean;
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
@@ -81,12 +69,6 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     { id: "dash-13", name: "Quarterly Board Deck Metrics", description: "Board-ready quarterly metrics with year-over-year growth, automation rate trends, and projected cost savings.", createdBy: "Ivy Nakamura", kpis: ["Board Metrics", "Quarterly Review"] },
   ]);
 
-  const [favorites, setFavorites] = useState<FavoriteDashboard[]>([
-    { id: "agent-queries", name: "Agent Queries", path: "/dashboard/agent-queries" },
-    { id: "intent-nlu", name: "Intent & NLU", path: "/observability/ai-agents/intent-nlu" },
-    { id: "knowledge-responses", name: "Knowledge Responses", path: "/dashboard/knowledge-responses" },
-  ]);
-
   const addProject = useCallback((name: string): Project => {
     const newProject: Project = {
       id: `proj-${Date.now()}`,
@@ -104,20 +86,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const deleteProject = useCallback((projectId: string) => {
-    // Collect dashboard IDs for favorites cleanup before removing the project
-    setProjects((prev) => {
-      const project = prev.find((p) => p.id === projectId);
-      if (project) {
-        const dashboardFavIds = project.dashboards.map((d) => `${projectId}/${d.id}`);
-        // Schedule favorites cleanup — uses queueMicrotask to avoid calling
-        // setFavorites inside setProjects's updater (React doesn't allow
-        // nested setState during a render-phase updater).
-        queueMicrotask(() => {
-          setFavorites((fPrev) => fPrev.filter((f) => !dashboardFavIds.includes(f.id)));
-        });
-      }
-      return prev.filter((p) => p.id !== projectId);
-    });
+    setProjects((prev) => prev.filter((p) => p.id !== projectId));
   }, []);
 
   const addDashboardToProject = useCallback((projectId: string, dashboardName: string, sourceOotbId?: string, description?: string): Dashboard => {
@@ -157,9 +126,6 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
           : p
       )
     );
-    // Remove from favorites if it was favorited
-    const favoriteId = `${projectId}/${dashboardId}`;
-    setFavorites((prev) => prev.filter((f) => f.id !== favoriteId));
   }, []);
 
   const moveDashboardToProject = useCallback((fromProjectId: string, dashboardId: string, toProjectId: string) => {
@@ -217,8 +183,6 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
 
   const deleteStandaloneDashboard = useCallback((dashboardId: string) => {
     setStandaloneDashboards((prev) => prev.filter((d) => d.id !== dashboardId));
-    // Remove from favorites if it was favorited
-    setFavorites((prev) => prev.filter((f) => f.id !== dashboardId));
   }, []);
 
   const restoreStandaloneDashboard = useCallback((dashboard: Dashboard) => {
@@ -277,31 +241,6 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const toggleFavorite = useCallback((fav: FavoriteDashboard) => {
-    setFavorites((prev) => {
-      const existingIndex = prev.findIndex((d) => d.id === fav.id);
-      if (existingIndex !== -1) {
-        return prev.filter((d) => d.id !== fav.id);
-      }
-      return [...prev, fav];
-    });
-  }, []);
-
-  const removeFavorites = useCallback((ids: string[]) => {
-    setFavorites((prev) => prev.filter((d) => !ids.includes(d.id)));
-  }, []);
-
-  const restoreFavorites = useCallback((favs: FavoriteDashboard[]) => {
-    setFavorites((prev) => {
-      const existingIds = new Set(prev.map((d) => d.id));
-      return [...prev, ...favs.filter((d) => !existingIds.has(d.id))];
-    });
-  }, []);
-
-  const isFavorite = useCallback((id: string) => {
-    return favorites.some((d) => d.id === id);
-  }, [favorites]);
-
   const value = useMemo(
     () => ({
       projects,
@@ -321,11 +260,6 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       restoreStandaloneDashboard,
       moveStandaloneToFolder,
       moveDashboardToStandalone,
-      favorites,
-      toggleFavorite,
-      removeFavorites,
-      restoreFavorites,
-      isFavorite,
     }),
     [
       projects,
@@ -345,11 +279,6 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       restoreStandaloneDashboard,
       moveStandaloneToFolder,
       moveDashboardToStandalone,
-      favorites,
-      toggleFavorite,
-      removeFavorites,
-      restoreFavorites,
-      isFavorite,
     ]
   );
 

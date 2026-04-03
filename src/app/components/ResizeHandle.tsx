@@ -84,7 +84,7 @@ export function ResizeHandle({
   return (
     <div
       className={cn(
-        "group/resize absolute inset-y-0 z-30 cursor-col-resize w-[6px]",
+        "group/resize absolute inset-y-0 z-[100] cursor-col-resize w-[6px]",
         side === "right"
           ? "right-0 translate-x-1/2"
           : "left-0 -translate-x-1/2",

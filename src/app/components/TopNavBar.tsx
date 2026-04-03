@@ -1,14 +1,21 @@
 import {
   PanelLeftClose,
   PanelLeftOpen,
-  Sun,
-  Moon,
+  Bell,
   Search,
   Sparkles,
 } from "lucide-react";
 import { Link } from "react-router";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 import { Button } from "./ui/button";
-import { useTheme } from "next-themes";
+import { Badge } from "./ui/badge";
 import { useSidebar } from "./ui/sidebar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import {
@@ -38,7 +45,7 @@ export function TopNavBar({
   onAiAssistantOpenChange,
   aiAssistantDisabled = false,
 }: TopNavBarProps) {
-  const { theme, setTheme } = useTheme();
+  const unreadNotifications = 3;
   const { state: sidebarState, toggleSidebar } = useSidebar();
   const isCollapsed = sidebarState === "collapsed";
   const hasBreadcrumbs = breadcrumbs.length > 0;
@@ -102,7 +109,7 @@ export function TopNavBar({
       )}
 
       {/* Page-level actions slot (portaled into by child pages) + global actions */}
-      <div className="ml-auto flex items-center gap-1">
+      <div className="ml-auto flex items-center gap-2">
         {/* Page-level actions slot */}
         <div ref={onActionsSlotRef} className="flex items-center gap-1" />
 
@@ -122,22 +129,76 @@ export function TopNavBar({
           <TooltipContent side="bottom">Search</TooltipContent>
         </Tooltip>
 
-        {/* Dark Mode Toggle */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            >
-              <Sun className="h-4 w-4 rotate-0 scale-100 transition-[transform,opacity] dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-[transform,opacity] dark:rotate-0 dark:scale-100" />
-              <span className="sr-only">Toggle theme</span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">{theme === "dark" ? "Light mode" : "Dark mode"}</TooltipContent>
-        </Tooltip>
+        {/* Notifications */}
+        <DropdownMenu>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-flex">
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="size-8 relative">
+                    <Bell className="h-4 w-4" />
+                    {unreadNotifications > 0 && (
+                      <Badge
+                        variant="destructive"
+                        className="absolute -top-0.5 -right-0.5 h-4 min-w-4 flex items-center justify-center p-0 text-[10px]"
+                      >
+                        {unreadNotifications}
+                      </Badge>
+                    )}
+                    <span className="sr-only">Notifications</span>
+                  </Button>
+                </DropdownMenuTrigger>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Notifications</TooltipContent>
+          </Tooltip>
+          <DropdownMenuContent align="end" className="w-80">
+            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <div className="max-h-96 overflow-y-auto">
+              <DropdownMenuItem className="flex flex-col items-start py-3 cursor-pointer">
+                <div className="flex items-start gap-2 w-full">
+                  <div className="h-2 w-2 bg-primary rounded-full mt-1.5 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm" style={{ fontWeight: 500 }}>New recommended action available</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Deploy Account Verification AI Agent - High Priority
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">2 minutes ago</p>
+                  </div>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex flex-col items-start py-3 cursor-pointer">
+                <div className="flex items-start gap-2 w-full">
+                  <div className="h-2 w-2 bg-primary rounded-full mt-1.5 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm" style={{ fontWeight: 500 }}>Dashboard saved successfully</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Custom Support Analytics Dashboard saved to Q1 Analytics
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">1 hour ago</p>
+                  </div>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex flex-col items-start py-3 cursor-pointer">
+                <div className="flex items-start gap-2 w-full">
+                  <div className="h-2 w-2 bg-muted-foreground/40 rounded-full mt-1.5 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm" style={{ fontWeight: 500 }}>Escalation rate alert</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Escalation rate increased by 8% in the last 7 days
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">3 hours ago</p>
+                  </div>
+                </div>
+              </DropdownMenuItem>
+            </div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="justify-center text-sm text-primary">
+              View all notifications
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* Global AI Assistant toggle (single thread — not used on Explore) */}
         <Tooltip>

@@ -58,8 +58,10 @@ interface ActionRecord {
   triggeredBy: string;
   startedAt: string;
   completedAt: string | null;
-  /** Expected or realized outcome of this deployment (e.g. containment, savings). */
-  impact: string;
+  /** Short headline for the impact badge (metric, dollar value, etc.). */
+  impactBadge: string;
+  /** Supporting line shown under the badge. */
+  impactDescription: string;
   details: string;
 }
 
@@ -72,7 +74,8 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "John Doe",
     startedAt: "Feb 20, 2026 09:14 AM",
     completedAt: "Feb 20, 2026 09:16 AM",
-    impact: "+23% containment (target)",
+    impactBadge: "+23%",
+    impactDescription: "Containment lift for verification volume; ~$180K/yr value at current run rate",
     details: "Deployed AI agent to handle account verification requests in Tier-1 queue.",
   },
   {
@@ -83,7 +86,8 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "Emily Rodriguez",
     startedAt: "Feb 20, 2026 08:45 AM",
     completedAt: "Feb 20, 2026 08:45 AM",
-    impact: "−12% repeat contacts on reset intent",
+    impactBadge: "−12%",
+    impactDescription: "Repeat contacts on reset intent; ~$42K/yr deflection value projected",
     details: "Updated article #KB-1042 with new 2FA reset flow instructions.",
   },
   {
@@ -94,7 +98,8 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "System (Scheduled)",
     startedAt: "Feb 20, 2026 08:00 AM",
     completedAt: null,
-    impact: "+4% routing accuracy (projected)",
+    impactBadge: "+4%",
+    impactDescription: "Routing accuracy once training finishes; validation holdout in progress",
     details: "Retraining escalation prediction model with last 30 days of labeled data.",
   },
   {
@@ -105,7 +110,8 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "Sarah Johnson",
     startedAt: "Feb 19, 2026 04:30 PM",
     completedAt: "Feb 19, 2026 04:31 PM",
-    impact: "Leadership visibility / planning",
+    impactBadge: "Q4 pack",
+    impactDescription: "Executive readout for workforce and channel planning decisions",
     details: "Exported PDF report for Q4 2025 customer support analytics.",
   },
   {
@@ -116,7 +122,8 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "Michael Chen",
     startedAt: "Feb 19, 2026 02:10 PM",
     completedAt: "Feb 19, 2026 02:10 PM",
-    impact: "−3 min AHT in billing (intended)",
+    impactBadge: "−3 min AHT",
+    impactDescription: "Target for billing queue; not realized — run failed at destination capacity",
     details: "Attempted to reassign 47 billing tickets to Tier-2. Failed: target queue at capacity.",
   },
   {
@@ -127,7 +134,8 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "John Doe",
     startedAt: "Feb 19, 2026 11:00 AM",
     completedAt: "Feb 19, 2026 11:00 AM",
-    impact: "−38% AHT for technical queue",
+    impactBadge: "−38%",
+    impactDescription: "Handle time for technical queue; ~$5.8K/wk labor savings (measured)",
     details: "Enabled AI Copilot suggestions for all agents in the Technical Support team.",
   },
   {
@@ -138,7 +146,8 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "System (Scheduled)",
     startedAt: "Feb 21, 2026 06:00 AM",
     completedAt: null,
-    impact: "Faster leadership review cycles",
+    impactBadge: "Weekly",
+    impactDescription: "Digest to team leads; faster review vs. ad hoc dashboard checks",
     details: "Scheduled weekly digest email for all team leads.",
   },
   {
@@ -149,7 +158,8 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "System (Automated)",
     startedAt: "Feb 18, 2026 12:00 AM",
     completedAt: "Feb 18, 2026 12:02 AM",
-    impact: "Compliance + storage efficiency",
+    impactBadge: "312",
+    impactDescription: "Conversations archived past retention; storage + compliance posture",
     details: "Archived 312 conversations older than 90 days with resolved status.",
   },
   {
@@ -160,7 +170,8 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "System (Scheduled)",
     startedAt: "Feb 18, 2026 03:00 AM",
     completedAt: "Feb 18, 2026 03:04 AM",
-    impact: "Fewer identity / context errors",
+    impactBadge: "1,847",
+    impactDescription: "Contact rows synced; fewer identity and context errors in tickets",
     details: "Synced 1,847 contact records from Salesforce CRM.",
   },
   {
@@ -171,7 +182,8 @@ const initialActions: ActionRecord[] = [
     triggeredBy: "David Kim",
     startedAt: "Feb 17, 2026 03:45 PM",
     completedAt: "Feb 17, 2026 03:45 PM",
-    impact: "−12% escalations (intended)",
+    impactBadge: "−12%",
+    impactDescription: "Escalation reduction goal; not deployed — rule conflict with existing policy",
     details: "Routing rule conflict detected. Rule overlaps with existing priority escalation rule.",
   },
 ];
@@ -200,7 +212,8 @@ export function ActionsHistoryPage() {
       !searchQuery ||
       action.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       action.details.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      action.impact.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      action.impactBadge.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      action.impactDescription.toLowerCase().includes(searchQuery.toLowerCase()) ||
       action.triggeredBy.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || action.status === statusFilter;
     const matchesType = typeFilter === "all" || action.type === typeFilter;
@@ -292,7 +305,7 @@ export function ActionsHistoryPage() {
       <PageHeader>
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-3xl tracking-tight">Deployed Actions</h1>
+            <h1 className="text-3xl tracking-tight">History</h1>
             <Badge variant="secondary" className="text-xs px-2 py-0.5 shrink-0">
               {counts.total} total actions
             </Badge>
@@ -309,7 +322,7 @@ export function ActionsHistoryPage() {
                 <div className="relative flex-1 min-w-[200px] max-w-sm">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search actions..."
+                    placeholder="Search history..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-9"
@@ -366,10 +379,10 @@ export function ActionsHistoryPage() {
         dashboardId="actions-history"
         dashboardData={{
           id: "actions-history",
-          title: "Deployed Actions",
+          title: "History",
           description: "Audit log of all automated and manual actions across the platform",
         }}
-        recommendedActionsTitle="Deployment insights"
+        recommendedActionsTitle="History insights"
         hideDismissAll
         recommendedActionsContent={
           <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
@@ -379,7 +392,7 @@ export function ActionsHistoryPage() {
             >
               <div className="absolute right-3 top-3 z-10">
                 <WidgetAIPromptButton
-                  widgetTitle={`Deployment insight: Completed deployments (${counts.completed} in this log)`}
+                  widgetTitle={`History insight: Completed actions (${counts.completed} in this log)`}
                   chartType="metric"
                   widgetAnchorId="actions-history-insight-completed"
                   tooltipLabel="Ask AI about this insight"
@@ -391,7 +404,7 @@ export function ActionsHistoryPage() {
                   {counts.completed}
                 </p>
                 <p className="text-sm leading-snug text-foreground/80">
-                  Successfully finished deployments in this log
+                  Successfully finished actions in this log
                 </p>
               </div>
             </div>
@@ -401,7 +414,7 @@ export function ActionsHistoryPage() {
             >
               <div className="absolute right-3 top-3 z-10">
                 <WidgetAIPromptButton
-                  widgetTitle={`Deployment insight: Failed or active actions (${counts.failed + counts.active} in this log)`}
+                  widgetTitle={`History insight: Failed or active actions (${counts.failed + counts.active} in this log)`}
                   chartType="metric"
                   widgetAnchorId="actions-history-insight-failed-active"
                   tooltipLabel="Ask AI about this insight"
@@ -524,8 +537,25 @@ export function ActionsHistoryPage() {
                       <TableCell>
                         <div className="text-sm text-muted-foreground">{action.startedAt}</div>
                       </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-foreground">{action.impact}</span>
+                      <TableCell className="min-w-[10rem] max-w-[16rem] align-top">
+                        <div className="flex flex-col gap-1.5">
+                          <Badge
+                            variant="outline"
+                            className={
+                              action.status === "failed"
+                                ? "w-fit border-destructive/40 bg-destructive/5 px-2 py-0.5 text-xs font-medium text-destructive"
+                                : action.status === "pending" ||
+                                    action.status === "in_progress"
+                                  ? "w-fit border-amber-500/40 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900 dark:border-amber-600/50 dark:bg-amber-950/40 dark:text-amber-200"
+                                  : "w-fit border-green-500/50 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-900 dark:border-green-700 dark:bg-emerald-950/50 dark:text-emerald-200"
+                            }
+                          >
+                            {action.impactBadge}
+                          </Badge>
+                          <p className="text-xs leading-snug text-muted-foreground">
+                            {action.impactDescription}
+                          </p>
+                        </div>
                       </TableCell>
                       <TableCell className={tableOverflowMenuColumnClassName}>
                         <Tooltip>
@@ -569,7 +599,7 @@ export function ActionsHistoryPage() {
             <EmptyMedia variant="icon">
               <Clock />
             </EmptyMedia>
-            <EmptyTitle>No deployed actions yet</EmptyTitle>
+            <EmptyTitle>No actions in history yet</EmptyTitle>
             <EmptyDescription>
               Deploy recommended actions to see them tracked here as an audit log
             </EmptyDescription>

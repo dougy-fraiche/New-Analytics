@@ -14,7 +14,6 @@ export const ROUTES = {
   SAVED_DASHBOARD: (dashboardId: string) => `/saved/dashboard/${dashboardId}`,
   PROJECT_DASHBOARD: (projectId: string, dashboardId: string) =>
     `/project/${projectId}/dashboard/${dashboardId}`,
-  PINNED: "/pinned",
   RECOMMENDED_ACTIONS: "/recommended-actions",
   ACTIONS_HISTORY: "/actions/history",
   INSIGHTS: "/insights",

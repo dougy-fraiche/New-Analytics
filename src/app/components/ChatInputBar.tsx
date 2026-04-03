@@ -98,7 +98,7 @@ export function ChatInputBar({
 
   return (
     <div
-      className={`relative mx-auto w-full max-w-[50rem] rounded-3xl border bg-card text-card-foreground transition-shadow focus-within:border-ring ${
+      className={`relative mx-auto w-full max-w-[64rem] rounded-3xl border bg-card text-card-foreground transition-shadow focus-within:border-ring ${
         isHero
           ? "explore-chat-input-elevated"
           : "shadow-sm focus-within:ring-[3px] focus-within:ring-ring/20"

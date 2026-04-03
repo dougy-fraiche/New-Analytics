@@ -5,7 +5,6 @@ import {
   Download,
   MoreVertical,
   Pencil,
-  Pin,
   Copy,
   Settings,
   Clock,
@@ -166,7 +165,7 @@ const tableData = [
 
 export function DashboardPage() {
   const { dashboardId, projectId } = useParams();
-  const { projects, renameDashboardInProject, toggleFavorite, isFavorite, deleteDashboardFromProject, restoreDashboardToProject, standaloneDashboards, renameStandaloneDashboard, deleteStandaloneDashboard, restoreStandaloneDashboard } = useProjects();
+  const { projects, renameDashboardInProject, deleteDashboardFromProject, restoreDashboardToProject, standaloneDashboards, renameStandaloneDashboard, deleteStandaloneDashboard, restoreStandaloneDashboard } = useProjects();
 
   // Rename state
   const [showRenameDialog, setShowRenameDialog] = useState(false);
@@ -262,15 +261,6 @@ export function DashboardPage() {
     setShowRenameDialog(false);
   };
 
-  // Pin helpers – build composite key and path from route params
-  const favoriteId = projectId ? `${projectId}/${dashboardId}` : dashboardId || "";
-  const favoritePath = projectId
-    ? `/project/${projectId}/dashboard/${dashboardId}`
-    : isStandaloneDashboard
-    ? `/saved/dashboard/${dashboardId}`
-    : `/dashboard/${dashboardId}`;
-  const currentlyPinned = isFavorite(favoriteId);
-
   // For OOTB dashboards, the dashboardId IS the ootb type.
   // For saved dashboards, use the explicit sourceOotbId if available.
   const chatSourceOotbId = isSavedDashboard
@@ -335,22 +325,6 @@ export function DashboardPage() {
           <div className="flex items-center gap-2">
             <h1 className="text-3xl tracking-tight">{meta.title}</h1>
             <div className="ml-auto flex items-center gap-2">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className={`h-8 w-8 ${currentlyPinned ? "text-primary hover:text-primary/80" : "text-muted-foreground"}`}
-                    onClick={() => {
-                      toggleFavorite({ id: favoriteId, name: meta.title, path: favoritePath });
-                      toast.success(currentlyPinned ? "Unpinned" : "Pinned");
-                    }}
-                  >
-                    <Pin className={`h-4 w-4 ${currentlyPinned ? "fill-current" : ""}`} />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">{currentlyPinned ? "Unpin" : "Pin"}</TooltipContent>
-              </Tooltip>
                 <DropdownMenu>
                   <Tooltip>
                     <TooltipTrigger asChild>
