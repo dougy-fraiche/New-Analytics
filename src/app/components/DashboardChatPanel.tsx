@@ -72,6 +72,7 @@ import { buildMockAssistantFields } from "../lib/mock-assistant-structure";
 import {
   buildCreateAIAgentReplyPayload,
   CREATE_AI_AGENT_IN_CHAT_EVENT,
+  CREATE_AI_AGENT_IN_CHAT_PROGRESS_EVENT,
   CREATE_AI_AGENT_IN_CHAT_FINISHED_EVENT,
   type CreateAIAgentInChatDetail,
 } from "../lib/create-ai-agent-chat";
@@ -1047,6 +1048,15 @@ export function DashboardChatPanel({
         patch: (partial) => {
           if (gen !== phaseGenerationRef.current) return;
           dashboardChat.patchMessage(GLOBAL_AI_ASSISTANT_KEY, assistantId, partial);
+          if (partial.toolSteps && partial.toolSteps.length > 0) {
+            const runningIdx = partial.toolSteps.findIndex((s) => s.status === "running");
+            const step = runningIdx >= 0 ? runningIdx + 1 : partial.toolSteps.length;
+            window.dispatchEvent(
+              new CustomEvent(CREATE_AI_AGENT_IN_CHAT_PROGRESS_EVENT, {
+                detail: { sourceKey: detail.sourceKey, agentId: detail.agentId, step },
+              }),
+            );
+          }
         },
       }).then(() => {
         const cancelled = gen !== phaseGenerationRef.current;
@@ -1360,7 +1370,11 @@ export function DashboardChatPanel({
                     key={index}
                     asChild
                     variant="outline"
-                    className="h-auto max-w-full min-w-0 cursor-pointer rounded-full py-1.5 pl-3 pr-3 text-left text-xs font-normal shadow-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    className={cn(
+                      "h-auto max-w-full min-w-0 cursor-pointer rounded-full bg-background py-1.5 pl-3 pr-3 text-left text-xs font-normal shadow-none transition-colors",
+                      "hover:bg-muted/40",
+                      "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                    )}
                   >
                     <button
                       type="button"

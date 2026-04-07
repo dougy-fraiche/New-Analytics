@@ -5,7 +5,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
 import { ChatInputBar } from "./ChatInputBar";
-import { PageContent } from "./PageChrome";
+import { PageContent, pageMainColumnClassName, pageRootListScrollGutterClassName } from "./PageChrome";
 import { RecommendedActionSheet } from "./RecommendedActionSheet";
 import { WidgetAIPromptButton } from "./WidgetAIPromptButton";
 import type { RecommendedAction } from "../data/recommended-actions";
@@ -182,8 +182,10 @@ export function ExplorePhase({
           </div>
         </PageContent>
 
-        <PageContent className="mt-auto shrink-0 px-8 mb-8 flex flex-col items-center rounded-xl border border-border/60 bg-background p-8 shadow-sm">
-          <div className="mx-auto w-full">
+        <div className={pageRootListScrollGutterClassName}>
+          <div className={pageMainColumnClassName}>
+            <section className="mt-auto mb-8 flex flex-col items-center rounded-xl border border-border/60 bg-background p-8 shadow-sm">
+              <div className="mx-auto w-full">
             <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <section className="min-w-0">
                 <h2 className="text-xl">Top Insights</h2>
@@ -302,8 +304,10 @@ export function ExplorePhase({
                 );
               })}
             </div>
+              </div>
+            </section>
           </div>
-        </PageContent>
+        </div>
       </div>
     </>
   );

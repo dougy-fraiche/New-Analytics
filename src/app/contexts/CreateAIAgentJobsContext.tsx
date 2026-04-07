@@ -16,6 +16,8 @@ import {
   CREATE_AI_AGENT_IN_CHAT_EVENT,
   CREATE_AI_AGENT_IN_CHAT_FINISHED_EVENT,
   type CreateAIAgentInChatFinishedDetail,
+  CREATE_AI_AGENT_IN_CHAT_PROGRESS_EVENT,
+  type CreateAIAgentInChatProgressDetail,
 } from "../lib/create-ai-agent-chat";
 import {
   type AgentJob,
@@ -49,8 +51,10 @@ export function CreateAIAgentJobsProvider({ children }: { children: ReactNode })
   const [agentsBySource, setAgentsBySource] = useState<AgentsBySource>(() =>
     loadAgentsBySourceFromSession(),
   );
-  /** While the chat flow runs — value is scope title for synthetic job copy. */
-  const [pendingBySource, setPendingBySource] = useState<Record<string, string>>({});
+  /** While the chat flow runs — synthetic job status for each source key. */
+  const [pendingBySource, setPendingBySource] = useState<
+    Record<string, { scopeTitle: string; agentId: string; step: AgentJobStep }>
+  >({});
 
   const stateRef = useRef({ agentsBySource });
   stateRef.current = { agentsBySource };
@@ -65,11 +69,30 @@ export function CreateAIAgentJobsProvider({ children }: { children: ReactNode })
   }, [agentsBySource]);
 
   useEffect(() => {
+    const onProgress = (e: Event) => {
+      const d = (e as CustomEvent<CreateAIAgentInChatProgressDetail>).detail;
+      if (!d?.sourceKey || !d.agentId || typeof d.step !== "number") return;
+      const nextStep = Math.max(1, Math.min(6, Math.round(d.step))) as AgentJobStep;
+      setPendingBySource((prev) => {
+        const cur = prev[d.sourceKey];
+        if (!cur) return prev;
+        if (cur.agentId !== d.agentId) return prev;
+        if (cur.step === nextStep) return prev;
+        return { ...prev, [d.sourceKey]: { ...cur, step: nextStep } };
+      });
+    };
+    window.addEventListener(CREATE_AI_AGENT_IN_CHAT_PROGRESS_EVENT, onProgress as EventListener);
+    return () =>
+      window.removeEventListener(CREATE_AI_AGENT_IN_CHAT_PROGRESS_EVENT, onProgress as EventListener);
+  }, []);
+
+  useEffect(() => {
     const onFinished = (e: Event) => {
       const d = (e as CustomEvent<CreateAIAgentInChatFinishedDetail>).detail;
       if (!d?.sourceKey || !d.agentId) return;
       setPendingBySource((prev) => {
         if (!(d.sourceKey in prev)) return prev;
+        if (prev[d.sourceKey]?.agentId !== d.agentId) return prev;
         const next = { ...prev };
         delete next[d.sourceKey];
         return next;
@@ -94,7 +117,10 @@ export function CreateAIAgentJobsProvider({ children }: { children: ReactNode })
 
   const startJob = useCallback((input: StartCreateAIAgentJobInput) => {
     const agentId = crypto.randomUUID();
-    setPendingBySource((prev) => ({ ...prev, [input.sourceKey]: input.scopeTitle }));
+    setPendingBySource((prev) => ({
+      ...prev,
+      [input.sourceKey]: { scopeTitle: input.scopeTitle, agentId, step: 1 as AgentJobStep },
+    }));
     window.dispatchEvent(
       new CustomEvent(WIDGET_AI_MESSAGE_SENT_EVENT, {
         detail: { persistKey: GLOBAL_AI_ASSISTANT_KEY },
@@ -134,13 +160,13 @@ export function CreateAIAgentJobsProvider({ children }: { children: ReactNode })
 
   const jobForSource = useCallback(
     (sourceKey: string) => {
-      const pendingTitle = pendingBySource[sourceKey];
-      if (pendingTitle !== undefined) {
+      const pending = pendingBySource[sourceKey];
+      if (pending !== undefined) {
         const synthetic: AgentJob = {
           id: `pending-${sourceKey}`,
           sourceKey,
-          scopeTitle: pendingTitle,
-          step: 1,
+          scopeTitle: pending.scopeTitle,
+          step: pending.step,
           stepEnteredAt: Date.now(),
         };
         return synthetic;

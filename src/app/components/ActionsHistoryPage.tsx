@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import {
   CheckCircle2,
+  Check,
   Clock,
   XCircle,
   Loader2,
+  Bot,
   Search,
   RotateCcw,
   MoreHorizontal,
@@ -25,6 +27,12 @@ import {
   EmptyDescription,
 } from "./ui/empty";
 import { Input } from "./ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -48,7 +56,7 @@ import { WidgetAIPromptButton } from "./WidgetAIPromptButton";
 import { WidgetAIProvider } from "../contexts/WidgetAIContext";
 import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 
-type ActionStatus = "completed" | "failed" | "in_progress" | "pending";
+type ActionStatus = "completed" | "failed" | "in_progress" | "pending" | "created";
 
 interface ActionRecord {
   id: string;
@@ -106,7 +114,7 @@ const initialActions: ActionRecord[] = [
     id: "act-004",
     name: "Export Q4 Analytics Report",
     type: "Deterministic Process",
-    status: "completed",
+    status: "created",
     triggeredBy: "Sarah Johnson",
     startedAt: "Feb 19, 2026 04:30 PM",
     completedAt: "Feb 19, 2026 04:31 PM",
@@ -142,7 +150,7 @@ const initialActions: ActionRecord[] = [
     id: "act-007",
     name: "Generate Weekly Digest",
     type: "Deterministic Process",
-    status: "pending",
+    status: "in_progress",
     triggeredBy: "Priya Patel",
     startedAt: "Feb 21, 2026 06:00 AM",
     completedAt: null,
@@ -192,10 +200,11 @@ const statusConfig: Record<
   ActionStatus,
   { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: typeof CheckCircle2 }
 > = {
-  completed: { label: "Completed", variant: "default", icon: CheckCircle2 },
+  completed: { label: "Published", variant: "outline", icon: Check },
+  created: { label: "Created", variant: "default", icon: Bot },
   failed: { label: "Failed", variant: "destructive", icon: XCircle },
   in_progress: { label: "In Progress", variant: "secondary", icon: Loader2 },
-  pending: { label: "Pending", variant: "outline", icon: Clock },
+  pending: { label: "In Progress", variant: "outline", icon: Clock },
 };
 
 const allTypes = Array.from(new Set(initialActions.map((a) => a.type)));
@@ -205,6 +214,7 @@ export function ActionsHistoryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const navigate = useNavigate();
 
   const filtered = actions.filter((action) => {
     const matchesSearch =
@@ -256,10 +266,11 @@ export function ActionsHistoryPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
+      <SelectItem value="completed">Published</SelectItem>
+      <SelectItem value="created">Created</SelectItem>
                     <SelectItem value="failed">Failed</SelectItem>
                     <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
+      <SelectItem value="pending">In Progress</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={typeFilter} onValueChange={setTypeFilter}>
@@ -368,7 +379,7 @@ export function ActionsHistoryPage() {
                 <TableHead className="w-[180px]">Triggered By</TableHead>
                 <TableHead className="w-[196px]">Started</TableHead>
                 <TableHead className="min-w-[22rem] w-[32%]">Impact</TableHead>
-                <TableHead className={tableOverflowMenuColumnClassName}>
+                <TableHead className={`${tableOverflowMenuColumnClassName} px-0 pr-4`}>
                   <span className="sr-only">Actions</span>
                 </TableHead>
               </TableRow>
@@ -393,13 +404,20 @@ export function ActionsHistoryPage() {
                         <Badge variant="secondary">{action.type}</Badge>
                       </TableCell>
                       <TableCell className="w-[128px]">
-                        <Badge variant={statusInfo.variant}>
+                        <Badge
+                          variant={statusInfo.variant}
+                          className={cn(
+                            "gap-1.5",
+                            action.status === "completed"
+                              ? "border-transparent bg-emerald-600 text-white dark:bg-emerald-600 dark:text-white"
+                              : "",
+                          )}
+                        >
                           {action.status === "in_progress" ? (
-                            <Loader2
-                              className="animate-spin"
-                              aria-hidden
-                            />
-                          ) : null}
+                            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                          ) : (
+                            <statusInfo.icon className="h-4 w-4" aria-hidden />
+                          )}
                           {statusInfo.label}
                         </Badge>
                       </TableCell>
@@ -412,21 +430,32 @@ export function ActionsHistoryPage() {
                           {action.impactDescription}
                         </p>
                       </TableCell>
-                      <TableCell className={tableOverflowMenuColumnClassName}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              disabled
+                      <TableCell className={`${tableOverflowMenuColumnClassName} px-0 pr-4`}>
+                        <DropdownMenu>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">More options</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom">More options</TooltipContent>
+                          </Tooltip>
+                          <DropdownMenuContent align="end" className="w-44">
+                            <DropdownMenuItem
+                              onSelect={() => {
+                                navigate(
+                                  `/automation-opportunities/agent/${encodeURIComponent(action.name)}`,
+                                );
+                              }}
                             >
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">More options</span>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="left">More options</TooltipContent>
-                        </Tooltip>
+                              <Bot className="h-4 w-4" />
+                              View Agent
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   );

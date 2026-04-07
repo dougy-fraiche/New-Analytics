@@ -165,7 +165,7 @@ function RootLayoutInner() {
       const agent = getAgentById(params.agentId);
       return [
         { label: "Automation Opportunities", href: ROUTES.AUTOMATION_OPPORTUNITIES },
-        { label: agent?.scopeTitle ?? "Agent" },
+        { label: agent?.scopeTitle ?? decodeURIComponent(params.agentId) ?? "Agent" },
       ];
     }
 
@@ -300,7 +300,7 @@ function RootLayoutInner() {
       location.pathname.startsWith(`${ROUTES.AUTOMATION_OPPORTUNITIES}/agent/`)
     ) {
       if (params.agentId) {
-        label = getAgentById(params.agentId)?.scopeTitle ?? "Agent";
+        label = getAgentById(params.agentId)?.scopeTitle ?? decodeURIComponent(params.agentId) ?? "Agent";
       } else {
         label = "Automation Opportunities";
       }

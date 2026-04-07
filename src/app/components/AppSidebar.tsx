@@ -778,8 +778,10 @@ export function AppSidebar() {
                     className="font-normal data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                   >
                     <Avatar className="h-8 w-8 rounded-full">
-                      <AvatarImage src="https://images.unsplash.com/photo-1672685667592-0392f458f46f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBtYW4lMjBoZWFkc2hvdCUyMHBvcnRyYWl0fGVufDF8fHx8MTc3MzY4NjY2MHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral" alt="John Doe" className="rounded-full object-cover" />
-                      <AvatarFallback className="rounded-full bg-primary text-primary-foreground text-xs">
+                      <AvatarFallback
+                        delayMs={0}
+                        className="rounded-full bg-primary text-primary-foreground text-xs"
+                      >
                         JD
                       </AvatarFallback>
                     </Avatar>

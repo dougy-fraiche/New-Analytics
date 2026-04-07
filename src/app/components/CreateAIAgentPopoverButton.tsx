@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Bot, ChevronDown, Eye, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router";
 
 import { useCreateAIAgentJobs } from "../contexts/CreateAIAgentJobsContext";
 import {
-  AI_AGENT_JOB_STEP_MS,
   type AgentJobStep,
   buttonLabelForStep,
   formatAgentCreatedAt,
@@ -42,24 +40,6 @@ export function CreateAIAgentPopoverButton({
   const step = (job?.step ?? 0) as AgentJobStep;
   const loading = isLoadingStep(step);
   const agents = agentsForSource(sourceKey);
-
-  /** Cycles 1→6 on the same cadence as the in-chat phased steps (replaces a static first label + spinner). */
-  const [loadingStep, setLoadingStep] = useState<AgentJobStep>(1);
-  useEffect(() => {
-    if (!loading) {
-      setLoadingStep(1);
-      return;
-    }
-    setLoadingStep(1);
-    const id = window.setInterval(() => {
-      setLoadingStep((prev) => {
-        const n = prev as number;
-        if (n >= 6) return 6 as AgentJobStep;
-        return (n + 1) as AgentJobStep;
-      });
-    }, AI_AGENT_JOB_STEP_MS);
-    return () => window.clearInterval(id);
-  }, [loading]);
 
   const handlePrimaryCreate = () => {
     if (step === 0) {
@@ -130,7 +110,7 @@ export function CreateAIAgentPopoverButton({
         <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
       ) : null}
       <span className={cn(loading && "min-w-0 flex-1 truncate text-left")}>
-        {loading ? buttonLabelForStep(loadingStep) : buttonLabelForStep(step)}
+        {buttonLabelForStep(step)}
       </span>
     </Button>
   );

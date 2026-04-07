@@ -4,6 +4,8 @@ import type { AssistantReplyPayload, AssistantToolStep } from "../types/conversa
 
 export const CREATE_AI_AGENT_IN_CHAT_EVENT = "create-ai-agent-in-chat";
 
+export const CREATE_AI_AGENT_IN_CHAT_PROGRESS_EVENT = "create-ai-agent-in-chat-progress";
+
 export const CREATE_AI_AGENT_IN_CHAT_FINISHED_EVENT = "create-ai-agent-in-chat-finished";
 
 export type CreateAIAgentInChatDetail = {
@@ -21,6 +23,12 @@ export type CreateAIAgentInChatFinishedDetail = {
   scopeTitle: string;
   agentId: string;
   cancelled?: boolean;
+};
+
+export type CreateAIAgentInChatProgressDetail = {
+  sourceKey: string;
+  agentId: string;
+  step: number;
 };
 
 function buildToolStepDefs(scopeTitle: string): AssistantToolStep[] {
