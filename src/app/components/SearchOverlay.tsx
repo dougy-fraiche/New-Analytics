@@ -31,7 +31,9 @@ import { ootbCategories } from "../data/ootb-dashboards";
 import { ROUTES } from "../routes";
 
 const AI_AGENTS_OVERVIEW_PATH = (() => {
-  const first = ootbCategories.find((c) => c.id === "ai-agents")?.dashboards[0]?.id;
+  const first = ootbCategories
+    .find((c) => c.id === "ai-agents")
+    ?.dashboards.find((d) => d.id !== "ai-agents-copilot")?.id;
   return first ? ROUTES.AI_AGENTS_DASHBOARD(first) : ROUTES.AI_AGENTS;
 })();
 
@@ -179,6 +181,10 @@ export function SearchOverlay({ open, onOpenChange }: SearchOverlayProps) {
                 <Brain className="mr-2 h-4 w-4" />
                 <span>AI Agents</span>
               </CommandItem>
+              <CommandItem value="Copilot" onSelect={() => handleSelect(ROUTES.COPILOT, "Copilot")}>
+                <Sparkles className="mr-2 h-4 w-4" />
+                <span>Copilot</span>
+              </CommandItem>
               <CommandItem
                 value="Automation Opportunities"
                 onSelect={() => handleSelect(ROUTES.AUTOMATION_OPPORTUNITIES, "Automation Opportunities")}
@@ -226,7 +232,16 @@ export function SearchOverlay({ open, onOpenChange }: SearchOverlayProps) {
                   <CommandItem
                     key={dashboard.id}
                     value={`${category.name} ${dashboard.name}`}
-                    onSelect={() => handleSelect(ROUTES.DASHBOARD(dashboard.id), dashboard.name)}
+                    onSelect={() =>
+                      handleSelect(
+                        dashboard.id === "ai-agents-copilot"
+                          ? ROUTES.COPILOT
+                          : category.id === "ai-agents"
+                            ? ROUTES.AI_AGENTS_DASHBOARD(dashboard.id)
+                            : ROUTES.DASHBOARD(dashboard.id),
+                        dashboard.name,
+                      )
+                    }
                   >
                     <Icon className="mr-2 h-4 w-4" />
                     <span>{dashboard.name}</span>

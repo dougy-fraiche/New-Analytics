@@ -145,6 +145,12 @@ const dashboardSuggestedQuestions: Record<string, string[]> = {
     "Are there any agents with degraded health?",
     "Compare operational metrics across regions",
   ],
+  "ai-agents-copilot": [
+    "What's Copilot adoption across teams?",
+    "Show suggestion acceptance rate trends",
+    "Which intents get the most Copilot assists?",
+    "Compare handle time with Copilot enabled vs disabled",
+  ],
   "ai-agent-evaluation": [
     "Which tools are invoked most often and how reliable are they?",
     "How are self-learning loops affecting model quality?",
@@ -246,6 +252,15 @@ const dashboardResponseHandlers: Record<string, (msg: string) => string | null> 
     if (msg.includes("throughput") || msg.includes("trend")) return "Weekly throughput: 142,300 conversations processed, up 9% from last week. Peak throughput hit 892 concurrent conversations on Tuesday at 11:15 AM EST. Average response time is 1.8s, within the 2.5s SLA. Want a breakdown by agent or hour?";
     if (msg.includes("degraded") || msg.includes("alert")) return "No agents are currently in degraded state. However, TechSupportBot is approaching its memory threshold (82% utilized) and may need a restart within 48 hours. BillingBot's p99 latency has crept from 2.1s to 2.4s this week \u2014 still within SLA but trending upward. Want to set alerting thresholds?";
     if (msg.includes("compare") || msg.includes("region")) return "Regional breakdown: US-East handles 41% of traffic (avg 1.6s latency), US-West 28% (1.7s), EU-West 22% (1.9s), APAC 9% (2.2s). APAC latency is elevated due to model serving distance; edge deployment planned for next sprint.";
+    return null;
+  },
+  "ai-agents-copilot": (msg) => {
+    if (msg.includes("adopt") || msg.includes("team")) return "Copilot adoption: 78% of active agents used assist at least once this week (+6 pts vs last week). Tier 1 leads at 86%, Tier 2 at 71%, Technical at 62%. Want a breakdown by queue or channel?";
+    if (msg.includes("accept") || msg.includes("suggestion") || msg.includes("rate"))
+      return "Suggestion acceptance rate is 71% (rolling 7 days), up from 64% last month. Highest acceptance on billing and order-status flows; lowest on multi-step troubleshooting. Should I segment by intent?";
+    if (msg.includes("intent") || msg.includes("assist")) return "Top intents by Copilot assist volume: password reset, order lookup, billing inquiry, and return status. Assist reduces average handle time by ~18% on these intents in pilots. Want correlation with CSAT?";
+    if (msg.includes("handle") || msg.includes("time") || msg.includes("compare"))
+      return "Handle time with Copilot enabled averages 3.9 minutes vs 4.8 minutes without (same intent cohorts). Biggest savings are on lookup-heavy conversations. I can chart week-over-week impact if you want.";
     return null;
   },
   "ai-agent-evaluation": (msg) => {

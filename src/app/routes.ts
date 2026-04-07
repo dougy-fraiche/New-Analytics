@@ -6,8 +6,10 @@ export const ROUTES = {
   AUTOMATION_OPPORTUNITIES: "/automation-opportunities",
   /** Stable agent id (UUID) as the path segment. */
   AUTOMATION_OPPORTUNITIES_AGENT: (agentId: string) => `/automation-opportunities/agent/${agentId}`,
+  OBSERVABILITY: "/observability",
   AI_AGENTS: "/ai-agents",
   AI_AGENTS_DASHBOARD: (dashboardId: string) => `/ai-agents/${dashboardId}`,
+  COPILOT: "/copilot",
   DASHBOARD: (dashboardId: string) => `/dashboard/${dashboardId}`,
   SAVED: "/saved",
   SAVED_FOLDER: (folderId: string) => `/saved/${folderId}`,
@@ -30,6 +32,7 @@ export const ROUTE_PREFIXES = {
   conversation: "/conversation/",
   dashboard: "/dashboard/",
   aiAgentsNested: `${ROUTES.AI_AGENTS}/`,
+  copilot: ROUTES.COPILOT,
   savedDashboard: "/saved/dashboard/",
   saved: "/saved/",
   project: "/project/",

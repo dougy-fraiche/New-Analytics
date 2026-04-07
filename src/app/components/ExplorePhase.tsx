@@ -17,6 +17,9 @@ import {
 } from "../data/explore-data";
 
 type TopInsightsFilter = "all" | "anomalies" | "actions";
+const HERO_SECTION_MAX_HEIGHT_PX = 800;
+const HERO_SECTION_VERTICAL_PADDING_PX = 64; // 2rem top + 2rem bottom.
+const MIN_TOP_INSIGHTS_VISIBLE_PX = 240;
 
 interface ExplorePhaseProps {
   query: string;
@@ -60,7 +63,9 @@ export function ExplorePhase({
   const [topInsightSheetAction, setTopInsightSheetAction] = useState<RecommendedAction | null>(
     null,
   );
+  const [heroSectionHeightPx, setHeroSectionHeightPx] = useState<number | null>(null);
   const exploreSurfaceRef = useRef<HTMLDivElement>(null);
+  const heroContentRef = useRef<HTMLDivElement>(null);
   const heroHeading = useMemo(
     () => exploreHeadings[Math.floor(Math.random() * exploreHeadings.length)],
     [],
@@ -102,6 +107,38 @@ export function ExplorePhase({
     };
   }, [heroInputBarRef]);
 
+  useLayoutEffect(() => {
+    const surface = exploreSurfaceRef.current;
+    const heroContent = heroContentRef.current;
+    if (!surface || !heroContent) return;
+
+    const computeHeroHeight = () => {
+      const surfaceHeight = surface.clientHeight;
+      const heroMinHeight = heroContent.scrollHeight + HERO_SECTION_VERTICAL_PADDING_PX;
+      const heroTargetHeight = Math.min(
+        HERO_SECTION_MAX_HEIGHT_PX,
+        Math.max(heroMinHeight, surfaceHeight - MIN_TOP_INSIGHTS_VISIBLE_PX),
+      );
+
+      setHeroSectionHeightPx((prev) => {
+        if (prev !== null && Math.abs(prev - heroTargetHeight) < 1) return prev;
+        return heroTargetHeight;
+      });
+    };
+
+    computeHeroHeight();
+
+    const resizeObserver = new ResizeObserver(computeHeroHeight);
+    resizeObserver.observe(surface);
+    resizeObserver.observe(heroContent);
+    window.addEventListener("resize", computeHeroHeight);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", computeHeroHeight);
+    };
+  }, []);
+
   const filteredTopInsights = useMemo(() => {
     switch (topInsightsFilter) {
       case "anomalies":
@@ -130,54 +167,62 @@ export function ExplorePhase({
         key="explore"
         className="explore-page-gradient flex min-h-0 flex-1 flex-col overflow-y-auto"
       >
-        <PageContent className="flex h-full max-h-[800px] shrink-0 flex-col items-center justify-center pb-24">
-          <div className="relative mx-auto flex w-full max-w-[64rem] flex-col items-stretch gap-8 text-center">
-            <h1
-              className="animate-gradient-text w-full text-[36px] font-normal leading-[44px] tracking-tight sm:text-[40px] sm:leading-[48px]"
-              style={{ fontWeight: 600 }}
-            >
-              {heroHeading}
-            </h1>
-
+        <PageContent className="shrink-0">
+          <div
+            className="flex w-full flex-col items-center justify-center py-8"
+            style={heroSectionHeightPx ? { height: `${heroSectionHeightPx}px` } : undefined}
+          >
             <div
-              ref={heroInputBarRef as LegacyRef<HTMLDivElement>}
-              className="w-full"
-              style={{ visibility: isInputAnimating ? "hidden" : "visible" }}
+              ref={heroContentRef}
+              className="relative mx-auto flex w-full max-w-[64rem] flex-col items-stretch gap-8 text-center"
             >
-              <ChatInputBar
-                variant="hero"
-                query={query}
-                voice={voice}
-                inputRef={inputRef}
-                onQueryChange={onQueryChange}
-                onSend={() => {
-                  onShowTypeahead(false);
-                  onSend();
-                }}
-                showTypeahead={showTypeahead}
-                onShowTypeahead={onShowTypeahead}
-                forcedSuggestions={forcedSuggestions}
-                onForcedSuggestionsChange={onForcedSuggestionsChange}
-                onTypeaheadSuggestionPicked={onTypeaheadSuggestionPicked}
-              />
-            </div>
+              <h1
+                className="animate-gradient-text w-full text-[36px] font-normal leading-[44px] tracking-tight sm:text-[40px] sm:leading-[48px]"
+                style={{ fontWeight: 600 }}
+              >
+                {heroHeading}
+              </h1>
 
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              {suggestedActions.map((action) => {
-                const Icon = action.icon;
-                return (
-                  <Button
-                    key={action.id}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onActionClick(action.label, action.prompts)}
-                    className="gap-2"
-                  >
-                    <Icon className="h-4 w-4" />
-                    {action.label}
-                  </Button>
-                );
-              })}
+              <div
+                ref={heroInputBarRef as LegacyRef<HTMLDivElement>}
+                className="w-full"
+                style={{ visibility: isInputAnimating ? "hidden" : "visible" }}
+              >
+                <ChatInputBar
+                  variant="hero"
+                  query={query}
+                  voice={voice}
+                  inputRef={inputRef}
+                  onQueryChange={onQueryChange}
+                  onSend={() => {
+                    onShowTypeahead(false);
+                    onSend();
+                  }}
+                  showTypeahead={showTypeahead}
+                  onShowTypeahead={onShowTypeahead}
+                  forcedSuggestions={forcedSuggestions}
+                  onForcedSuggestionsChange={onForcedSuggestionsChange}
+                  onTypeaheadSuggestionPicked={onTypeaheadSuggestionPicked}
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                {suggestedActions.map((action) => {
+                  const Icon = action.icon;
+                  return (
+                    <Button
+                      key={action.id}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onActionClick(action.label, action.prompts)}
+                      className="gap-2"
+                    >
+                      <Icon className="h-4 w-4" />
+                      {action.label}
+                    </Button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </PageContent>

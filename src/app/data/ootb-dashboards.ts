@@ -3,6 +3,7 @@ import {
   Target,
   LayoutDashboard,
   ClipboardCheck,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 
@@ -58,6 +59,13 @@ export const ootbCategories: OotbCategory[] = [
         icon: Brain,
         description: "Track intent recognition accuracy, NLU confidence, and classification metrics",
         lastUpdated: "1 hour ago",
+      },
+      {
+        id: "ai-agents-copilot",
+        name: "Copilot",
+        icon: Sparkles,
+        description: "Agent copilot usage, suggestion quality, and assist coverage (same layout as Overview for now)",
+        lastUpdated: "Recently",
       },
     ],
   },

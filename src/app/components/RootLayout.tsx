@@ -158,6 +158,10 @@ function RootLayoutInner() {
       return [{ label: "Automation Opportunities" }];
     }
 
+    if (location.pathname === ROUTES.OBSERVABILITY) {
+      return [{ label: "Observability" }];
+    }
+
     if (
       params.agentId &&
       location.pathname.startsWith(`${ROUTES.AUTOMATION_OPPORTUNITIES}/agent/`)
@@ -173,7 +177,17 @@ function RootLayoutInner() {
       location.pathname === ROUTES.AI_AGENTS ||
       location.pathname.startsWith(`${ROUTES.AI_AGENTS}/`)
     ) {
-      return [{ label: "AI Agents" }];
+      return [
+        { label: "Observability", href: ROUTES.OBSERVABILITY },
+        { label: "AI Agents" },
+      ];
+    }
+
+    if (location.pathname === ROUTES.COPILOT) {
+      return [
+        { label: "Observability", href: ROUTES.OBSERVABILITY },
+        { label: "Copilot" },
+      ];
     }
 
     if (location.pathname === "/saved") {
@@ -236,10 +250,14 @@ function RootLayoutInner() {
       const dashboardId = params.dashboardId;
       const ootbInfo = dashboardId ? findOotbDashboardById(dashboardId) : undefined;
       const dashboardName = ootbInfo?.name || "Dashboard";
-      return [
-        { label: "AI Agents", href: ROUTES.AI_AGENTS },
-        { label: dashboardName },
-      ];
+      if (ootbInfo?.categoryName) {
+        return [
+          { label: "Observability", href: ROUTES.OBSERVABILITY },
+          { label: ootbInfo.categoryName },
+          { label: dashboardName },
+        ];
+      }
+      return [{ label: "Observability", href: ROUTES.OBSERVABILITY }, { label: dashboardName }];
     }
 
     // Standalone custom dashboard (not in a folder)
@@ -309,6 +327,10 @@ function RootLayoutInner() {
       location.pathname.startsWith(`${ROUTES.AI_AGENTS}/`)
     ) {
       label = "AI Agents";
+    } else if (location.pathname === ROUTES.COPILOT) {
+      label = "Copilot";
+    } else if (location.pathname === ROUTES.OBSERVABILITY) {
+      label = "Observability";
     } else if (location.pathname === "/saved") {
       label = "Saved";
     } else if (location.pathname === "/recommended-actions") {
@@ -336,6 +358,7 @@ function RootLayoutInner() {
     location.pathname === '/insights' ||
     location.pathname === '/automation-opportunities' ||
     location.pathname.startsWith(`${ROUTES.AUTOMATION_OPPORTUNITIES}/agent/`) ||
+    location.pathname === ROUTES.COPILOT ||
     location.pathname === ROUTES.AI_AGENTS ||
     location.pathname.startsWith(`${ROUTES.AI_AGENTS}/`);
 

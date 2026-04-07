@@ -44,6 +44,14 @@ export function resolveAiAssistantRouteContext(
     return { dashboardId: AUTOMATION_OPPORTUNITIES_ID, sourceOotbId: AUTOMATION_OPPORTUNITIES_ID };
   }
 
+  if (pathname === ROUTES.OBSERVABILITY) {
+    return { dashboardId: "observability", sourceOotbId: "observability" };
+  }
+
+  if (pathname === ROUTES.COPILOT) {
+    return { dashboardId: "ai-agents-copilot", sourceOotbId: "ai-agents-copilot" };
+  }
+
   if (pathname.startsWith(`${ROUTES.AUTOMATION_OPPORTUNITIES}/agent/`)) {
     return { dashboardId: AUTOMATION_OPPORTUNITIES_ID, sourceOotbId: AUTOMATION_OPPORTUNITIES_ID };
   }
@@ -60,10 +68,14 @@ export function resolveAiAssistantRouteContext(
     if (!category || category.dashboards.length === 0) {
       return {};
     }
+    const visibleDashboards = category.dashboards.filter((d) => d.id !== "ai-agents-copilot");
+    if (visibleDashboards.length === 0) {
+      return {};
+    }
     const activeId =
-      params.dashboardId && category.dashboards.some((d) => d.id === params.dashboardId)
+      params.dashboardId && visibleDashboards.some((d) => d.id === params.dashboardId)
         ? params.dashboardId
-        : category.dashboards[0]!.id;
+        : visibleDashboards[0]!.id;
     return { dashboardId: activeId, sourceOotbId: activeId };
   }
 

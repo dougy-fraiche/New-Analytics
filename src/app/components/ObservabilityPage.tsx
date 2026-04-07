@@ -28,6 +28,7 @@ import {
 import { LabeledSelectValue } from "./HeaderFilters";
 import { PageTransition } from "./PageTransition";
 import { ootbCategories, totalOotbDashboardCount } from "../data/ootb-dashboards";
+import { ROUTES } from "../routes";
 
 export function ObservabilityPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -43,7 +44,7 @@ export function ObservabilityPage() {
       ...d,
       categoryName: cat.name,
       categoryId: cat.id,
-      path: `/ai-agents/${d.id}`,
+      path: d.id === "ai-agents-copilot" ? ROUTES.COPILOT : ROUTES.AI_AGENTS_DASHBOARD(d.id),
     }));
   });
 

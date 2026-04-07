@@ -25,11 +25,17 @@ function HydrateFallback() {
   return null;
 }
 
-/** Legacy `/observability/*` bookmarks → `/ai-agents` routes. */
+/** Legacy nested `/observability/*` bookmarks → `/ai-agents` routes. */
 function LegacyObservabilityRedirect() {
   const { categoryId, dashboardId } = useParams<{ categoryId?: string; dashboardId?: string }>();
+  if (categoryId === "ai-agents" && dashboardId === "ai-agents-copilot") {
+    return <Navigate to={ROUTES.COPILOT} replace />;
+  }
   if (categoryId === "ai-agents" && dashboardId) {
     return <Navigate to={ROUTES.AI_AGENTS_DASHBOARD(dashboardId)} replace />;
+  }
+  if (categoryId === "copilot") {
+    return <Navigate to={ROUTES.COPILOT} replace />;
   }
   return <Navigate to={ROUTES.AI_AGENTS} replace />;
 }
@@ -90,11 +96,13 @@ const router = createBrowserRouter([
         ),
       },
       { path: "automation-opportunities", ...lazyRoute(() => import("./components/AutomationOpportunitiesPage"), "AutomationOpportunitiesPage") },
-      { path: "observability", element: <Navigate to={ROUTES.AI_AGENTS} replace /> },
+      { path: "observability", ...lazyRoute(() => import("./components/ObservabilityPage"), "ObservabilityPage") },
       { path: "observability/:categoryId", element: <LegacyObservabilityRedirect /> },
       { path: "observability/:categoryId/:dashboardId", element: <LegacyObservabilityRedirect /> },
+      { path: "ai-agents/ai-agents-copilot", element: <Navigate to={ROUTES.COPILOT} replace /> },
       { path: "ai-agents", ...lazyRoute(() => import("./components/ObservabilityCategoryPage"), "ObservabilityCategoryPage") },
       { path: "ai-agents/:dashboardId", ...lazyRoute(() => import("./components/ObservabilityCategoryPage"), "ObservabilityCategoryPage") },
+      { path: "copilot", ...lazyRoute(() => import("./components/CopilotPage"), "CopilotPage") },
       { path: "saved", ...lazyRoute(() => import("./components/SavedFoldersPage"), "SavedFoldersPage") },
       { path: "saved/:folderId", ...lazyRoute(() => import("./components/SavedFoldersPage"), "SavedFoldersPage") },
       { path: "saved/:folderId/dashboard/:dashboardId", ...lazyRoute(() => import("./components/DashboardPage"), "DashboardPage") },

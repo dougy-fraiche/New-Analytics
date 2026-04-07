@@ -8,6 +8,7 @@ import {
   FolderInput,
   History,
   Bookmark,
+  ChartLine,
   ChevronRight,
   Settings,
   LogOut,
@@ -261,6 +262,7 @@ export function AppSidebar() {
 
   // Persisted collapse states
   const [exploreOpen, setExploreOpen] = usePersistedState("sidebar-explore-open", true);
+  const [observabilityOpen, setObservabilityOpen] = usePersistedState("sidebar-observability-open", true);
   const [savedOpen, setSavedOpen] = usePersistedState("sidebar-saved-open", true);
   const [folderOpenState, setFolderOpenState] = usePersistedState<Record<string, boolean>>("sidebar-folders-open", {});
 
@@ -284,6 +286,15 @@ export function AppSidebar() {
 
   // ── Keyboard shortcuts ─────────────────────────────────────────────────
   useKeyboardShortcut([
+    {
+      id: "sidebar:toggle-observability",
+      key: "O",
+      shift: true,
+      handler: (e: KeyboardEvent) => {
+        e.preventDefault();
+        setObservabilityOpen((prev) => !prev);
+      },
+    },
     {
       id: "sidebar:toggle-saved",
       key: "S",
@@ -475,31 +486,49 @@ export function AppSidebar() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              {(() => {
-                const aiAgentsCategory = ootbCategories.find((c) => c.id === "ai-agents");
-                if (!aiAgentsCategory?.dashboards.length) return null;
-                const overviewId = aiAgentsCategory.dashboards[0]!.id;
-                const AiAgentsIcon = aiAgentsCategory.icon;
-                return (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={
-                        location.pathname === ROUTES.AI_AGENTS ||
-                        location.pathname.startsWith(`${ROUTES.AI_AGENTS}/`)
-                      }
-                      tooltip={aiAgentsCategory.name}
-                    >
-                      <Link to={ROUTES.AI_AGENTS_DASHBOARD(overviewId)}>
-                        <AiAgentsIcon />
-                        <span>{aiAgentsCategory.name}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })()}
             </SidebarMenu>
           </div>
+
+          <CollapsibleSidebarSection
+            icon={ChartLine}
+            label="Observability"
+            path="/observability"
+            open={observabilityOpen}
+            onToggle={setObservabilityOpen}
+            headerIsActive={location.pathname === ROUTES.OBSERVABILITY}
+          >
+            {(() => {
+              const aiAgentsCategory = ootbCategories.find((c) => c.id === "ai-agents");
+              if (!aiAgentsCategory?.dashboards.length) return null;
+              const overviewId =
+                aiAgentsCategory.dashboards.find((d) => d.id !== "ai-agents-copilot")?.id ??
+                aiAgentsCategory.dashboards[0]!.id;
+              const onAiAgentsRoute =
+                location.pathname === ROUTES.AI_AGENTS ||
+                location.pathname.startsWith(`${ROUTES.AI_AGENTS}/`);
+              const isCopilotRoute = location.pathname === ROUTES.COPILOT;
+              const parentNavActive = onAiAgentsRoute && !isCopilotRoute;
+
+              return (
+                <>
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={parentNavActive}>
+                      <Link to={ROUTES.AI_AGENTS_DASHBOARD(overviewId)}>
+                        <span className="truncate">{aiAgentsCategory.name}</span>
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={isCopilotRoute}>
+                      <Link to={ROUTES.COPILOT}>
+                        <span className="truncate">Copilot</span>
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                </>
+              );
+            })()}
+          </CollapsibleSidebarSection>
 
           {/* Saved (user-created) Dashboards */}
           <CollapsibleSidebarSection

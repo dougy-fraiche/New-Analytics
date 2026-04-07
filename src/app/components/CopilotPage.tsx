@@ -1,0 +1,208 @@
+import { useMemo, useState } from "react";
+import {
+  Clock,
+  Download,
+  MoreVertical,
+  RotateCcw,
+  Settings,
+} from "lucide-react";
+import { Button } from "./ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectSeparator,
+  SelectTrigger,
+} from "./ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import {
+  PageHeader,
+  pageMainColumnClassName,
+  pageRootListScrollGutterClassName,
+} from "./PageChrome";
+import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
+import { WidgetAIProvider } from "../contexts/WidgetAIContext";
+import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
+import { AIAgentsOverviewTab } from "./AIAgentsOverviewTab";
+import { useContainerBreakpoint } from "../hooks/useContainerBreakpoint";
+import {
+  DATE_RANGE_CUSTOM_OPTION,
+  DATE_RANGE_LABELS,
+  DATE_RANGE_PRIMARY_OPTIONS,
+  DATE_RANGE_SECONDARY_OPTIONS,
+  type DateRangeOption,
+} from "../data/date-ranges";
+import {
+  DEFAULT_DASHBOARD_FILTERS as DEFAULT_FILTERS,
+  type DashboardProductFilter,
+  type DashboardTeamFilter,
+} from "../data/dashboard-filters";
+import { LabeledFilterInline, LabeledSelectValue } from "./HeaderFilters";
+import { ootbCategories } from "../data/ootb-dashboards";
+import { PageTransition } from "./PageTransition";
+import { cn } from "./ui/utils";
+
+export function CopilotPage() {
+  const { ref: dashboardContentRef, isBelowBreakpoint: isCompactDashboard } =
+    useContainerBreakpoint<HTMLDivElement>(768);
+  const [dateRange, setDateRange] = useState<DateRangeOption>(DEFAULT_FILTERS.dateRange);
+  const [team, setTeam] = useState(DEFAULT_FILTERS.team);
+  const [product, setProduct] = useState(DEFAULT_FILTERS.product);
+
+  const hasFilterChanges = useMemo(() => {
+    return (
+      dateRange !== DEFAULT_FILTERS.dateRange ||
+      team !== DEFAULT_FILTERS.team ||
+      product !== DEFAULT_FILTERS.product
+    );
+  }, [dateRange, team, product]);
+
+  const aiAgentsCategory = ootbCategories.find((c) => c.id === "ai-agents");
+  const copilotDashboard = aiAgentsCategory?.dashboards.find((d) => d.id === "ai-agents-copilot");
+
+  if (!copilotDashboard) {
+    return (
+      <div className="flex items-center justify-center h-full p-8">
+        <div className="text-center">
+          <h1 className="text-4xl mb-2">404</h1>
+          <p className="text-muted-foreground">Copilot dashboard not found</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <WidgetAIProvider persistKey={GLOBAL_AI_ASSISTANT_KEY} ootbTypeId={copilotDashboard.id}>
+      <div className="flex flex-col h-full min-h-0">
+        <PageHeader>
+          <section>
+            <section className="flex items-center gap-2">
+              <h1 className="text-3xl tracking-tight">Copilot</h1>
+              <div className="ml-auto flex items-center gap-2">
+                <DropdownMenu>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="icon" className="h-8 w-8">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">Dashboard options</TooltipContent>
+                  </Tooltip>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem>
+                      <Download className="h-4 w-4 mr-2" />
+                      Export
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Settings className="h-4 w-4 mr-2" />
+                      Edit Settings
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Clock className="h-4 w-4 mr-2" />
+                      Schedule Report
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </section>
+            <p className="text-muted-foreground mt-1">{copilotDashboard.description}</p>
+          </section>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRangeOption)}>
+              <SelectTrigger className="h-8 w-auto shrink-0">
+                <LabeledFilterInline label="Date range">{DATE_RANGE_LABELS[dateRange]}</LabeledFilterInline>
+              </SelectTrigger>
+              <SelectContent>
+                {DATE_RANGE_PRIMARY_OPTIONS.map((opt) => (
+                  <SelectItem key={opt} value={opt}>
+                    {DATE_RANGE_LABELS[opt]}
+                  </SelectItem>
+                ))}
+                <SelectSeparator />
+                {DATE_RANGE_SECONDARY_OPTIONS.map((opt) => (
+                  <SelectItem key={opt} value={opt}>
+                    {DATE_RANGE_LABELS[opt]}
+                  </SelectItem>
+                ))}
+                <SelectSeparator />
+                <SelectItem value={DATE_RANGE_CUSTOM_OPTION}>
+                  {DATE_RANGE_LABELS[DATE_RANGE_CUSTOM_OPTION]}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={team} onValueChange={(v) => setTeam(v as DashboardTeamFilter)}>
+              <SelectTrigger className="h-8 w-auto shrink-0">
+                <LabeledSelectValue label="Team" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all-teams">All Teams</SelectItem>
+                <SelectItem value="tier-1">Tier 1 Support</SelectItem>
+                <SelectItem value="tier-2">Tier 2 Support</SelectItem>
+                <SelectItem value="technical">Technical Team</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={product} onValueChange={(v) => setProduct(v as DashboardProductFilter)}>
+              <SelectTrigger className="h-8 w-auto shrink-0">
+                <LabeledSelectValue label="Product" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all-products">All Products</SelectItem>
+                <SelectItem value="product-a">Product A</SelectItem>
+                <SelectItem value="product-b">Product B</SelectItem>
+                <SelectItem value="product-c">Product C</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {hasFilterChanges && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 shrink-0"
+                onClick={() => {
+                  setDateRange(DEFAULT_FILTERS.dateRange);
+                  setTeam(DEFAULT_FILTERS.team);
+                  setProduct(DEFAULT_FILTERS.product);
+                }}
+              >
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Reset Filters
+              </Button>
+            )}
+          </div>
+        </PageHeader>
+
+        <div className="flex-1 min-h-0 overflow-auto">
+          <div className={cn(pageRootListScrollGutterClassName, "pb-4 md:pb-8")}>
+            <PageTransition className={pageMainColumnClassName}>
+              <div ref={dashboardContentRef} className="space-y-4">
+                <HeaderAIInsightsRow
+                  dashboardId={copilotDashboard.id}
+                  dashboardData={{
+                    id: copilotDashboard.id,
+                    title: "Copilot",
+                    description: copilotDashboard.description,
+                  }}
+                />
+                <AIAgentsOverviewTab
+                  isCompactDashboard={isCompactDashboard}
+                  showWidgetOverflowMenu={false}
+                />
+              </div>
+            </PageTransition>
+          </div>
+        </div>
+      </div>
+    </WidgetAIProvider>
+  );
+}

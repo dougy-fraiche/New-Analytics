@@ -120,6 +120,8 @@ export function ObservabilityCategoryPage() {
   const params = useParams<{ categoryId?: string; dashboardId?: string }>();
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const isAiAgentsRoute = pathname === ROUTES.AI_AGENTS || pathname.startsWith(`${ROUTES.AI_AGENTS}/`);
+  const isCopilotLegacyRoute = pathname === ROUTES.AI_AGENTS_DASHBOARD("ai-agents-copilot");
 
   const categoryId =
     params.categoryId ??
@@ -129,6 +131,10 @@ export function ObservabilityCategoryPage() {
   const urlDashboardId = params.dashboardId;
 
   const category = ootbCategories.find((c) => c.id === categoryId);
+  const visibleDashboards =
+    category?.id === "ai-agents"
+      ? category.dashboards.filter((d) => d.id !== "ai-agents-copilot")
+      : category?.dashboards ?? [];
 
   const { ref: dashboardContentRef, isBelowBreakpoint: isCompactDashboard } =
     useContainerBreakpoint<HTMLDivElement>(768);
@@ -154,11 +160,15 @@ export function ObservabilityCategoryPage() {
   }, [standaloneCategoryId, navigate]);
 
   useEffect(() => {
-    if (pathname !== ROUTES.AI_AGENTS) return;
-    const cat = ootbCategories.find((c) => c.id === categoryId);
-    const first = cat?.dashboards[0]?.id;
+    if (!isAiAgentsRoute || pathname !== ROUTES.AI_AGENTS) return;
+    const first = visibleDashboards[0]?.id;
     if (first) navigate(ROUTES.AI_AGENTS_DASHBOARD(first), { replace: true });
-  }, [pathname, categoryId, navigate]);
+  }, [isAiAgentsRoute, pathname, visibleDashboards, navigate]);
+
+  useEffect(() => {
+    if (!isCopilotLegacyRoute) return;
+    navigate(ROUTES.COPILOT, { replace: true });
+  }, [isCopilotLegacyRoute, navigate]);
 
   if (!category) {
     return (
@@ -175,13 +185,24 @@ export function ObservabilityCategoryPage() {
     return null;
   }
 
+  if (visibleDashboards.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full p-8">
+        <div className="text-center">
+          <h1 className="text-4xl mb-2">404</h1>
+          <p className="text-muted-foreground">No dashboards configured for this category</p>
+        </div>
+      </div>
+    );
+  }
+
   // Determine the active dashboard tab
-  const defaultDashboard = category.dashboards[0];
-  const activeDashboardId = urlDashboardId && category.dashboards.some((d) => d.id === urlDashboardId)
+  const defaultDashboard = visibleDashboards[0];
+  const activeDashboardId = urlDashboardId && visibleDashboards.some((d) => d.id === urlDashboardId)
     ? urlDashboardId
     : defaultDashboard.id;
 
-  const activeDashboard = category.dashboards.find((d) => d.id === activeDashboardId) || defaultDashboard;
+  const activeDashboard = visibleDashboards.find((d) => d.id === activeDashboardId) || defaultDashboard;
   const headerSubtitle = category.pageDescription ?? activeDashboard.description;
 
   const handleTabChange = (tabValue: string) => {
@@ -294,7 +315,7 @@ export function ObservabilityCategoryPage() {
               )}
             </div>
             <TabsList variant="line" className="mt-4">
-              {category.dashboards.map((dashboard) => (
+              {visibleDashboards.map((dashboard) => (
                   <TabsTrigger key={dashboard.id} value={dashboard.id}>
                     {dashboard.name}
                   </TabsTrigger>
@@ -313,9 +334,9 @@ export function ObservabilityCategoryPage() {
                 description: activeDashboard.description,
               }}
             />
-            {category.dashboards.map((dashboard) => (
+            {visibleDashboards.map((dashboard) => (
               <TabsContent key={dashboard.id} value={dashboard.id} className="space-y-4 mt-2">
-                {dashboard.id === "ai-agents-overview" ? (
+                {dashboard.id === "ai-agents-overview" || dashboard.id === "ai-agents-copilot" ? (
                   <AIAgentsOverviewTab
                     isCompactDashboard={isCompactDashboard}
                     showWidgetOverflowMenu={false}
