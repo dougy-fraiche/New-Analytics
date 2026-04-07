@@ -26,11 +26,25 @@ export function resolveAiAssistantRouteContext(
 ): AiAssistantRouteContext {
   const { projects, standaloneDashboards } = deps;
 
+  // Explore draft list (sub-route of Explore)
+  if (pathname === ROUTES.CONVERSATIONS) {
+    return { dashboardId: "conversations", sourceOotbId: "explore-thread" };
+  }
+
+  // Explore conversation thread — same global assistant; explicit id for prompts + handlers
+  if (pathname.startsWith(ROUTE_PREFIXES.conversation) && params.conversationId) {
+    return { dashboardId: params.conversationId, sourceOotbId: "explore-thread" };
+  }
+
   if (pathname === ROUTES.INSIGHTS) {
     return { dashboardId: "all-insights", sourceOotbId: "all-insights" };
   }
 
   if (pathname === ROUTES.AUTOMATION_OPPORTUNITIES) {
+    return { dashboardId: AUTOMATION_OPPORTUNITIES_ID, sourceOotbId: AUTOMATION_OPPORTUNITIES_ID };
+  }
+
+  if (pathname.startsWith(`${ROUTES.AUTOMATION_OPPORTUNITIES}/agent/`)) {
     return { dashboardId: AUTOMATION_OPPORTUNITIES_ID, sourceOotbId: AUTOMATION_OPPORTUNITIES_ID };
   }
 
@@ -40,9 +54,9 @@ export function resolveAiAssistantRouteContext(
     return { dashboardId: id, sourceOotbId: id };
   }
 
-  // Observability category (tabbed dashboards)
-  if (pathname.startsWith(ROUTE_PREFIXES.observabilityNested) && params.categoryId) {
-    const category = ootbCategories.find((c) => c.id === params.categoryId);
+  // AI Agents (tabbed OOTB dashboards)
+  if (pathname === ROUTES.AI_AGENTS || pathname.startsWith(ROUTE_PREFIXES.aiAgentsNested)) {
+    const category = ootbCategories.find((c) => c.id === "ai-agents");
     if (!category || category.dashboards.length === 0) {
       return {};
     }

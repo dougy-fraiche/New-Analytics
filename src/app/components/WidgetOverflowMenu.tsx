@@ -103,17 +103,15 @@ export function WidgetOverflowMenu({
       <DropdownMenu>
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className="inline-flex">
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <MoreVertical className="h-3.5 w-3.5" />
-                </Button>
-              </DropdownMenuTrigger>
-            </span>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <MoreVertical className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
           </TooltipTrigger>
           <TooltipContent side="bottom">Widget options</TooltipContent>
         </Tooltip>

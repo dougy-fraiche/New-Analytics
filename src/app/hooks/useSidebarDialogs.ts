@@ -152,9 +152,14 @@ function dialogReducer(state: SidebarDialogState, action: DialogAction): Sidebar
   }
 }
 
+export interface UseSidebarDialogsOptions {
+  /** Called after a new folder is created from the sidebar dialog (e.g. expand Saved). */
+  onFolderCreated?: (project: Project) => void;
+}
+
 // ── Hook ───────────────────────────────────────────────────────────────────
 
-export function useSidebarDialogs() {
+export function useSidebarDialogs(options?: UseSidebarDialogsOptions) {
   const [state, dispatch] = useReducer(dialogReducer, initialState);
   const {
     projects,
@@ -173,10 +178,12 @@ export function useSidebarDialogs() {
   // ── Handlers ───────────────────────────────────────────────────────────
 
   const handleCreateProject = () => {
-    if (state.newProjectName.trim()) {
-      addProject(state.newProjectName);
+    const name = state.newProjectName.trim();
+    if (name) {
+      const project = addProject(name);
+      options?.onFolderCreated?.(project);
       toast.success("Folder created", {
-        description: `"${state.newProjectName.trim()}" has been created.`,
+        description: `"${name}" has been created.`,
       });
       dispatch({ type: "CLOSE_NEW_PROJECT" });
     }

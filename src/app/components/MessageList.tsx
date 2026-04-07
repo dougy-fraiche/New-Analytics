@@ -116,9 +116,7 @@ export const MessageList = memo(function MessageList({
                     </div>
                   )}
                 </button>
-                <div>
-                  <p className="text-sm">{msg.content}</p>
-                </div>
+                <p className="text-sm">{msg.content}</p>
               </div>
             </div>
           );
@@ -133,9 +131,7 @@ export const MessageList = memo(function MessageList({
             >
               <div className="w-full space-y-3">
                 <InlineWidget widget={msg.widgetData} />
-                <div>
-                  <p className="text-sm">{msg.content}</p>
-                </div>
+                <p className="text-sm">{msg.content}</p>
               </div>
             </div>
           );
@@ -160,7 +156,7 @@ export const MessageList = memo(function MessageList({
                           <IconComp className="h-3 w-3 shrink-0 text-neutral-600" />
                         ) : null;
                       })()}
-                      <span className="truncate font-medium">{msg.widgetRef}</span>
+                      <span className="truncate font-normal">{msg.widgetRef}</span>
                     </span>
                     {msg.widgetKpiLabel ? (
                       <span className="w-full truncate text-[10px] text-neutral-600">

@@ -2,7 +2,12 @@ import { useMemo, useState, useRef, useLayoutEffect, useCallback } from "react";
 import { Link } from "react-router";
 import { Search, LayoutGrid, ExternalLink, ChevronDown, ChevronUp, RotateCcw } from "lucide-react";
 
-import { PageContent, PageHeader } from "./PageChrome";
+import {
+  PageHeader,
+  pageMainColumnClassName,
+  pageRootListScrollGutterClassName,
+} from "./PageChrome";
+import { cn } from "./ui/utils";
 import { Input } from "./ui/input";
 import { Badge } from "./ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
@@ -266,23 +271,21 @@ export function AllInsightsPage() {
     <WidgetAIProvider persistKey={GLOBAL_AI_ASSISTANT_KEY} ootbTypeId="all-insights">
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         <PageHeader>
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
-                <LayoutGrid className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <div>
-                <h1 className="text-3xl tracking-tight">All Insights</h1>
-                <p className="text-muted-foreground mt-1">
-                  A catalog of every unique widget across all dashboards
-                </p>
-              </div>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
+              <LayoutGrid className="h-6 w-6 text-muted-foreground" />
             </div>
+            <section>
+              <h1 className="text-3xl tracking-tight">All Insights</h1>
+              <p className="text-muted-foreground mt-1">
+                A catalog of every unique widget across all dashboards
+              </p>
+            </section>
           </div>
         </PageHeader>
         <div className="flex-1 overflow-auto min-h-0">
-          <PageContent className="space-y-6 p-8">
-            <PageTransition className="space-y-6">
+          <div className={cn(pageRootListScrollGutterClassName, "pb-8")}>
+            <PageTransition className={cn(pageMainColumnClassName, "space-y-6")}>
             <HeaderAIInsightsRow
               dashboardId="insights"
               dashboardData={{
@@ -384,7 +387,7 @@ export function AllInsightsPage() {
               </Empty>
             )}
             </PageTransition>
-          </PageContent>
+          </div>
         </div>
 
       </div>

@@ -21,7 +21,12 @@ import { Separator } from "./ui/separator";
 import { Badge } from "./ui/badge";
 import { toast } from "sonner";
 
-import { PageContent, PageHeader } from "./PageChrome";
+import {
+  PageHeader,
+  pageMainColumnClassName,
+  pageRootListScrollGutterClassName,
+} from "./PageChrome";
+import { cn } from "./ui/utils";
 import { PageTransition } from "./PageTransition";
 import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
 
@@ -59,16 +64,14 @@ export function SettingsPage() {
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <PageHeader>
-        <div>
-          <h1 className="text-3xl tracking-tight">Settings</h1>
-          <p className="text-muted-foreground mt-2">
-            Manage your account preferences and application configuration
-          </p>
-        </div>
+        <h1 className="text-3xl tracking-tight">Settings</h1>
+        <p className="text-muted-foreground mt-2">
+          Manage your account preferences and application configuration
+        </p>
       </PageHeader>
       <div className="flex-1 min-h-0 overflow-auto">
-        <PageContent className="space-y-6 p-8">
-      <PageTransition className="space-y-6">
+        <div className={cn(pageRootListScrollGutterClassName, "pb-8")}>
+      <PageTransition className={cn(pageMainColumnClassName, "space-y-6")}>
       <HeaderAIInsightsRow
         dashboardId="settings"
         dashboardData={{
@@ -305,7 +308,7 @@ export function SettingsPage() {
         </CardContent>
       </Card>
       </PageTransition>
-        </PageContent>
+        </div>
       </div>
     </div>
   );

@@ -36,7 +36,12 @@ import { DeleteFolderDialog } from "./DeleteFolderDialog";
 import { DuplicateDashboardDialog } from "./DuplicateDashboardDialog";
 import { useDrag, useDrop } from "react-dnd";
 
-import { PageContent, PageHeader } from "./PageChrome";
+import {
+  PageHeader,
+  pageMainColumnClassName,
+  pageRootListScrollGutterClassName,
+} from "./PageChrome";
+import { cn } from "./ui/utils";
 import { PageTransition } from "./PageTransition";
 import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
 
@@ -374,14 +379,10 @@ export function SavedFoldersPage() {
     return (
       <div className="flex flex-col flex-1 min-h-0">
         <PageHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl tracking-tight">{selectedFolder.name}</h1>
-              <p className="text-muted-foreground mt-1">
-                {selectedFolder.dashboards.length} {selectedFolder.dashboards.length === 1 ? 'dashboard' : 'dashboards'}
-              </p>
-            </div>
-          </div>
+          <h1 className="text-3xl tracking-tight">{selectedFolder.name}</h1>
+          <p className="text-muted-foreground mt-1">
+            {selectedFolder.dashboards.length} {selectedFolder.dashboards.length === 1 ? 'dashboard' : 'dashboards'}
+          </p>
           {selectedFolder.dashboards.length > 0 && (
             <div className="mt-4 flex w-full flex-wrap items-center gap-3">
               <div className="relative flex-1 min-w-[200px] max-w-sm">
@@ -408,8 +409,8 @@ export function SavedFoldersPage() {
           )}
         </PageHeader>
         <div className="flex-1 min-h-0 overflow-auto">
-          <PageContent className="space-y-6 p-8">
-        <PageTransition className="space-y-6">
+          <div className={cn(pageRootListScrollGutterClassName, "pb-8")}>
+        <PageTransition className={cn(pageMainColumnClassName, "space-y-6")}>
         <HeaderAIInsightsRow
           dashboardId={`saved-folder-${selectedFolder.id}`}
           dashboardData={{
@@ -476,7 +477,7 @@ export function SavedFoldersPage() {
                             to={`/project/${selectedFolder.id}/dashboard/${dashboard.id}`}
                             className="flex items-center gap-3 hover:underline"
                           >
-                            <span className="font-medium">{dashboard.name}</span>
+                            <span className="font-normal">{dashboard.name}</span>
                           </Link>
                         </TableCell>
                         <TableCell className="text-muted-foreground whitespace-nowrap">
@@ -498,18 +499,16 @@ export function SavedFoldersPage() {
                           <DropdownMenu>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <span className="inline-flex">
-                                  <DropdownMenuTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8"
-                                    >
-                                      <MoreHorizontal className="h-4 w-4" />
-                                      <span className="sr-only">More options</span>
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                </span>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    <span className="sr-only">More options</span>
+                                  </Button>
+                                </DropdownMenuTrigger>
                               </TooltipTrigger>
                               <TooltipContent side="left">More options</TooltipContent>
                             </Tooltip>
@@ -611,29 +610,27 @@ export function SavedFoldersPage() {
                 Enter a new name for your dashboard.
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="rename-dashboard-folder">Dashboard Name</Label>
-                <Input
-                  id="rename-dashboard-folder"
-                  value={renameDashboardDialog?.dashboardName || ""}
-                  onChange={(e) =>
-                    setRenameDashboardDialog(
-                      renameDashboardDialog ? { ...renameDashboardDialog, dashboardName: e.target.value } : null
-                    )
-                  }
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && renameDashboardDialog) {
-                      if (renameDashboardDialog.projectId) {
-                        renameDashboardInProject(renameDashboardDialog.projectId, renameDashboardDialog.dashboardId, renameDashboardDialog.dashboardName);
-                      } else {
-                        renameStandaloneDashboard(renameDashboardDialog.dashboardId, renameDashboardDialog.dashboardName);
-                      }
-                      setRenameDashboardDialog(null);
+            <div className="grid gap-2 py-4">
+              <Label htmlFor="rename-dashboard-folder">Dashboard Name</Label>
+              <Input
+                id="rename-dashboard-folder"
+                value={renameDashboardDialog?.dashboardName || ""}
+                onChange={(e) =>
+                  setRenameDashboardDialog(
+                    renameDashboardDialog ? { ...renameDashboardDialog, dashboardName: e.target.value } : null
+                  )
+                }
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && renameDashboardDialog) {
+                    if (renameDashboardDialog.projectId) {
+                      renameDashboardInProject(renameDashboardDialog.projectId, renameDashboardDialog.dashboardId, renameDashboardDialog.dashboardName);
+                    } else {
+                      renameStandaloneDashboard(renameDashboardDialog.dashboardId, renameDashboardDialog.dashboardName);
                     }
-                  }}
-                />
-              </div>
+                    setRenameDashboardDialog(null);
+                  }
+                }}
+              />
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setRenameDashboardDialog(null)}>
@@ -662,21 +659,19 @@ export function SavedFoldersPage() {
                 Select a destination for "{moveDashboardDialog?.dashboardName}".
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label>Destination</Label>
-                <Select value={moveTargetFolderId} onValueChange={setMoveTargetFolderId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a folder" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__standalone__">Standalone (no folder)</SelectItem>
-                    {projects.filter((p) => p.id !== moveDashboardDialog?.fromProjectId).map((project) => (
-                      <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="grid gap-2 py-4">
+              <Label>Destination</Label>
+              <Select value={moveTargetFolderId} onValueChange={setMoveTargetFolderId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a folder" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__standalone__">Standalone (no folder)</SelectItem>
+                  {projects.filter((p) => p.id !== moveDashboardDialog?.fromProjectId).map((project) => (
+                    <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => { setMoveDashboardDialog(null); setMoveTargetFolderId(""); }}>
@@ -695,7 +690,7 @@ export function SavedFoldersPage() {
           sourceOotbId={duplicateDashboardDialog?.sourceOotbId}
         />
         </PageTransition>
-          </PageContent>
+          </div>
         </div>
       </div>
     );
@@ -775,8 +770,8 @@ export function SavedFoldersPage() {
             ref={standaloneDropRef as unknown as React.Ref<HTMLDivElement>}
             className={`flex items-center justify-between rounded-lg p-2 -m-2 transition-[box-shadow,background-color] ${isOverStandalone ? "ring-2 ring-primary ring-offset-2 bg-primary/5" : ""}`}
           >
-            <div>
-              <div className="flex items-center gap-2">
+            <section>
+              <section className="flex items-center gap-2">
                 <h1 className="text-3xl tracking-tight">Saved</h1>
                 <Badge variant="secondary" className="text-xs px-2 py-0.5">
                   {projects.length} folders
@@ -784,14 +779,14 @@ export function SavedFoldersPage() {
                 <Badge variant="secondary" className="text-xs px-2 py-0.5">
                   {projects.reduce((sum, p) => sum + p.dashboards.length, 0) + standaloneDashboards.length} total dashboards
                 </Badge>
-              </div>
+              </section>
               <p className="text-muted-foreground mt-2">
                 Organize and manage your saved dashboards in folders
               </p>
               {isOverStandalone && (
                 <p className="text-sm text-primary mt-1">Drop here to move to standalone</p>
               )}
-            </div>
+            </section>
             <Button onClick={() => setNewFolderDialog(true)}>
               <Plus className="h-4 w-4 mr-2" />
               New Folder
@@ -835,8 +830,8 @@ export function SavedFoldersPage() {
           )}
         </PageHeader>
         <div className="flex-1 min-h-0 overflow-auto">
-          <PageContent className="space-y-6 p-8">
-        <PageTransition className="space-y-6">
+          <div className={cn(pageRootListScrollGutterClassName, "pb-8")}>
+        <PageTransition className={cn(pageMainColumnClassName, "space-y-6")}>
         <HeaderAIInsightsRow
           dashboardId="saved"
           dashboardData={{
@@ -870,14 +865,12 @@ export function SavedFoldersPage() {
                       <DropdownMenu>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <span className="inline-flex">
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                  <span className="sr-only">More options</span>
-                                </Button>
-                              </DropdownMenuTrigger>
-                            </span>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">More options</span>
+                              </Button>
+                            </DropdownMenuTrigger>
                           </TooltipTrigger>
                           <TooltipContent side="bottom">More options</TooltipContent>
                         </Tooltip>
@@ -959,7 +952,7 @@ export function SavedFoldersPage() {
                           to={item.linkPath}
                           className="flex items-center gap-3 hover:underline"
                         >
-                          <span className="font-medium">{item.dashboard.name}</span>
+                          <span className="font-normal">{item.dashboard.name}</span>
                         </Link>
                       </TableCell>
                       <TableCell>
@@ -979,14 +972,12 @@ export function SavedFoldersPage() {
                         <DropdownMenu>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <span className="inline-flex">
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                    <span className="sr-only">More options</span>
-                                  </Button>
-                                </DropdownMenuTrigger>
-                              </span>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">More options</span>
+                                </Button>
+                              </DropdownMenuTrigger>
                             </TooltipTrigger>
                             <TooltipContent side="left">More options</TooltipContent>
                           </Tooltip>
@@ -1110,7 +1101,7 @@ export function SavedFoldersPage() {
           </Empty>
         )}
         </PageTransition>
-          </PageContent>
+          </div>
         </div>
       </div>
 
@@ -1123,21 +1114,19 @@ export function SavedFoldersPage() {
               Folders help you organize related dashboards.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="folder-name">Folder Name</Label>
-              <Input
-                id="folder-name"
-                value={newFolderName}
-                onChange={(e) => setNewFolderName(e.target.value)}
-                placeholder="e.g., Q1 Customer Analysis"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleCreateFolder();
-                  }
-                }}
-              />
-            </div>
+          <div className="grid gap-2 py-4">
+            <Label htmlFor="folder-name">Folder Name</Label>
+            <Input
+              id="folder-name"
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              placeholder="e.g., Q1 Customer Analysis"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleCreateFolder();
+                }
+              }}
+            />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setNewFolderDialog(false)}>
@@ -1157,24 +1146,22 @@ export function SavedFoldersPage() {
               Enter a new name for your folder.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="rename-folder">Folder Name</Label>
-              <Input
-                id="rename-folder"
-                value={renameDialog?.name || ""}
-                onChange={(e) =>
-                  setRenameDialog(
-                    renameDialog ? { ...renameDialog, name: e.target.value } : null
-                  )
+          <div className="grid gap-2 py-4">
+            <Label htmlFor="rename-folder">Folder Name</Label>
+            <Input
+              id="rename-folder"
+              value={renameDialog?.name || ""}
+              onChange={(e) =>
+                setRenameDialog(
+                  renameDialog ? { ...renameDialog, name: e.target.value } : null
+                )
+              }
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleRenameFolder();
                 }
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleRenameFolder();
-                  }
-                }}
-              />
-            </div>
+              }}
+            />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRenameDialog(null)}>
@@ -1219,25 +1206,23 @@ export function SavedFoldersPage() {
               Select a destination for "{moveDashboardDialog?.dashboardName}".
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>Destination</Label>
-              <Select value={moveTargetFolderId} onValueChange={setMoveTargetFolderId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a folder" />
-                </SelectTrigger>
-                <SelectContent>
-                  {moveDashboardDialog?.fromProjectId && (
-                    <SelectItem value="__standalone__">Standalone (no folder)</SelectItem>
-                  )}
-                  {projects
-                    .filter((p) => p.id !== moveDashboardDialog?.fromProjectId)
-                    .map((project) => (
-                      <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="grid gap-2 py-4">
+            <Label>Destination</Label>
+            <Select value={moveTargetFolderId} onValueChange={setMoveTargetFolderId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a folder" />
+              </SelectTrigger>
+              <SelectContent>
+                {moveDashboardDialog?.fromProjectId && (
+                  <SelectItem value="__standalone__">Standalone (no folder)</SelectItem>
+                )}
+                {projects
+                  .filter((p) => p.id !== moveDashboardDialog?.fromProjectId)
+                  .map((project) => (
+                    <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setMoveDashboardDialog(null); setMoveTargetFolderId(""); }}>
@@ -1257,29 +1242,27 @@ export function SavedFoldersPage() {
               Enter a new name for your dashboard.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="rename-dashboard">Dashboard Name</Label>
-              <Input
-                id="rename-dashboard"
-                value={renameDashboardDialog?.dashboardName || ""}
-                onChange={(e) =>
-                  setRenameDashboardDialog(
-                    renameDashboardDialog ? { ...renameDashboardDialog, dashboardName: e.target.value } : null
-                  )
-                }
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && renameDashboardDialog) {
-                    if (renameDashboardDialog.projectId) {
-                      renameDashboardInProject(renameDashboardDialog.projectId, renameDashboardDialog.dashboardId, renameDashboardDialog.dashboardName);
-                    } else {
-                      renameStandaloneDashboard(renameDashboardDialog.dashboardId, renameDashboardDialog.dashboardName);
-                    }
-                    setRenameDashboardDialog(null);
+          <div className="grid gap-2 py-4">
+            <Label htmlFor="rename-dashboard">Dashboard Name</Label>
+            <Input
+              id="rename-dashboard"
+              value={renameDashboardDialog?.dashboardName || ""}
+              onChange={(e) =>
+                setRenameDashboardDialog(
+                  renameDashboardDialog ? { ...renameDashboardDialog, dashboardName: e.target.value } : null
+                )
+              }
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && renameDashboardDialog) {
+                  if (renameDashboardDialog.projectId) {
+                    renameDashboardInProject(renameDashboardDialog.projectId, renameDashboardDialog.dashboardId, renameDashboardDialog.dashboardName);
+                  } else {
+                    renameStandaloneDashboard(renameDashboardDialog.dashboardId, renameDashboardDialog.dashboardName);
                   }
-                }}
-              />
-            </div>
+                  setRenameDashboardDialog(null);
+                }
+              }}
+            />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRenameDashboardDialog(null)}>

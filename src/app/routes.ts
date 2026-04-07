@@ -4,10 +4,10 @@ export const ROUTES = {
   CONVERSATION: (id: string) => `/conversation/${id}`,
   CONVERSATIONS: "/conversations",
   AUTOMATION_OPPORTUNITIES: "/automation-opportunities",
-  OBSERVABILITY: "/observability",
-  OBSERVABILITY_CATEGORY: (categoryId: string) => `/observability/${categoryId}`,
-  OBSERVABILITY_DASHBOARD: (categoryId: string, dashboardId: string) =>
-    `/observability/${categoryId}/${dashboardId}`,
+  /** Stable agent id (UUID) as the path segment. */
+  AUTOMATION_OPPORTUNITIES_AGENT: (agentId: string) => `/automation-opportunities/agent/${agentId}`,
+  AI_AGENTS: "/ai-agents",
+  AI_AGENTS_DASHBOARD: (dashboardId: string) => `/ai-agents/${dashboardId}`,
   DASHBOARD: (dashboardId: string) => `/dashboard/${dashboardId}`,
   SAVED: "/saved",
   SAVED_FOLDER: (folderId: string) => `/saved/${folderId}`,
@@ -27,8 +27,9 @@ export const ROUTES = {
  * Keeps assistant route resolution aligned with `ROUTES`.
  */
 export const ROUTE_PREFIXES = {
+  conversation: "/conversation/",
   dashboard: "/dashboard/",
-  observabilityNested: `${ROUTES.OBSERVABILITY}/`,
+  aiAgentsNested: `${ROUTES.AI_AGENTS}/`,
   savedDashboard: "/saved/dashboard/",
   saved: "/saved/",
   project: "/project/",

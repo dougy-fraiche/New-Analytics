@@ -183,7 +183,7 @@ function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
     <tfoot
       data-slot="table-footer"
       className={cn(
-        "bg-muted/50 border-t font-medium [&>tr]:last:border-b-0",
+        "bg-muted/50 border-t font-normal [&>tr]:last:border-b-0",
         className,
       )}
       {...props}
@@ -252,7 +252,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
       ref={ref}
       data-slot="table-head"
       className={cn(
-        "text-foreground group/th relative h-10 overflow-hidden text-ellipsis pr-2 pl-4 text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+        "text-foreground group/th relative h-10 overflow-hidden text-ellipsis pr-2 pl-4 text-left align-middle font-normal whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
         className,
       )}
       {...props}

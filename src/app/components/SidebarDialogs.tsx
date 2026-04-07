@@ -64,21 +64,19 @@ export function SidebarDialogs({
               Folders help you organize related dashboards.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="project-name">Folder Name</Label>
-              <Input
-                id="project-name"
-                value={state.newProjectName}
-                onChange={(e) =>
-                  dispatch({ type: "SET_NEW_PROJECT_NAME", name: e.target.value })
-                }
-                placeholder="e.g., Q1 Customer Analysis"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleCreateProject();
-                }}
-              />
-            </div>
+          <div className="grid gap-2 py-4">
+            <Label htmlFor="project-name">Folder Name</Label>
+            <Input
+              id="project-name"
+              value={state.newProjectName}
+              onChange={(e) =>
+                dispatch({ type: "SET_NEW_PROJECT_NAME", name: e.target.value })
+              }
+              placeholder="e.g., Q1 Customer Analysis"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleCreateProject();
+              }}
+            />
           </div>
           <DialogFooter>
             <Button
@@ -104,20 +102,18 @@ export function SidebarDialogs({
               Enter a new name for your folder.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="rename-project">Folder Name</Label>
-              <Input
-                id="rename-project"
-                value={state.renameDialog?.name || ""}
-                onChange={(e) =>
-                  dispatch({ type: "UPDATE_RENAME_PROJECT_NAME", name: e.target.value })
-                }
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleRenameProject();
-                }}
-              />
-            </div>
+          <div className="grid gap-2 py-4">
+            <Label htmlFor="rename-project">Folder Name</Label>
+            <Input
+              id="rename-project"
+              value={state.renameDialog?.name || ""}
+              onChange={(e) =>
+                dispatch({ type: "UPDATE_RENAME_PROJECT_NAME", name: e.target.value })
+              }
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleRenameProject();
+              }}
+            />
           </div>
           <DialogFooter>
             <Button
@@ -143,20 +139,18 @@ export function SidebarDialogs({
               Enter a new name for your dashboard.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="rename-dashboard">Dashboard Name</Label>
-              <Input
-                id="rename-dashboard"
-                value={state.renameDashboardDialog?.name || ""}
-                onChange={(e) =>
-                  dispatch({ type: "UPDATE_RENAME_DASHBOARD_NAME", name: e.target.value })
-                }
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleRenameDashboard();
-                }}
-              />
-            </div>
+          <div className="grid gap-2 py-4">
+            <Label htmlFor="rename-dashboard">Dashboard Name</Label>
+            <Input
+              id="rename-dashboard"
+              value={state.renameDashboardDialog?.name || ""}
+              onChange={(e) =>
+                dispatch({ type: "UPDATE_RENAME_DASHBOARD_NAME", name: e.target.value })
+              }
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleRenameDashboard();
+              }}
+            />
           </div>
           <DialogFooter>
             <Button
@@ -182,21 +176,19 @@ export function SidebarDialogs({
               Dashboards are generated from conversations.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="dashboard-name">Dashboard Name</Label>
-              <Input
-                id="dashboard-name"
-                value={state.newDashboardName}
-                onChange={(e) =>
-                  dispatch({ type: "SET_NEW_DASHBOARD_NAME", name: e.target.value })
-                }
-                placeholder="e.g., Escalation Trends"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleAddDashboard();
-                }}
-              />
-            </div>
+          <div className="grid gap-2 py-4">
+            <Label htmlFor="dashboard-name">Dashboard Name</Label>
+            <Input
+              id="dashboard-name"
+              value={state.newDashboardName}
+              onChange={(e) =>
+                dispatch({ type: "SET_NEW_DASHBOARD_NAME", name: e.target.value })
+              }
+              placeholder="e.g., Escalation Trends"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleAddDashboard();
+              }}
+            />
           </div>
           <DialogFooter>
             <Button
@@ -222,23 +214,21 @@ export function SidebarDialogs({
               Enter a new name for your draft.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="rename-conversation">Draft Name</Label>
-              <Input
-                id="rename-conversation"
-                value={state.renameConversationDialog?.name || ""}
-                onChange={(e) =>
-                  dispatch({
-                    type: "UPDATE_RENAME_CONVERSATION_NAME",
-                    name: e.target.value,
-                  })
-                }
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleRenameConversation();
-                }}
-              />
-            </div>
+          <div className="grid gap-2 py-4">
+            <Label htmlFor="rename-conversation">Draft Name</Label>
+            <Input
+              id="rename-conversation"
+              value={state.renameConversationDialog?.name || ""}
+              onChange={(e) =>
+                dispatch({
+                  type: "UPDATE_RENAME_CONVERSATION_NAME",
+                  name: e.target.value,
+                })
+              }
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleRenameConversation();
+              }}
+            />
           </div>
           <DialogFooter>
             <Button
@@ -264,33 +254,31 @@ export function SidebarDialogs({
               Select a folder to move the dashboard to.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="move-dashboard">Folder Name</Label>
-              <Select
-                value={state.moveTargetProjectId}
-                onValueChange={(val) =>
-                  dispatch({ type: "SET_MOVE_TARGET", projectId: val })
-                }
-              >
-                <SelectTrigger id="move-dashboard">
-                  <SelectValue placeholder="Select a folder" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects
-                    .filter((project) =>
-                      state.moveDashboardDialog
-                        ? project.id !== state.moveDashboardDialog.fromProjectId
-                        : true
-                    )
-                    .map((project) => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.name}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="grid gap-2 py-4">
+            <Label htmlFor="move-dashboard">Folder Name</Label>
+            <Select
+              value={state.moveTargetProjectId}
+              onValueChange={(val) =>
+                dispatch({ type: "SET_MOVE_TARGET", projectId: val })
+              }
+            >
+              <SelectTrigger id="move-dashboard">
+                <SelectValue placeholder="Select a folder" />
+              </SelectTrigger>
+              <SelectContent>
+                {projects
+                  .filter((project) =>
+                    state.moveDashboardDialog
+                      ? project.id !== state.moveDashboardDialog.fromProjectId
+                      : true
+                  )
+                  .map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
           </div>
           <DialogFooter>
             <Button

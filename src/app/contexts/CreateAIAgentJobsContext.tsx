@@ -11,235 +11,167 @@ import {
   type ReactNode,
 } from "react";
 
+import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 import {
-  AI_AGENT_JOB_STEP_MS,
+  CREATE_AI_AGENT_IN_CHAT_EVENT,
+  CREATE_AI_AGENT_IN_CHAT_FINISHED_EVENT,
+  type CreateAIAgentInChatFinishedDetail,
+} from "../lib/create-ai-agent-chat";
+import {
   type AgentJob,
-  type AgentJobLayout,
   type AgentJobStep,
-  type CompletedAgentBySource,
-  clampPosition,
-  completedJobsFromList,
-  defaultPanelPosition,
-  isLoadingStep,
-  loadAgentJobsStateFromSession,
-  mergeCompletedMaps,
-  persistAgentJobsStateToSession,
-  type AgentJobPosition,
+  type AgentsBySource,
+  type CreatedAgentRecord,
+  loadAgentsBySourceFromSession,
+  persistAgentsBySourceToSession,
 } from "../lib/create-ai-agent-jobs";
 
+const WIDGET_AI_MESSAGE_SENT_EVENT = "widget-ai-message-sent";
+
+export type StartCreateAIAgentJobInput = {
+  sourceKey: string;
+  scopeTitle: string;
+  ootbTypeId?: string;
+  /** When true, append user + assistant turns to the current global thread (dropdown “Create AI Agent”). */
+  appendToCurrentConversation?: boolean;
+};
+
 type CreateAIAgentJobsContextValue = {
-  jobs: AgentJob[];
-  panelLayout: AgentJobLayout;
-  panelPosition: AgentJobPosition;
-  startJob: (input: { sourceKey: string; scopeTitle: string }) => void;
-  dismissJob: (jobId: string) => void;
-  dismissAllJobs: () => void;
-  setPanelLayout: (layout: AgentJobLayout) => void;
-  updatePanelPosition: (position: AgentJobPosition, cardSize: { width: number; height: number }) => void;
+  startJob: (input: StartCreateAIAgentJobInput) => void;
   jobForSource: (sourceKey: string) => AgentJob | undefined;
+  agentsForSource: (sourceKey: string) => CreatedAgentRecord[];
+  getAgentById: (agentId: string) => CreatedAgentRecord | undefined;
 };
 
 const CreateAIAgentJobsContext = createContext<CreateAIAgentJobsContextValue | null>(null);
 
-function reconcileHydrated(jobs: AgentJob[]): AgentJob[] {
-  const now = Date.now();
-  return jobs.map((j) => {
-    if (!isLoadingStep(j.step)) return j;
-    let step = j.step;
-    let entered = j.stepEnteredAt;
-    while (step < 7 && isLoadingStep(step) && now - entered >= AI_AGENT_JOB_STEP_MS) {
-      entered += AI_AGENT_JOB_STEP_MS;
-      step = (step + 1) as AgentJobStep;
-    }
-    return { ...j, step, stepEnteredAt: entered };
-  });
-}
-
-function hydrateInitialState(): {
-  jobs: AgentJob[];
-  completedBySource: CompletedAgentBySource;
-  panelLayout: AgentJobLayout;
-  panelPosition: AgentJobPosition;
-} {
-  const saved = loadAgentJobsStateFromSession();
-  if (!saved) {
-    return {
-      jobs: [],
-      completedBySource: {},
-      panelLayout: "compact",
-      panelPosition: defaultPanelPosition(),
-    };
-  }
-  const jobs = reconcileHydrated(saved.jobs);
-  return {
-    jobs,
-    completedBySource: mergeCompletedMaps(saved.completedBySource, completedJobsFromList(jobs)),
-    panelLayout: saved.panelLayout,
-    panelPosition: saved.panelPosition,
-  };
-}
-
-function JobStepTimer({
-  jobId,
-  step,
-  stepEnteredAt,
-  onAdvance,
-}: {
-  jobId: string;
-  step: AgentJobStep;
-  stepEnteredAt: number;
-  onAdvance: (jobId: string) => void;
-}) {
-  useEffect(() => {
-    const elapsed = Date.now() - stepEnteredAt;
-    const remaining = Math.max(0, AI_AGENT_JOB_STEP_MS - elapsed);
-    const t = window.setTimeout(() => onAdvance(jobId), remaining);
-    return () => window.clearTimeout(t);
-  }, [jobId, step, stepEnteredAt, onAdvance]);
-  return null;
-}
-
 export function CreateAIAgentJobsProvider({ children }: { children: ReactNode }) {
-  const initial = hydrateInitialState();
-  const [jobs, setJobs] = useState<AgentJob[]>(initial.jobs);
-  const [completedBySource, setCompletedBySource] = useState<CompletedAgentBySource>(initial.completedBySource);
-  const [panelLayout, setPanelLayoutState] = useState<AgentJobLayout>(initial.panelLayout);
-  const [panelPosition, setPanelPosition] = useState<AgentJobPosition>(initial.panelPosition);
+  const [agentsBySource, setAgentsBySource] = useState<AgentsBySource>(() =>
+    loadAgentsBySourceFromSession(),
+  );
+  /** While the chat flow runs — value is scope title for synthetic job copy. */
+  const [pendingBySource, setPendingBySource] = useState<Record<string, string>>({});
 
-  const stateRef = useRef({ jobs, completedBySource, panelLayout, panelPosition });
-  stateRef.current = { jobs, completedBySource, panelLayout, panelPosition };
-
-  /** Keep completion ledger in sync with any job at step 7 (timers + hydration). */
-  useEffect(() => {
-    setCompletedBySource((prev) => {
-      const fromJobs = completedJobsFromList(jobs);
-      const merged = mergeCompletedMaps(prev, fromJobs);
-      const prevKeys = Object.keys(prev);
-      const nextKeys = Object.keys(merged);
-      if (prevKeys.length !== nextKeys.length) return merged;
-      for (const k of nextKeys) {
-        if (prev[k]?.scopeTitle !== merged[k]?.scopeTitle) return merged;
-      }
-      return prev;
-    });
-  }, [jobs]);
-
-  const advanceJobStep = useCallback((jobId: string) => {
-    setJobs((prev) =>
-      prev.map((x) => {
-        if (x.id !== jobId || !isLoadingStep(x.step)) return x;
-        return {
-          ...x,
-          step: (x.step + 1) as AgentJobStep,
-          stepEnteredAt: Date.now(),
-        };
-      }),
-    );
-  }, []);
+  const stateRef = useRef({ agentsBySource });
+  stateRef.current = { agentsBySource };
 
   const persistTimer = useRef<number | undefined>(undefined);
   useEffect(() => {
     window.clearTimeout(persistTimer.current);
     persistTimer.current = window.setTimeout(() => {
-      persistAgentJobsStateToSession(stateRef.current);
+      persistAgentsBySourceToSession(stateRef.current.agentsBySource);
     }, 150);
     return () => window.clearTimeout(persistTimer.current);
-  }, [jobs, completedBySource, panelLayout, panelPosition]);
+  }, [agentsBySource]);
 
-  const startJob = useCallback((input: { sourceKey: string; scopeTitle: string }) => {
-    setCompletedBySource((prev) => {
-      if (!(input.sourceKey in prev)) return prev;
-      const next = { ...prev };
-      delete next[input.sourceKey];
-      return next;
-    });
-    let wasEmpty = false;
-    setJobs((prev) => {
-      wasEmpty = prev.length === 0;
-      const job: AgentJob = {
-        id: crypto.randomUUID(),
-        sourceKey: input.sourceKey,
-        scopeTitle: input.scopeTitle,
-        step: 1,
-        stepEnteredAt: Date.now(),
-      };
-      return [...prev, job];
-    });
-    if (wasEmpty) {
-      setPanelPosition(defaultPanelPosition());
-    }
+  useEffect(() => {
+    const onFinished = (e: Event) => {
+      const d = (e as CustomEvent<CreateAIAgentInChatFinishedDetail>).detail;
+      if (!d?.sourceKey || !d.agentId) return;
+      setPendingBySource((prev) => {
+        if (!(d.sourceKey in prev)) return prev;
+        const next = { ...prev };
+        delete next[d.sourceKey];
+        return next;
+      });
+      if (!d.cancelled) {
+        setAgentsBySource((prev) => {
+          const list = prev[d.sourceKey] ?? [];
+          return {
+            ...prev,
+            [d.sourceKey]: [
+              ...list,
+              { id: d.agentId, scopeTitle: d.scopeTitle, createdAt: Date.now() },
+            ],
+          };
+        });
+      }
+    };
+    window.addEventListener(CREATE_AI_AGENT_IN_CHAT_FINISHED_EVENT, onFinished as EventListener);
+    return () =>
+      window.removeEventListener(CREATE_AI_AGENT_IN_CHAT_FINISHED_EVENT, onFinished as EventListener);
   }, []);
 
-  const dismissJob = useCallback((jobId: string) => {
-    setJobs((prev) => prev.filter((j) => j.id !== jobId));
+  const startJob = useCallback((input: StartCreateAIAgentJobInput) => {
+    const agentId = crypto.randomUUID();
+    setPendingBySource((prev) => ({ ...prev, [input.sourceKey]: input.scopeTitle }));
+    window.dispatchEvent(
+      new CustomEvent(WIDGET_AI_MESSAGE_SENT_EVENT, {
+        detail: { persistKey: GLOBAL_AI_ASSISTANT_KEY },
+      }),
+    );
+    window.dispatchEvent(
+      new CustomEvent(CREATE_AI_AGENT_IN_CHAT_EVENT, {
+        detail: {
+          sourceKey: input.sourceKey,
+          scopeTitle: input.scopeTitle,
+          agentId,
+          ootbTypeId: input.ootbTypeId,
+          appendToCurrentConversation: input.appendToCurrentConversation ?? false,
+        },
+      }),
+    );
   }, []);
 
-  const dismissAllJobs = useCallback(() => {
-    setJobs([]);
-    setPanelLayoutState("compact");
-  }, []);
+  const agentsForSource = useCallback(
+    (sourceKey: string) => {
+      const list = agentsBySource[sourceKey] ?? [];
+      return [...list].sort((a, b) => b.createdAt - a.createdAt);
+    },
+    [agentsBySource],
+  );
 
-  const setPanelLayout = useCallback((layout: AgentJobLayout) => {
-    setPanelLayoutState(layout);
-  }, []);
+  const getAgentById = useCallback(
+    (agentId: string): CreatedAgentRecord | undefined => {
+      for (const list of Object.values(agentsBySource)) {
+        const found = list.find((a) => a.id === agentId);
+        if (found) return found;
+      }
+      return undefined;
+    },
+    [agentsBySource],
+  );
 
-  const updatePanelPosition = useCallback((position: AgentJobPosition, cardSize: { width: number; height: number }) => {
-    const w = cardSize.width > 0 ? cardSize.width : 420;
-    const h = cardSize.height > 0 ? cardSize.height : 320;
-    setPanelPosition(clampPosition(position, w, h));
-  }, []);
-
-  const jobForSource = useCallback((sourceKey: string) => {
-    for (let i = jobs.length - 1; i >= 0; i--) {
-      if (jobs[i]!.sourceKey === sourceKey) return jobs[i];
-    }
-    const done = completedBySource[sourceKey];
-    if (done) {
-      const synthetic: AgentJob = {
-        id: `completed-${sourceKey}`,
-        sourceKey,
-        scopeTitle: done.scopeTitle,
-        step: 7,
-        stepEnteredAt: 0,
-      };
-      return synthetic;
-    }
-    return undefined;
-  }, [jobs, completedBySource]);
+  const jobForSource = useCallback(
+    (sourceKey: string) => {
+      const pendingTitle = pendingBySource[sourceKey];
+      if (pendingTitle !== undefined) {
+        const synthetic: AgentJob = {
+          id: `pending-${sourceKey}`,
+          sourceKey,
+          scopeTitle: pendingTitle,
+          step: 1,
+          stepEnteredAt: Date.now(),
+        };
+        return synthetic;
+      }
+      const agents = agentsBySource[sourceKey];
+      if (agents && agents.length > 0) {
+        const last = agents.reduce((a, b) => (a.createdAt >= b.createdAt ? a : b));
+        return {
+          id: `completed-${sourceKey}`,
+          sourceKey,
+          scopeTitle: last.scopeTitle,
+          step: 7 as AgentJobStep,
+          stepEnteredAt: 0,
+        } satisfies AgentJob;
+      }
+      return undefined;
+    },
+    [pendingBySource, agentsBySource],
+  );
 
   const value = useMemo<CreateAIAgentJobsContextValue>(
     () => ({
-      jobs,
-      panelLayout,
-      panelPosition,
       startJob,
-      dismissJob,
-      dismissAllJobs,
-      setPanelLayout,
-      updatePanelPosition,
       jobForSource,
+      agentsForSource,
+      getAgentById,
     }),
-    [jobs, panelLayout, panelPosition, startJob, dismissJob, dismissAllJobs, setPanelLayout, updatePanelPosition, jobForSource],
+    [startJob, jobForSource, agentsForSource, getAgentById],
   );
 
-  return (
-    <CreateAIAgentJobsContext.Provider value={value}>
-      <>
-        {jobs.map((j) =>
-          isLoadingStep(j.step) ? (
-            <JobStepTimer
-              key={`${j.id}:${j.step}:${j.stepEnteredAt}`}
-              jobId={j.id}
-              step={j.step}
-              stepEnteredAt={j.stepEnteredAt}
-              onAdvance={advanceJobStep}
-            />
-          ) : null,
-        )}
-        {children}
-      </>
-    </CreateAIAgentJobsContext.Provider>
-  );
+  return <CreateAIAgentJobsContext.Provider value={value}>{children}</CreateAIAgentJobsContext.Provider>;
 }
 
 export function useCreateAIAgentJobs(): CreateAIAgentJobsContextValue {

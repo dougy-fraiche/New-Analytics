@@ -19,12 +19,5 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src"],
-  "exclude": [
-    "src/app/components/ui/carousel.tsx",
-    "src/app/components/ui/drawer.tsx",
-    "src/app/components/ui/form.tsx",
-    "src/app/components/ui/input-otp.tsx",
-    "src/app/components/ui/resizable.tsx"
-  ]
+  "include": ["src"]
 }

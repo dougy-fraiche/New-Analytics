@@ -1,8 +1,6 @@
 import { createContext, useContext, useCallback, useRef, useSyncExternalStore, useMemo, ReactNode } from "react";
 import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 import type { AssistantStructuredFields, DashboardData, WidgetMessageMeta } from "../types/conversation-types";
-import type { Conversation } from "./ConversationContext";
-import { conversationMessageToGlobalChat } from "../lib/conversation-message-to-global-chat";
 
 export interface ChatMessage extends WidgetMessageMeta, AssistantStructuredFields {
   id: string;
@@ -12,6 +10,11 @@ export interface ChatMessage extends WidgetMessageMeta, AssistantStructuredField
   dashboardData?: DashboardData;
   /** True while the mock runner is revealing assistant `content` (typewriter / streaming). */
   isTypingContent?: boolean;
+  /** After Create AI Agent chat flow completes — drives “View Agent” deep link in the thread. */
+  createAgentView?: {
+    scopeTitle: string;
+    agentId: string;
+  };
 }
 
 type Listener = () => void;
@@ -29,8 +32,6 @@ export interface GlobalAiConversation {
   messages: ChatMessage[];
   /** When true, leaving this chat may replace `name` with text from the first user message if still default. */
   usesAutoTitle?: boolean;
-  /** Explore draft thread id (`/conversation/:id`) when this history row mirrors or was started from Explore. */
-  exploreDraftId?: string;
 }
 
 export function conversationNameFromPrompt(prompt: string): string {
@@ -116,11 +117,7 @@ class ChatStore {
     this.notify(key);
   };
 
-  appendMessage = (
-    key: string,
-    message: ChatMessage,
-    meta?: { exploreDraftId?: string },
-  ) => {
+  appendMessage = (key: string, message: ChatMessage) => {
     if (key === GLOBAL_AI_ASSISTANT_KEY) {
       const active = this.getActiveGlobalConversation();
       if (active) {
@@ -136,7 +133,7 @@ class ChatStore {
         this.sortGlobalConversations();
         this.notifyGlobalConversations();
       } else if (message.role === "user") {
-        this.createGlobalConversationFromFirstUserMessage(message, meta?.exploreDraftId);
+        this.createGlobalConversationFromFirstUserMessage(message);
       } else {
         this.globalDraftMessages = [...this.globalDraftMessages, message];
       }
@@ -269,35 +266,6 @@ class ChatStore {
     this.notifyGlobalConversations();
   };
 
-  /**
-   * One-time hydration: mirror active Explore drafts into AI Assistant Chat History
-   * (matching titles + messages). Skips if the user already has global chats.
-   */
-  seedGlobalAiFromExploreConversationsIfEmpty = (exploreConversations: Conversation[]) => {
-    if (this.globalConversations.length > 0) return;
-    const active = exploreConversations.filter((c) => !c.archived);
-    if (active.length === 0) return;
-    this.globalConversations = active.map((c) => {
-      const messages = c.messages.map((m) => conversationMessageToGlobalChat(m));
-      const lastTs =
-        messages.length > 0 ? messages[messages.length - 1]!.timestamp : c.createdAt;
-      return {
-        id: `gai-${c.id}`,
-        exploreDraftId: c.id,
-        name: c.name,
-        usesAutoTitle: false,
-        createdAt: c.createdAt,
-        updatedAt: lastTs.getTime() >= c.createdAt.getTime() ? lastTs : c.createdAt,
-        messages,
-      };
-    });
-    this.globalActiveConversationId = null;
-    this.sortGlobalConversations();
-    this.notifyGlobalConversations();
-    this.notifyGlobalActiveConversation();
-    this.notify(GLOBAL_AI_ASSISTANT_KEY);
-  };
-
   private finalizeDefaultTitleIfNeeded(conversationId: string | null) {
     if (!conversationId) return;
     const target = this.globalConversations.find((c) => c.id === conversationId);
@@ -318,16 +286,12 @@ class ChatStore {
     }
   }
 
-  private createGlobalConversationFromFirstUserMessage(
-    message: ChatMessage,
-    exploreDraftId?: string,
-  ) {
+  private createGlobalConversationFromFirstUserMessage(message: ChatMessage) {
     const now = new Date();
     const displayName = this.globalDraftDisplayName.trim() || GLOBAL_AI_DEFAULT_CHAT_TITLE;
     const usesAutoTitle = !this.globalDraftDisplayNameUserSet && displayName === GLOBAL_AI_DEFAULT_CHAT_TITLE;
     const convo: GlobalAiConversation = {
       id: crypto.randomUUID(),
-      ...(exploreDraftId ? { exploreDraftId } : {}),
       name: displayName,
       usesAutoTitle,
       createdAt: now,
@@ -376,11 +340,7 @@ class ChatStore {
 interface DashboardChatContextType {
   getMessages: (dashboardKey: string) => ChatMessage[];
   setMessages: (dashboardKey: string, messages: ChatMessage[]) => void;
-  appendMessage: (
-    dashboardKey: string,
-    message: ChatMessage,
-    meta?: { exploreDraftId?: string },
-  ) => void;
+  appendMessage: (dashboardKey: string, message: ChatMessage) => void;
   patchMessage: (dashboardKey: string, messageId: string, partial: Partial<ChatMessage>) => void;
   clearMessages: (dashboardKey: string) => void;
   getGlobalAiConversations: () => GlobalAiConversation[];
@@ -391,7 +351,6 @@ interface DashboardChatContextType {
   deleteGlobalAiConversation: (conversationId: string) => void;
   startNewGlobalAiDraft: () => void;
   setActiveGlobalAiConversation: (conversationId: string | null) => void;
-  seedGlobalAiFromExploreConversationsIfEmpty: (exploreConversations: Conversation[]) => void;
   _store: ChatStore;
 }
 
@@ -420,7 +379,6 @@ export function DashboardChatProvider({ children }: { children: ReactNode }) {
       deleteGlobalAiConversation: store.deleteGlobalAiConversation,
       startNewGlobalAiDraft: store.startNewGlobalAiDraft,
       setActiveGlobalAiConversation: store.setActiveGlobalAiConversation,
-      seedGlobalAiFromExploreConversationsIfEmpty: store.seedGlobalAiFromExploreConversationsIfEmpty,
       _store: store,
     }),
     [store],

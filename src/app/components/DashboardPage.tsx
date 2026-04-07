@@ -44,7 +44,11 @@ import { DashboardChartGrid } from "./ChartVariants";
 import { toast } from "sonner";
 import { DeleteDashboardDialog } from "./DeleteDashboardDialog";
 import { DuplicateDashboardDialog } from "./DuplicateDashboardDialog";
-import { PageContent, PageHeader } from "./PageChrome";
+import {
+  PageHeader,
+  pageMainColumnClassName,
+  pageRootListScrollGutterClassName,
+} from "./PageChrome";
 import { allOotbDashboards, standaloneCategories } from "../data/ootb-dashboards";
 import { WidgetAIProvider } from "../contexts/WidgetAIContext";
 import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
@@ -80,6 +84,7 @@ import { Label } from "./ui/label";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { getDashboardAnomalyHighlights } from "../lib/dashboard-anomaly-highlights";
 import { useContainerBreakpoint } from "../hooks/useContainerBreakpoint";
+import { cn } from "./ui/utils";
 
 // Build OOTB meta lookup
 const dashboardMeta: Record<string, { title: string; description: string }> = {};
@@ -322,19 +327,17 @@ export function DashboardPage() {
       <div className="flex flex-col h-full min-h-0">
         {/* Fixed header: title, description, global buttons */}
         <PageHeader>
-          <div className="flex items-center gap-2">
+          <section className="flex items-center gap-2">
             <h1 className="text-3xl tracking-tight">{meta.title}</h1>
             <div className="ml-auto flex items-center gap-2">
                 <DropdownMenu>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="inline-flex">
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="icon" className="h-8 w-8">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                      </span>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="icon" className="h-8 w-8">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
                     </TooltipTrigger>
                     <TooltipContent side="bottom">Dashboard options</TooltipContent>
                   </Tooltip>
@@ -375,7 +378,7 @@ export function DashboardPage() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-          </div>
+          </section>
           <p className="text-muted-foreground mt-1">{meta.description}</p>
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRangeOption)}>
@@ -445,8 +448,8 @@ export function DashboardPage() {
 
         {/* Scrollable content */}
         <div className="flex-1 min-h-0 overflow-auto">
-          <PageContent className="p-4 md:p-8">
-          <PageTransition>
+          <div className={cn(pageRootListScrollGutterClassName, "pb-4 md:pb-8")}>
+          <PageTransition className={pageMainColumnClassName}>
           <div ref={dashboardContentRef} className="space-y-4">
           {dashboardId ? (
             <HeaderAIInsightsRow
@@ -458,9 +461,14 @@ export function DashboardPage() {
               }}
             />
           ) : null}
-          {/* Section heading */}
-          <div className="flex items-center gap-4 flex-wrap">
-            <h3 className="mt-8 flex items-center gap-2 tracking-tight">
+          {/* Section heading — 2rem below AI insights only (avoid space-y-4 + mt-8 stacking) */}
+          <div
+            className={cn(
+              "flex flex-wrap items-center gap-4",
+              dashboardId ? "!mt-8" : undefined,
+            )}
+          >
+            <h3 className="flex items-center gap-2 tracking-tight">
               <CircleGauge className="h-4 w-4 shrink-0 text-primary" aria-hidden />
               Key Performance Indicators
             </h3>
@@ -644,7 +652,7 @@ export function DashboardPage() {
           </div>
           </div>
           </PageTransition>
-          </PageContent>
+          </div>
         </div>
       </div>
 

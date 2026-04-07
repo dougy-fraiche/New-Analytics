@@ -740,13 +740,11 @@ export function DashboardAISummary({
               <DropdownMenu>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="inline-flex">
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="icon" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                    </span>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="icon" className="h-8 w-8">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">Summary options</TooltipContent>
                 </Tooltip>
@@ -824,7 +822,7 @@ export function DashboardAISummary({
               className={insightsCollapsible ? "flex min-w-0 flex-col" : "contents"}
             >
               <CardContent className="space-y-6 bg-muted/20 pt-4">
-                <div>
+                <section>
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="flex min-w-0 flex-1 items-center gap-2">
                       <List className="h-4 w-4 shrink-0 text-primary" aria-hidden />
@@ -889,7 +887,7 @@ export function DashboardAISummary({
                   )}
                     </div>
                   </div>
-                </div>
+                </section>
 
                 {(isRefreshing ||
                   recommendedActionsContent ||

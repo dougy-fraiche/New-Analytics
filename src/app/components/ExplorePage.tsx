@@ -3,17 +3,17 @@ import { useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 
 import { useConversations, type Message } from "../contexts/ConversationContext";
+import { useDashboardChat } from "../contexts/DashboardChatContext";
 import {
-  useDashboardChat,
-  useGlobalAiConversations,
-  useActiveGlobalAiConversationId,
-} from "../contexts/DashboardChatContext";
-import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
+  EXPLORE_THREAD_USER_TURN_EVENT,
+  GLOBAL_AI_ASSISTANT_KEY,
+} from "../lib/ai-assistant-global";
 import { conversationMessageToGlobalChat } from "../lib/conversation-message-to-global-chat";
 import { runPhasedExploreAssistantReply } from "../lib/run-phased-explore-assistant-reply";
 import { useVoiceInput } from "../hooks/useVoiceInput";
 import { generateConversationName, generateAIResponse } from "../data/explore-data";
 
+import { WidgetAIProvider } from "../contexts/WidgetAIContext";
 import { ExplorePhase } from "./ExplorePhase";
 import { ConversationPhase } from "./ConversationPhase";
 
@@ -47,6 +47,8 @@ export function ExplorePage() {
   const chatInputRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const heroInputBarRef = useRef<HTMLDivElement>(null);
+  /** Next hero send came from picking a typeahead row — merge dashboard into the assistant reply. */
+  const exploreTypeaheadPickedRef = useRef(false);
 
   // ── Context hooks ─────────────────────────────────────────────────
   const { addConversation, conversations, addMessageToConversation, patchMessageInConversation } =
@@ -56,12 +58,9 @@ export function ExplorePage() {
     patchMessage,
     startNewGlobalAiDraft,
     setGlobalAiDraftDisplayName,
-    setActiveGlobalAiConversation,
   } = useDashboardChat();
   const navigate = useNavigate();
   const params = useParams();
-  const globalAiConversations = useGlobalAiConversations();
-  const activeGlobalAiId = useActiveGlobalAiConversationId();
 
   // Derive active conversation ID directly from URL params
   const currentConversationId = params.conversationId ?? null;
@@ -121,7 +120,8 @@ export function ExplorePage() {
   useEffect(() => { conversationsRef.current = conversations; });
 
   const lastSyncedIdRef = useRef<string | null>(null);
-  const exploreFirstMessagePhaseRef = useRef(0);
+  /** Shared with ConversationPhase — cancels / finishes phased replies across hero + thread sends. */
+  const exploreAssistantPhaseGenRef = useRef(0);
 
   useEffect(() => {
     const conversationId = params.conversationId ?? null;
@@ -143,17 +143,6 @@ export function ExplorePage() {
     }
   }, [params.conversationId]);
 
-  /** Keep the assistant panel thread aligned with the Explore draft in the URL. */
-  useEffect(() => {
-    const id = params.conversationId;
-    if (!id) return;
-    const match = globalAiConversations.find(
-      (c) => c.exploreDraftId === id || c.id === `gai-${id}`,
-    );
-    if (!match || match.id === activeGlobalAiId) return;
-    setActiveGlobalAiConversation(match.id);
-  }, [params.conversationId, globalAiConversations, activeGlobalAiId, setActiveGlobalAiConversation]);
-
   // ── Explore phase handlers ────────────────────────────────────────
   const handleActionClick = useCallback((label: string, prompts: string[]) => {
     setQuery(label);
@@ -162,95 +151,134 @@ export function ExplorePage() {
     setTimeout(() => inputRef.current?.focus(), 0);
   }, []);
 
-  // First message — creates a new conversation
-  const handleSend = useCallback(() => {
-    if (!query.trim()) return;
+  /** First user message — same path as sending from the hero {@link ChatInputBar} (new thread + navigate). */
+  const sendExploreFirstMessage = useCallback(
+    (rawMessage: string) => {
+      const messageToSend = rawMessage.trim();
+      if (!messageToSend) return;
 
-    const name = generateConversationName(query);
-    setConversationName(name);
-    const newConversation = addConversation(name);
-    setPhase("conversation");
+      setShowTypeahead(false);
+      setForcedSuggestions([]);
 
-    lastSyncedIdRef.current = newConversation.id;
+      voice.stop();
+      window.dispatchEvent(new Event(EXPLORE_THREAD_USER_TURN_EVENT));
 
-    const userMessage: Message = {
-      id: crypto.randomUUID(),
-      role: "user",
-      content: query,
-      timestamp: new Date(),
-    };
-    addMessageToConversation(newConversation.id, userMessage);
-    startNewGlobalAiDraft();
-    setGlobalAiDraftDisplayName(name.trim(), { userSet: true });
-    appendMessage(GLOBAL_AI_ASSISTANT_KEY, conversationMessageToGlobalChat(userMessage), {
-      exploreDraftId: newConversation.id,
-    });
-    setMessages([userMessage]);
-    const messageToSend = query;
-    setQuery("");
-    try { sessionStorage.removeItem(DRAFT_KEY); } catch {}
-    setIsThinking(true);
+      const name = generateConversationName(messageToSend);
+      setConversationName(name);
+      const newConversation = addConversation(name);
+      setPhase("conversation");
 
-    const targetConversationId = newConversation.id;
-    const gen = ++exploreFirstMessagePhaseRef.current;
-    const assistantId = crypto.randomUUID();
-    const aiResponse = generateAIResponse(messageToSend);
-    const stub: Message = {
-      id: assistantId,
-      role: "assistant",
-      content: "",
-      timestamp: new Date(),
-    };
-    addMessageToConversation(targetConversationId, stub);
-    appendMessage(GLOBAL_AI_ASSISTANT_KEY, conversationMessageToGlobalChat(stub));
-    setMessages([userMessage, stub]);
-    setIsThinking(false);
+      lastSyncedIdRef.current = newConversation.id;
 
-    queueMicrotask(() => {
-      navigate(`/conversation/${newConversation.id}`);
-    });
+      const userMessage: Message = {
+        id: crypto.randomUUID(),
+        role: "user",
+        content: messageToSend,
+        timestamp: new Date(),
+      };
+      addMessageToConversation(newConversation.id, userMessage);
+      startNewGlobalAiDraft();
+      setGlobalAiDraftDisplayName(name.trim(), { userSet: true });
+      appendMessage(GLOBAL_AI_ASSISTANT_KEY, conversationMessageToGlobalChat(userMessage));
+      setMessages([userMessage]);
+      setQuery("");
+      try {
+        sessionStorage.removeItem(DRAFT_KEY);
+      } catch {
+        /* ignore */
+      }
+      setIsThinking(true);
 
-    void runPhasedExploreAssistantReply({
-      conversationId: targetConversationId,
-      assistantId,
-      final: aiResponse,
-      isCancelled: () => gen !== exploreFirstMessagePhaseRef.current,
+      const targetConversationId = newConversation.id;
+      const gen = ++exploreAssistantPhaseGenRef.current;
+      const assistantId = crypto.randomUUID();
+      const seedDashboardForTypeahead = exploreTypeaheadPickedRef.current;
+      exploreTypeaheadPickedRef.current = false;
+      const aiResponse = generateAIResponse(messageToSend, { seedDashboardForTypeahead });
+      const stub: Message = {
+        id: assistantId,
+        role: "assistant",
+        content: "",
+        timestamp: new Date(),
+      };
+      addMessageToConversation(targetConversationId, stub);
+      appendMessage(GLOBAL_AI_ASSISTANT_KEY, conversationMessageToGlobalChat(stub));
+      setMessages([userMessage, stub]);
+
+      queueMicrotask(() => {
+        navigate(`/conversation/${newConversation.id}`);
+      });
+
+      void runPhasedExploreAssistantReply({
+        conversationId: targetConversationId,
+        assistantId,
+        final: aiResponse,
+        isCancelled: () => gen !== exploreAssistantPhaseGenRef.current,
+        patchMessageInConversation,
+        patchGlobalMessage: (messageId, partial) =>
+          patchMessage(GLOBAL_AI_ASSISTANT_KEY, messageId, partial),
+        syncLocalMessages: (updater) => setMessages(updater),
+      }).finally(() => {
+        if (gen === exploreAssistantPhaseGenRef.current) {
+          setIsThinking(false);
+        }
+      });
+    },
+    [
+      voice.stop,
+      addConversation,
+      addMessageToConversation,
+      appendMessage,
+      patchMessage,
       patchMessageInConversation,
-      patchGlobalMessage: (messageId, partial) =>
-        patchMessage(GLOBAL_AI_ASSISTANT_KEY, messageId, partial),
-      syncLocalMessages: (updater) => setMessages(updater),
-    });
-  }, [
-    query,
-    addConversation,
-    addMessageToConversation,
-    appendMessage,
-    patchMessage,
-    patchMessageInConversation,
-    navigate,
-    startNewGlobalAiDraft,
-    setGlobalAiDraftDisplayName,
-  ]);
+      navigate,
+      startNewGlobalAiDraft,
+      setGlobalAiDraftDisplayName,
+    ],
+  );
+
+  const handleSend = useCallback(() => {
+    sendExploreFirstMessage(query);
+  }, [query, sendExploreFirstMessage]);
+
+  /** Top Insights “Ask AI” popover — same widget prompt UI as dashboards; sends start an Explore thread. */
+  const handleExploreWidgetPrompt = useCallback(
+    (widgetTitle: string, message: string) => {
+      const trimmed = message.trim();
+      if (!trimmed) return;
+      sendExploreFirstMessage(`Regarding “${widgetTitle}”: ${trimmed}`);
+    },
+    [sendExploreFirstMessage],
+  );
 
   // ── Render ────────────────────────────────────────────────────────
   return (
     <div ref={containerRef} className="h-full flex flex-col overflow-hidden relative">
       {/* ─── PHASE 1: EXPLORE ────────────────────────────── */}
       {phase === "explore" && !currentConversationId && (
-        <ExplorePhase
-          query={query}
-          onQueryChange={setQuery}
-          voice={voice}
-          inputRef={inputRef}
-          heroInputBarRef={heroInputBarRef}
-          isInputAnimating={isInputAnimating}
-          showTypeahead={showTypeahead}
-          onShowTypeahead={setShowTypeahead}
-          forcedSuggestions={forcedSuggestions}
-          onForcedSuggestionsChange={setForcedSuggestions}
-          onActionClick={handleActionClick}
-          onSend={handleSend}
-        />
+        <WidgetAIProvider
+          persistKey={GLOBAL_AI_ASSISTANT_KEY}
+          ootbTypeId="explore"
+          onWidgetPrompt={handleExploreWidgetPrompt}
+        >
+          <ExplorePhase
+            query={query}
+            onQueryChange={setQuery}
+            voice={voice}
+            inputRef={inputRef}
+            heroInputBarRef={heroInputBarRef}
+            isInputAnimating={isInputAnimating}
+            showTypeahead={showTypeahead}
+            onShowTypeahead={setShowTypeahead}
+            forcedSuggestions={forcedSuggestions}
+            onForcedSuggestionsChange={setForcedSuggestions}
+            onActionClick={handleActionClick}
+            onSend={handleSend}
+            onTypeaheadSuggestionPicked={() => {
+              exploreTypeaheadPickedRef.current = true;
+            }}
+          />
+        </WidgetAIProvider>
       )}
 
       {/* ─── PHASE 2: CONVERSATION ──────────────────────── */}
@@ -273,6 +301,7 @@ export function ExplorePage() {
           inputAnimStartLeft={inputAnimStartLeft}
           inputAnimStartWidth={inputAnimStartWidth}
           containerRef={containerRef}
+          assistantPhaseGenRef={exploreAssistantPhaseGenRef}
         />
       )}
     </div>

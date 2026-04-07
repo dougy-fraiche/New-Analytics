@@ -168,26 +168,32 @@ export const topAutomationOpportunities: AutomationOpportunity[] = [
 
 // ── Top Insights feed cards ────────────────────────────────────────────
 
-export type TopInsightCard = {
-  id: number;
-  category:
-    | "Critical"
-    | "High"
-    | "Opportunity"
-    | "Action"
-    | "Anomaly"
-    | "Recommended Action"
-    | "Automation Opportunity";
-  title: string;
-  description: string;
-  detail: string;
-  timestamp: string;
-};
+export type TopInsightCard =
+  | {
+      id: number;
+      segment: "anomaly";
+      severity: "Critical" | "High";
+      title: string;
+      description: string;
+      detail: string;
+      timestamp: string;
+    }
+  | {
+      id: number;
+      segment: "opportunity";
+      /** Shows an Action pill alongside Opportunity (automations, recommended actions, etc.). */
+      showActionPill: boolean;
+      title: string;
+      description: string;
+      detail: string;
+      timestamp: string;
+    };
 
 export const topInsightsCards: TopInsightCard[] = [
   {
     id: 1,
-    category: "Critical",
+    segment: "anomaly",
+    severity: "Critical",
     title: "CSAT Anomaly Detected",
     description: "Customer satisfaction dropped 15% today.",
     detail: "CSAT: 72% (usually 87%)",
@@ -195,7 +201,8 @@ export const topInsightsCards: TopInsightCard[] = [
   },
   {
     id: 2,
-    category: "High",
+    segment: "anomaly",
+    severity: "High",
     title: "AHT Anomaly Detected",
     description: "Average handle time increased 42%.",
     detail: "AHT: 8.5 min (usually 6.0 min)",
@@ -203,7 +210,8 @@ export const topInsightsCards: TopInsightCard[] = [
   },
   {
     id: 3,
-    category: "Opportunity",
+    segment: "opportunity",
+    showActionPill: true,
     title: "Call Volume Spike",
     description: "Unexpected volume spike of 28%.",
     detail: "3,847 calls (usually 3,000)",
@@ -211,7 +219,8 @@ export const topInsightsCards: TopInsightCard[] = [
   },
   {
     id: 4,
-    category: "Action",
+    segment: "opportunity",
+    showActionPill: true,
     title: "Bill Explanation",
     description: "1,620 automatable calls · 3.6% of total mix.",
     detail: "$13K annual savings · 4:00 avg duration",
@@ -219,7 +228,8 @@ export const topInsightsCards: TopInsightCard[] = [
   },
   {
     id: 5,
-    category: "Action",
+    segment: "opportunity",
+    showActionPill: true,
     title: "Card Activation",
     description: "1,245 automatable calls · 3.3% of total mix.",
     detail: "$11K annual savings · 3:30 avg duration",
@@ -227,7 +237,8 @@ export const topInsightsCards: TopInsightCard[] = [
   },
   {
     id: 6,
-    category: "Action",
+    segment: "opportunity",
+    showActionPill: true,
     title: "Payment Arrangement",
     description: "980 automatable calls · 3.1% of total mix.",
     detail: "$9K annual savings · 5:15 avg duration",
@@ -235,7 +246,8 @@ export const topInsightsCards: TopInsightCard[] = [
   },
   {
     id: 7,
-    category: "Recommended Action",
+    segment: "opportunity",
+    showActionPill: true,
     title: "Enable WISMO Auto-Reply",
     description: "Auto-send shipment status for repetitive order-tracking requests.",
     detail: "Projected deflection: 18% of weekly chat volume",
@@ -243,7 +255,8 @@ export const topInsightsCards: TopInsightCard[] = [
   },
   {
     id: 8,
-    category: "Automation Opportunity",
+    segment: "opportunity",
+    showActionPill: true,
     title: "Refund Policy Auto-Check",
     description: "Most return checks follow a fixed policy decision tree.",
     detail: "Estimated reduction: 45 agent-hours per week",
@@ -426,7 +439,41 @@ export type ExploreAIResponse = AssistantReplyPayload & {
   widgetData?: WidgetData;
 };
 
-export const generateAIResponse = (userMessage: string): ExploreAIResponse => {
+/** Default dashboard shell for Explore — keyed off the user query via {@link generateDashboardTitle}. */
+export function buildExploreDashboardFromQuery(userMessage: string): DashboardData {
+  const { title, description } = generateDashboardTitle(userMessage);
+  return {
+    id: `dash-${Date.now()}`,
+    title,
+    description,
+    metrics: [
+      { label: "Total Escalations", value: "260" },
+      { label: "Avg Resolution Time", value: "4.3h" },
+      { label: "Customer Satisfaction", value: "94%" },
+      { label: "Resolution Rate", value: "87%" },
+    ],
+    chartData: {
+      trend: [
+        { date: "Jan 15", interactions: 245 },
+        { date: "Jan 22", interactions: 312 },
+        { date: "Jan 29", interactions: 287 },
+        { date: "Feb 5", interactions: 398 },
+        { date: "Feb 12", interactions: 456 },
+        { date: "Feb 19", interactions: 512 },
+        { date: "Feb 26", interactions: 478 },
+      ],
+      breakdown: [
+        { category: "Technical Issues", volume: 342 },
+        { category: "Billing Questions", volume: 187 },
+        { category: "Feature Requests", volume: 156 },
+        { category: "General Inquiry", volume: 289 },
+        { category: "Bug Reports", volume: 98 },
+      ],
+    },
+  };
+}
+
+function generateAIResponseCore(userMessage: string): ExploreAIResponse {
   const mock = () => buildMockAssistantFields(userMessage);
   const lowerMessage = userMessage.toLowerCase();
   const wantsWidget = lowerMessage.includes("widget") || lowerMessage.includes("insight");
@@ -459,40 +506,12 @@ export const generateAIResponse = (userMessage: string): ExploreAIResponse => {
   }
 
   if (wantsDashboard) {
-    const { title, description } = generateDashboardTitle(userMessage);
+    const { title } = generateDashboardTitle(userMessage);
     return {
       content: `I've generated a "${title}" based on your request. You can view and interact with it in the panel on the right. Save it to keep it in your collection, or close the panel to continue our conversation.`,
       widgetData,
       ...mock(),
-      dashboardData: {
-        id: `dash-${Date.now()}`,
-        title,
-        description,
-        metrics: [
-          { label: "Total Tickets", value: "1,247" },
-          { label: "Avg Response Time", value: "2.3h" },
-          { label: "Resolution Rate", value: "87%" },
-          { label: "CSAT Score", value: "4.6/5" },
-        ],
-        chartData: {
-          trend: [
-            { date: "Jan 15", interactions: 245 },
-            { date: "Jan 22", interactions: 312 },
-            { date: "Jan 29", interactions: 287 },
-            { date: "Feb 5", interactions: 398 },
-            { date: "Feb 12", interactions: 456 },
-            { date: "Feb 19", interactions: 512 },
-            { date: "Feb 26", interactions: 478 },
-          ],
-          breakdown: [
-            { category: "Technical Issues", volume: 342 },
-            { category: "Billing Questions", volume: 187 },
-            { category: "Feature Requests", volume: 156 },
-            { category: "General Inquiry", volume: 289 },
-            { category: "Bug Reports", volume: 98 },
-          ],
-        },
-      },
+      dashboardData: buildExploreDashboardFromQuery(userMessage),
     };
   }
 
@@ -508,4 +527,23 @@ export const generateAIResponse = (userMessage: string): ExploreAIResponse => {
     content: "I've analyzed your request regarding customer support data. The insights show interesting patterns in user behavior and support performance. Let me know if you'd like me to dive deeper into any specific metrics or create a custom dashboard for tracking these trends.",
     ...mock(),
   };
+}
+
+export type GenerateExploreAIResponseOptions = {
+  /**
+   * When true (hero typeahead / suggestion pick), attach {@link buildExploreDashboardFromQuery}
+   * if the core reply did not already include dashboard data — avoids an empty dashboard panel.
+   */
+  seedDashboardForTypeahead?: boolean;
+};
+
+export const generateAIResponse = (
+  userMessage: string,
+  options?: GenerateExploreAIResponseOptions,
+): ExploreAIResponse => {
+  const res = generateAIResponseCore(userMessage);
+  if (options?.seedDashboardForTypeahead && !res.dashboardData) {
+    return { ...res, dashboardData: buildExploreDashboardFromQuery(userMessage) };
+  }
+  return res;
 };

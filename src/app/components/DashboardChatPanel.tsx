@@ -18,7 +18,6 @@ import {
   Image,
   Paperclip,
   History,
-  ChevronRight,
   ChevronDown,
   Trash2,
   X,
@@ -58,16 +57,30 @@ import {
   type GlobalAiConversation,
 } from "../contexts/DashboardChatContext";
 import { useAiAssistantExploreBridge } from "../contexts/AiAssistantExploreBridgeContext";
-import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
-import { useLocation, useNavigate } from "react-router";
+import {
+  EXPLORE_THREAD_USER_TURN_EVENT,
+  GLOBAL_AI_ASSISTANT_KEY,
+} from "../lib/ai-assistant-global";
+import { Link, useLocation } from "react-router";
+import { ROUTES } from "../routes";
 import { getChartIconForWidgetType } from "./ChartVariants";
 import { Sheet, SheetContent, SheetTitle } from "./ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { cn } from "./ui/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
 import { buildMockAssistantFields } from "../lib/mock-assistant-structure";
+import {
+  buildCreateAIAgentReplyPayload,
+  CREATE_AI_AGENT_IN_CHAT_EVENT,
+  CREATE_AI_AGENT_IN_CHAT_FINISHED_EVENT,
+  type CreateAIAgentInChatDetail,
+} from "../lib/create-ai-agent-chat";
+import { AI_AGENT_JOB_STEP_MS } from "../lib/create-ai-agent-jobs";
+import { syntheticAssistantReasoningText } from "../lib/assistant-synthetic-reasoning";
 import { runPhasedAssistantReply } from "../lib/run-phased-assistant-reply";
 import type { AssistantReplyPayload } from "../types/conversation-types";
+import { useTypingPlaceholder } from "../hooks/useTypingPlaceholder";
+import { placeholderSuffixes } from "../data/explore-data";
 
 interface DashboardChatPanelProps {
   /** Route / page context id (saved id, OOTB id, etc.) — not used for message persistence in global mode */
@@ -81,6 +94,9 @@ interface DashboardChatPanelProps {
   placeholder?: string;
   /** Human-readable current page title for the input context pill (from route / breadcrumbs). */
   pageContextLabel?: string;
+  /** Lets the app shell disable width transitions while the user drags the panel edge. */
+  onAssistantPanelResizeStart?: () => void;
+  onAssistantPanelResizeEnd?: () => void;
 }
 
 // ─── Dashboard-specific suggested questions ──────────────────────────────────
@@ -469,8 +485,8 @@ function assistantAwaitingAnswer(msg: ChatMessage): boolean {
 function AssistantMessageBlocks({ msg }: { msg: ChatMessage }) {
   const awaiting = assistantAwaitingAnswer(msg);
   const showBody = msg.content.trim().length > 0 || Boolean(msg.isTypingContent);
-  const showProvenance =
-    Boolean(msg.reasoning?.trim()) && !(msg.toolSteps && msg.toolSteps.length > 0);
+  /** Reasoning link above the assistant answer (incl. stored history without structured reasoning). */
+  const showReasoningCollapsible = showBody || Boolean(msg.reasoning?.trim());
 
   return (
     <div className="w-full space-y-3">
@@ -506,7 +522,7 @@ function AssistantMessageBlocks({ msg }: { msg: ChatMessage }) {
         ) : null
       ) : null}
 
-      {showProvenance ? (
+      {showReasoningCollapsible ? (
         <Collapsible defaultOpen={false} className="w-full max-w-full">
           <CollapsibleTrigger asChild>
             <Button
@@ -539,22 +555,36 @@ function AssistantMessageBlocks({ msg }: { msg: ChatMessage }) {
                 {msg.toolSteps.map((step, i) => (
                   <li key={i} className="flex items-start gap-2">
                     <Check className="h-3.5 w-3.5 shrink-0 text-primary mt-0.5" aria-hidden />
-                    <div>
+                    <section>
                       <span className="text-foreground/90 font-medium">{step.label}</span>
                       {step.detail ? (
                         <p className="mt-0.5 text-[11px] leading-relaxed">{step.detail}</p>
                       ) : null}
-                    </div>
+                    </section>
                   </li>
                 ))}
               </ul>
-            ) : null}
+            ) : (
+              <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                {syntheticAssistantReasoningText(msg.content)}
+              </p>
+            )}
           </CollapsibleContent>
         </Collapsible>
       ) : null}
 
       {showBody ? (
         <AssistantTextContent text={msg.content} showTypingCursor={msg.isTypingContent} />
+      ) : null}
+
+      {msg.createAgentView && !msg.isTypingContent ? (
+        <div className="pt-2">
+          <Button variant="outline" size="sm" asChild>
+            <Link to={ROUTES.AUTOMATION_OPPORTUNITIES_AGENT(msg.createAgentView.agentId)}>
+              View Agent
+            </Link>
+          </Button>
+        </div>
       ) : null}
     </div>
   );
@@ -572,20 +602,32 @@ function messageStreamScrollSignature(msg: ChatMessage): string {
     msg.toolSteps
       ?.map((s) => `${s.status[0]}:${s.label.length}:${(s.detail ?? "").length}`)
       .join("|") ?? "";
-  return `a:${msg.id}:${msg.content.length}:${msg.reasoning?.length ?? 0}:${stepSig}:${msg.sources?.length ?? 0}:ty${msg.isTypingContent ? 1 : 0}`;
+  const agentKey = msg.createAgentView
+    ? `${msg.createAgentView.agentId}:${msg.createAgentView.scopeTitle}`
+    : "";
+  return `a:${msg.id}:${msg.content.length}:${msg.reasoning?.length ?? 0}:${stepSig}:${msg.sources?.length ?? 0}:ty${msg.isTypingContent ? 1 : 0}:ag:${agentKey}`;
+}
+
+/**
+ * Isolated so the typewriter tick (~45ms) only re-renders this line, not the whole chat panel
+ * (same pattern as Explore `ChatInputBar` + `useTypingPlaceholder`).
+ */
+function AssistantEmptyTypingHint() {
+  const animatedSuffix = useTypingPlaceholder(placeholderSuffixes);
+  return (
+    <p className="mt-2 max-w-[28rem] text-sm text-muted-foreground">
+      Ask anything about your {animatedSuffix}
+    </p>
+  );
 }
 
 /** Conversation view: message list (single thread per dashboard) */
 function ThreadView({
   messages,
   isThinking,
-  suggestedQuestions,
-  onSendSuggestion,
 }: {
   messages: ChatMessage[];
   isThinking: boolean;
-  suggestedQuestions?: string[];
-  onSendSuggestion?: (msg: string) => void;
 }) {
   const displayMessages = messages.filter((msg) => !msg.dashboardData);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -650,34 +692,16 @@ function ThreadView({
   }, [scrollStreamKey]);
 
   const lastDisplay = displayMessages[displayMessages.length - 1];
-  const assistantProcessingInThread =
-    lastDisplay?.role === "assistant" && !lastDisplay.content.trim();
 
   // Empty thread state with suggested prompts
   if (displayMessages.length === 0 && !isThinking) {
     return (
       <div className="h-full min-h-0 p-4 flex flex-col items-center justify-center text-center">
         <Sparkles className="h-12 w-12 shrink-0 text-primary" aria-hidden />
-        <div className="mt-6 text-sm text-muted-foreground max-w-[28rem]">
-          Hi 👋 I'm your AI assistant, how can I help you today?
-        </div>
-
-        {suggestedQuestions && suggestedQuestions.length > 0 && (
-          <div className="mt-6 w-full max-w-[28rem] space-y-2 text-left">
-            {suggestedQuestions.map((question, index) => (
-              <Button
-                key={index}
-                variant="outline"
-                size="lg"
-                className="w-full justify-start text-left whitespace-normal"
-                onClick={() => onSendSuggestion?.(question)}
-              >
-                <span className="text-sm">{question}</span>
-                <ChevronRight className="h-4 w-4 ml-auto shrink-0 text-muted-foreground" />
-              </Button>
-            ))}
-          </div>
-        )}
+        <h3 className="mt-6 max-w-[28rem] text-lg font-semibold text-foreground">
+          How can I help you today?
+        </h3>
+        <AssistantEmptyTypingHint />
       </div>
     );
   }
@@ -735,10 +759,10 @@ function ThreadView({
           )}
         </div>
       ))}
-      {isThinking && !assistantProcessingInThread ? (
+      {isThinking && lastDisplay?.role !== "assistant" ? (
         <div className="flex justify-start">
           <div className="flex items-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" aria-hidden />
             <p className="text-sm text-muted-foreground">Analyzing...</p>
           </div>
         </div>
@@ -776,18 +800,18 @@ function HistoryView({
   if (conversations.length === 0) {
     return (
       <div className="h-full min-h-0 p-6 flex items-center justify-center text-center">
-        <div>
+        <section>
           <p className="text-sm font-medium">No previous conversations</p>
           <p className="mt-1 text-sm text-muted-foreground">
             Start a new chat and send a prompt to save it here.
           </p>
-        </div>
+        </section>
       </div>
     );
   }
 
   return (
-    <div className="h-full overflow-y-auto p-3 space-y-2">
+    <div className="h-full overflow-y-auto space-y-2 pt-0 px-4 pb-4">
       {conversations.map((conversation) => {
         const displayTitle = historyCardDisplayTitle(conversation);
         return (
@@ -853,11 +877,17 @@ export function DashboardChatPanel({
   sourceOotbId,
   placeholder,
   pageContextLabel,
+  onAssistantPanelResizeStart,
+  onAssistantPanelResizeEnd,
 }: DashboardChatPanelProps) {
   const dashboardChat = useDashboardChat();
   const location = useLocation();
-  const navigate = useNavigate();
-  const { isThinking: exploreThinking, onSend: exploreOnSend } = useAiAssistantExploreBridge();
+  const isExploreHome = location.pathname === "/";
+  const {
+    isThinking: exploreThinking,
+    onSend: exploreOnSend,
+    onCancelInFlight: exploreCancelInFlight,
+  } = useAiAssistantExploreBridge();
   const conversations = useGlobalAiConversations();
   const activeConversationId = useActiveGlobalAiConversationId();
   const draftDisplayName = useGlobalAiDraftDisplayName();
@@ -908,6 +938,25 @@ export function DashboardChatPanel({
   const messages = storedMessages;
   const isThinking = exploreOnSend ? exploreThinking : internalIsThinking;
 
+  const displayThreadMessages = useMemo(
+    () => storedMessages.filter((m) => !m.dashboardData),
+    [storedMessages],
+  );
+
+  const assistantReplyInFlight = useMemo(() => {
+    const last = displayThreadMessages[displayThreadMessages.length - 1];
+    if (last?.role !== "assistant") return false;
+    if (last.isTypingContent) return true;
+    if (!(last.content ?? "").trim()) return true;
+    const steps = last.toolSteps;
+    return !!(steps && steps.some((s) => s.status === "running"));
+  }, [displayThreadMessages]);
+
+  // Explore keeps `isThinking` true until the phased runner fully settles; the thread already
+  // reflects idle via `assistantReplyInFlight` once typing finishes — don’t hold the stop icon.
+  const showComposerStop =
+    assistantReplyInFlight || (!exploreOnSend && isThinking);
+
   useEffect(() => {
     if (!titleEditing) return;
     titleInputRef.current?.focus();
@@ -954,6 +1003,82 @@ export function DashboardChatPanel({
     }
   }, [routeContextKey]);
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      if (isExploreHome) return;
+      const detail = (e as CustomEvent<CreateAIAgentInChatDetail>).detail;
+      if (!detail?.sourceKey || !detail.scopeTitle?.trim() || !detail.agentId) return;
+
+      phaseGenerationRef.current += 1;
+      const gen = phaseGenerationRef.current;
+
+      if (!detail.appendToCurrentConversation) {
+        dashboardChat.startNewGlobalAiDraft();
+      }
+
+      const scope = detail.scopeTitle.trim();
+      const userText = `Create AI Agent: ${scope}`;
+      const userMessage: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: "user",
+        content: userText,
+        timestamp: new Date(),
+      };
+      dashboardChat.appendMessage(GLOBAL_AI_ASSISTANT_KEY, userMessage);
+
+      const assistantId = crypto.randomUUID();
+      const finalPayload = buildCreateAIAgentReplyPayload(scope, {
+        ootbTypeId: detail.ootbTypeId ?? ootbTypeId,
+        pageLabel: pageContextLabel?.trim() || undefined,
+        pagePath: `${location.pathname}${location.search}`,
+      });
+      const stub: ChatMessage = {
+        id: assistantId,
+        role: "assistant",
+        content: "",
+        timestamp: new Date(),
+      };
+      dashboardChat.appendMessage(GLOBAL_AI_ASSISTANT_KEY, stub);
+
+      void runPhasedAssistantReply({
+        final: finalPayload,
+        stepMs: AI_AGENT_JOB_STEP_MS,
+        isCancelled: () => gen !== phaseGenerationRef.current,
+        patch: (partial) => {
+          if (gen !== phaseGenerationRef.current) return;
+          dashboardChat.patchMessage(GLOBAL_AI_ASSISTANT_KEY, assistantId, partial);
+        },
+      }).then(() => {
+        const cancelled = gen !== phaseGenerationRef.current;
+        if (!cancelled) {
+          dashboardChat.patchMessage(GLOBAL_AI_ASSISTANT_KEY, assistantId, {
+            createAgentView: { scopeTitle: scope, agentId: detail.agentId },
+          });
+        }
+        window.dispatchEvent(
+          new CustomEvent(CREATE_AI_AGENT_IN_CHAT_FINISHED_EVENT, {
+            detail: {
+              sourceKey: detail.sourceKey,
+              scopeTitle: scope,
+              agentId: detail.agentId,
+              cancelled,
+            },
+          }),
+        );
+      });
+    };
+
+    window.addEventListener(CREATE_AI_AGENT_IN_CHAT_EVENT, handler as EventListener);
+    return () => window.removeEventListener(CREATE_AI_AGENT_IN_CHAT_EVENT, handler as EventListener);
+  }, [
+    isExploreHome,
+    dashboardChat,
+    ootbTypeId,
+    pageContextLabel,
+    location.pathname,
+    location.search,
+  ]);
+
   const chatVoice = useVoiceInput({
     onTranscript: (text) => {
       setQuery((prev) => (prev ? prev + " " : "") + text);
@@ -975,10 +1100,23 @@ export function DashboardChatPanel({
     },
   });
 
+  useEffect(() => {
+    const onExploreUserTurn = () => {
+      chatVoice.stop();
+    };
+    window.addEventListener(EXPLORE_THREAD_USER_TURN_EVENT, onExploreUserTurn);
+    return () => window.removeEventListener(EXPLORE_THREAD_USER_TURN_EVENT, onExploreUserTurn);
+  }, [chatVoice.stop]);
+
   // Keep one consistent, general set of suggested questions across the app.
   const suggestedQuestions = useMemo(() => {
     return defaultSuggestedQuestions;
   }, []);
+
+  const showSuggestedPromptChips = useMemo(() => {
+    const thread = messages.filter((m) => !m.dashboardData);
+    return thread.length === 0 && !isThinking;
+  }, [messages, isThinking]);
 
   const handleResize = useCallback((deltaPx: number) => {
     const deltaRem = deltaPx / REM_PX;
@@ -991,8 +1129,14 @@ export function DashboardChatPanel({
     setPanelWidthRem(CHAT_PANEL_DEFAULT_WIDTH_REM);
   }, []);
 
-  const handleResizeStart = useCallback(() => setIsResizing(true), []);
-  const handleResizeEnd = useCallback(() => setIsResizing(false), []);
+  const handleResizeStart = useCallback(() => {
+    setIsResizing(true);
+    onAssistantPanelResizeStart?.();
+  }, [onAssistantPanelResizeStart]);
+  const handleResizeEnd = useCallback(() => {
+    setIsResizing(false);
+    onAssistantPanelResizeEnd?.();
+  }, [onAssistantPanelResizeEnd]);
 
   const appendUserMessageWithReply = useCallback(
     (rawMessage: string) => {
@@ -1021,7 +1165,6 @@ export function DashboardChatPanel({
         timestamp: new Date(),
       };
       dashboardChat.appendMessage(GLOBAL_AI_ASSISTANT_KEY, stub);
-      setInternalIsThinking(false);
 
       void runPhasedAssistantReply({
         final: finalPayload,
@@ -1030,6 +1173,10 @@ export function DashboardChatPanel({
           if (gen !== phaseGenerationRef.current) return;
           dashboardChat.patchMessage(GLOBAL_AI_ASSISTANT_KEY, assistantId, partial);
         },
+      }).finally(() => {
+        if (gen === phaseGenerationRef.current) {
+          setInternalIsThinking(false);
+        }
       });
     },
     [dashboardChat, ootbTypeId, pageContextLabel, location.pathname, location.search],
@@ -1038,6 +1185,7 @@ export function DashboardChatPanel({
   const handleSend = (message: string = query) => {
     if (!message.trim()) return;
 
+    chatVoice.stop();
     setQuery("");
 
     if (exploreOnSend) {
@@ -1047,6 +1195,29 @@ export function DashboardChatPanel({
 
     appendUserMessageWithReply(message);
   };
+
+  const handleStopAssistant = useCallback(() => {
+    if (exploreOnSend && exploreCancelInFlight) {
+      exploreCancelInFlight();
+      return;
+    }
+    phaseGenerationRef.current += 1;
+    setInternalIsThinking(false);
+    const threadMsgs = storedMessages.filter((m) => !m.dashboardData);
+    const last = threadMsgs[threadMsgs.length - 1];
+    if (last?.role === "assistant") {
+      dashboardChat.patchMessage(GLOBAL_AI_ASSISTANT_KEY, last.id, {
+        content: last.content.trim() ? last.content : "Stopped.",
+        isTypingContent: false,
+        toolSteps: undefined,
+      });
+    }
+  }, [
+    exploreOnSend,
+    exploreCancelInFlight,
+    storedMessages,
+    dashboardChat,
+  ]);
 
   const handleNewChat = useCallback(() => {
     phaseGenerationRef.current += 1;
@@ -1064,15 +1235,8 @@ export function DashboardChatPanel({
       setShowHistory(false);
       setInternalIsThinking(false);
       setTitleEditing(false);
-      const row = conversations.find((c) => c.id === conversationId);
-      const draftId =
-        row?.exploreDraftId ??
-        (conversationId.startsWith("gai-") ? conversationId.slice(4) : null);
-      if (draftId) {
-        navigate(`/conversation/${draftId}`);
-      }
     },
-    [conversations, dashboardChat, navigate],
+    [dashboardChat],
   );
 
   const beginTitleEdit = useCallback(() => {
@@ -1102,7 +1266,7 @@ export function DashboardChatPanel({
     <div
       ref={setPanelPortalEl}
       data-chat-panel-root="true"
-      className="h-full flex flex-col bg-page relative shrink-0 border-l border-border"
+      className="h-full flex flex-col bg-page relative shrink-0"
       style={{ width: `${panelWidthRem}rem`, transition: isResizing ? 'none' : 'width 200ms ease' }}
     >
       {/* Resize handle on left edge */}
@@ -1114,7 +1278,7 @@ export function DashboardChatPanel({
         onResizeEnd={handleResizeEnd}
       />
 
-      <div className="flex-1 min-h-0 flex flex-col min-w-0">
+      <div className="flex-1 min-h-0 flex flex-col min-w-0 pt-4">
         <div className="shrink-0 px-4 flex items-center justify-between gap-2 h-[60px] min-w-0 bg-page relative z-30">
         <div className="min-w-0 flex-1">
               {titleEditing ? (
@@ -1172,12 +1336,7 @@ export function DashboardChatPanel({
             onScroll={() => updateFadeForElement(chatScrollRef.current, setChatFade)}
             className="h-full overflow-y-auto overflow-x-hidden px-4 py-2"
           >
-            <ThreadView
-              messages={messages}
-              isThinking={isThinking}
-              suggestedQuestions={suggestedQuestions}
-              onSendSuggestion={handleSend}
-            />
+            <ThreadView messages={messages} isThinking={isThinking} />
           </div>
           <div
             className={`pointer-events-none absolute inset-x-0 top-0 z-10 h-16 bg-gradient-to-b from-page from-[10%] via-page/85 via-40% to-page/0 to-100% transition-opacity ${chatFade.top ? "opacity-100" : "opacity-0"}`}
@@ -1189,19 +1348,35 @@ export function DashboardChatPanel({
           />
         </div>
 
-        <div className="shrink-0 bg-page px-4 pb-3 pt-2 relative z-30">
-            <div className="rounded-3xl border bg-background text-foreground transition-shadow focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/20">
-              <div className="px-4 pt-3 pb-2">
-                <div className="space-y-2">
-                  {pageContextLabel ? (
-                    <Badge
-                      variant="secondary"
-                      className="max-w-full min-w-0 justify-start"
-                      aria-label={`Current page context: ${pageContextLabel}`}
+        <div className="shrink-0 bg-page p-4 relative z-30">
+            {showSuggestedPromptChips && suggestedQuestions.length > 0 ? (
+              <div
+                className="mb-2 flex flex-wrap gap-2"
+                role="group"
+                aria-label="Suggested prompts"
+              >
+                {suggestedQuestions.map((question, index) => (
+                  <Badge
+                    key={index}
+                    asChild
+                    variant="outline"
+                    className="h-auto max-w-full min-w-0 cursor-pointer rounded-full py-1.5 pl-3 pr-3 text-left text-xs font-normal shadow-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  >
+                    <button
+                      type="button"
+                      className="inline-flex min-w-0 max-w-full text-left outline-none"
+                      onClick={() => handleSend(question)}
                     >
-                      <span className="min-w-0 truncate">{pageContextLabel}</span>
-                    </Badge>
-                  ) : null}
+                      <span className="min-w-0 whitespace-normal text-left leading-snug">
+                        {question}
+                      </span>
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            ) : null}
+            <section className="rounded-3xl border bg-background text-foreground transition-shadow focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/20">
+                <div className="space-y-2 p-4">
                   <Textarea
                     placeholder={placeholder || "Ask a question\u2026"}
                     value={query + (chatVoice.isListening && chatVoice.interimText ? chatVoice.interimText : "")}
@@ -1226,13 +1401,11 @@ export function DashboardChatPanel({
                     <DropdownMenu>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <span className="inline-flex">
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-                                <Plus className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                          </span>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
                         </TooltipTrigger>
                         <TooltipContent side="top">Attach</TooltipContent>
                       </Tooltip>
@@ -1257,11 +1430,19 @@ export function DashboardChatPanel({
                         <TooltipTrigger asChild>
                           <Button
                             size="icon"
-                            variant={chatVoice.isListening ? "destructive" : query.trim() ? "default" : "outline"}
+                            variant={
+                              chatVoice.isListening || showComposerStop
+                                ? "destructive"
+                                : query.trim()
+                                  ? "default"
+                                  : "outline"
+                            }
                             className={`h-8 w-8 rounded-lg ${chatVoice.isListening ? "animate-pulse" : ""}`}
                             onClick={() => {
                               if (chatVoice.isListening) {
                                 chatVoice.stop();
+                              } else if (showComposerStop) {
+                                handleStopAssistant();
                               } else if (query.trim()) {
                                 handleSend();
                               } else if (chatVoice.isSupported) {
@@ -1273,6 +1454,8 @@ export function DashboardChatPanel({
                           >
                             {chatVoice.isListening ? (
                               <Square className="h-4 w-4" />
+                            ) : showComposerStop ? (
+                              <Square className="h-4 w-4" />
                             ) : query.trim() ? (
                               <ArrowRight className="h-4 w-4" />
                             ) : (
@@ -1281,14 +1464,19 @@ export function DashboardChatPanel({
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent side="top">
-                          {chatVoice.isListening ? "Stop recording" : query.trim() ? "Send" : "Voice input"}
+                          {chatVoice.isListening
+                            ? "Stop recording"
+                            : showComposerStop
+                              ? "Stop generating"
+                              : query.trim()
+                                ? "Send"
+                                : "Voice input"}
                         </TooltipContent>
                       </Tooltip>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
+            </section>
           </div>
         </div>
 
@@ -1307,9 +1495,9 @@ export function DashboardChatPanel({
           portalContainer={panelPortalEl}
           hideCloseButton
           aria-describedby={undefined}
-          className="bg-neutral-0 border-border"
+          className="bg-neutral-0 border-border rounded-xl shadow-md"
         >
-          <div className="shrink-0 px-4 flex items-center justify-between gap-2 h-[60px] min-w-0 border-b border-border bg-neutral-0">
+          <div className="shrink-0 px-4 flex items-center justify-between gap-2 h-[60px] min-w-0 bg-neutral-0">
             <SheetTitle className="min-w-0 flex-1 text-sm font-semibold tracking-tight text-foreground text-left">
               Chat History
             </SheetTitle>

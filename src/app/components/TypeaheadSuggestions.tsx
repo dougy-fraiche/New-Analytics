@@ -116,7 +116,7 @@ function highlightMatch(text: string, query: string, isHighlighted: boolean) {
       {before}
       <span
         className={cn(
-          "font-semibold",
+          "font-normal",
           isHighlighted ? "text-sidebar-accent-foreground" : "text-foreground",
         )}
       >

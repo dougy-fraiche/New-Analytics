@@ -29,7 +29,7 @@ export function KpiMetricValueTitle({
     >
       <span className="min-w-0 truncate">{num}</span>
       {unit ? (
-        <span className="shrink-0 text-[0.5em] font-medium tabular-nums text-foreground">
+        <span className="shrink-0 text-[0.5em] font-normal tabular-nums text-foreground">
           {unit}
         </span>
       ) : null}

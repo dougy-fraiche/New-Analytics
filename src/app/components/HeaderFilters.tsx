@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import { SelectValue } from "./ui/select";
 
-const filterLabelClassName = "shrink-0 font-medium text-muted-foreground";
+const filterLabelClassName = "shrink-0 font-normal text-muted-foreground";
 
 export function FilterFieldLabel({ children }: { children: ReactNode }) {
   return <span className={filterLabelClassName}>{children}</span>;

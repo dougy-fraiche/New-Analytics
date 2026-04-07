@@ -132,13 +132,15 @@
     --color-switch-background: var(--switch-background);
     --color-page: var(--page-background);
 
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
-    --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
-    --radius-3xl: calc(var(--radius) * 2.2);
-    --radius-4xl: calc(var(--radius) * 2.6);
+    /* Border radius — Figma scale (16px root): xs 4, sm 6, md 8, lg 12, xl 16 */
+    --radius-xs: 0.25rem;
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-2xl: 1.25rem;
+    --radius-3xl: 1.5rem;
+    --radius-4xl: 2rem;
 }
 
 :root {
@@ -258,7 +260,7 @@
      * KPI mini line / area charts — Figma AI Agent (node 1:8029), Color/Primary/P500.
      */
     --kpi-line: #6e56cf;
-    --radius: 0.45rem;
+    --radius: 0.5rem;
     --sidebar: var(--neutral-0);
     --sidebar-foreground: var(--neutral-800);
     --sidebar-primary: var(--primary-600);
@@ -267,7 +269,7 @@
     --sidebar-accent-foreground: var(--primary-900);
     --sidebar-border: var(--neutral-100);
     --sidebar-ring: var(--neutral-400);
-    --page-background: var(--neutral-25);
+    --page-background: var(--neutral-50);
 }
 
 .dark {

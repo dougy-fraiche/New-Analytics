@@ -1,6 +1,21 @@
 import { useMemo, useState } from "react";
-import { Sparkles, LayoutDashboard, BarChart3, Bookmark, MoreVertical, Pencil, Trash2, Check, RotateCcw, LineChart } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { motion, useReducedMotion } from "motion/react";
+import {
+  Sparkles,
+  LayoutDashboard,
+  BarChart3,
+  Bookmark,
+  MoreVertical,
+  Pencil,
+  Trash2,
+  Check,
+  RotateCcw,
+  LineChart,
+  CircleGauge,
+  TrendingUp,
+  TrendingDown,
+} from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import {
@@ -20,7 +35,12 @@ import { DashboardData } from "../contexts/ConversationContext";
 import { DashboardChartGrid } from "./ChartVariants";
 import { WidgetAIProvider } from "../contexts/WidgetAIContext";
 import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
-import { PageContent, PageHeader } from "./PageChrome";
+import {
+  PageHeader,
+  pageMainColumnClassName,
+  pageRootListScrollGutterClassName,
+} from "./PageChrome";
+import { cn } from "./ui/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { useContainerBreakpoint } from "../hooks/useContainerBreakpoint";
 import {
@@ -36,6 +56,34 @@ import {
   type DashboardTeamFilter,
 } from "../data/dashboard-filters";
 import { LabeledFilterInline, LabeledSelectValue } from "./HeaderFilters";
+import type { ChartRow } from "../types/conversation-types";
+
+/** Stable fallbacks so chart datasets stay referentially stable across parent re-renders (e.g. Explore typewriter). */
+const DEFAULT_CONVERSATION_TREND: ChartRow[] = [
+  { date: "Jan 6", interactions: 3842 },
+  { date: "Jan 13", interactions: 4156 },
+  { date: "Jan 20", interactions: 3987 },
+  { date: "Jan 27", interactions: 4523 },
+  { date: "Feb 3", interactions: 4891 },
+  { date: "Feb 10", interactions: 5234 },
+  { date: "Feb 17", interactions: 4978 },
+  { date: "Feb 24", interactions: 5412 },
+  { date: "Mar 3", interactions: 5687 },
+  { date: "Mar 10", interactions: 5321 },
+  { date: "Mar 17", interactions: 5843 },
+  { date: "Mar 24", interactions: 6102 },
+];
+
+const DEFAULT_CONVERSATION_BREAKDOWN: ChartRow[] = [
+  { category: "Password Reset", volume: 1842 },
+  { category: "Billing Support", volume: 1356 },
+  { category: "Product Inquiry", volume: 987 },
+  { category: "Shipping Status", volume: 764 },
+  { category: "Returns & Refunds", volume: 623 },
+];
+import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
+import { KpiSparkline, KPI_SPARKLINE_SERIES } from "./KpiSparkline";
+import { KpiMetricValueTitle } from "./KpiMetricValueTitle";
 
 interface ConversationDashboardAreaProps {
   isThinking: boolean;
@@ -53,12 +101,117 @@ interface ConversationDashboardAreaProps {
   onDelete?: () => void;
 }
 
-function ThinkingAnimation() {
+const DASHBOARD_BUILD_BAR_HEIGHTS = [34, 62, 48, 78, 55, 70, 41, 66];
+
+/** Shown while the assistant is generating the first dashboard payload (Explore → conversation). */
+function DashboardBuildingAnimation() {
+  const reduceMotion = useReducedMotion() ?? false;
+  const barEase = [0.22, 1, 0.36, 1] as const;
+  const barDuration = reduceMotion ? 0.01 : 0.55;
+  const barStagger = reduceMotion ? 0 : 0.055;
+
   return (
-    <div className="flex h-full items-center justify-center p-8">
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <Sparkles className="h-4 w-4 text-primary" />
-        <span className="text-sm">AI is preparing your dashboard</span>
+    <div
+      className="flex h-full min-h-[min(320px,50vh)] flex-col items-center justify-center gap-8 p-6"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      aria-label="AI is preparing your dashboard"
+    >
+      <div className="relative w-full max-w-[320px] overflow-hidden rounded-xl border border-primary/25 bg-gradient-to-b from-primary/[0.06] via-muted/30 to-muted/50 p-5 shadow-sm">
+        {!reduceMotion ? (
+          <motion.div
+            className="pointer-events-none absolute inset-y-2 left-0 w-[42%] bg-gradient-to-r from-transparent via-primary/18 to-transparent"
+            initial={{ x: "-100%" }}
+            animate={{ x: "280%" }}
+            transition={{ duration: 2.4, repeat: Infinity, ease: "linear" }}
+            aria-hidden
+          />
+        ) : null}
+
+        <div className="relative flex flex-col gap-4">
+          <div className="space-y-2">
+            <motion.div
+              className="h-2.5 rounded-md bg-primary/30"
+              initial={{ scaleX: reduceMotion ? 1 : 0 }}
+              animate={{ scaleX: 1 }}
+              transition={{
+                duration: reduceMotion ? 0.01 : 0.45,
+                ease: barEase,
+                delay: reduceMotion ? 0 : 0.05,
+              }}
+              style={{ transformOrigin: "left center" }}
+            />
+            <motion.div
+              className="h-2 w-[82%] rounded-md bg-muted-foreground/18"
+              initial={{ scaleX: reduceMotion ? 1 : 0 }}
+              animate={{ scaleX: 1 }}
+              transition={{
+                duration: reduceMotion ? 0.01 : 0.45,
+                ease: barEase,
+                delay: reduceMotion ? 0 : 0.12,
+              }}
+              style={{ transformOrigin: "left center" }}
+            />
+          </div>
+
+          <div className="flex h-[7.5rem] items-end gap-1.5 px-0.5">
+            {DASHBOARD_BUILD_BAR_HEIGHTS.map((pct, i) => (
+              <motion.div
+                key={i}
+                className="min-h-0 flex-1 rounded-t-[3px] bg-primary/50 shadow-[0_-1px_0_0_rgba(0,0,0,0.06)] dark:bg-primary/45"
+                initial={{ height: reduceMotion ? `${pct}%` : "0%" }}
+                animate={{ height: `${pct}%` }}
+                transition={{
+                  duration: barDuration,
+                  ease: barEase,
+                  delay: reduceMotion ? 0 : 0.14 + barStagger * i,
+                }}
+              />
+            ))}
+          </div>
+
+          <div className="flex gap-2 pt-0.5">
+            {[0, 1, 2].map((i) => (
+              <motion.div
+                key={i}
+                className="h-10 flex-1 rounded-lg border border-border/70 bg-background/85 dark:bg-background/40"
+                initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={
+                  reduceMotion
+                    ? { duration: 0.01 }
+                    : {
+                        type: "spring",
+                        stiffness: 420,
+                        damping: 28,
+                        delay: 0.55 + i * 0.07,
+                      }
+                }
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex max-w-sm flex-col items-center gap-1.5 text-center">
+        <div className="flex items-center gap-2 text-foreground">
+          <motion.span
+            aria-hidden
+            animate={reduceMotion ? {} : { rotate: [0, 10, -8, 0] }}
+            transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <Sparkles className="h-4 w-4 text-primary" />
+          </motion.span>
+          <span className="text-sm font-medium">AI is preparing your dashboard</span>
+        </div>
+        <motion.p
+          className="text-xs text-muted-foreground"
+          animate={reduceMotion ? {} : { opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+        >
+          Building charts and layout…
+        </motion.p>
       </div>
     </div>
   );
@@ -84,36 +237,30 @@ function EmptyDashboardState() {
 
         {/* Hint cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 max-w-lg">
-          <div>
-            <Card className="border-dashed">
-              <CardContent className="p-4 text-center">
-                <BarChart3 className="h-5 w-5 text-muted-foreground/50 mx-auto mb-1" />
-                <p className="text-xs text-muted-foreground">
-                  Ask for trends
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-          <div>
-            <Card className="border-dashed">
-              <CardContent className="p-4 text-center">
-                <Sparkles className="h-5 w-5 text-muted-foreground/50 mx-auto mb-1" />
-                <p className="text-xs text-muted-foreground">
-                  Request insights
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-          <div>
-            <Card className="border-dashed">
-              <CardContent className="p-4 text-center">
-                <LayoutDashboard className="h-5 w-5 text-muted-foreground/50 mx-auto mb-1" />
-                <p className="text-xs text-muted-foreground">
-                  Create a dashboard
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+          <Card className="border-dashed">
+            <CardContent className="p-4 text-center">
+              <BarChart3 className="h-5 w-5 text-muted-foreground/50 mx-auto mb-1" />
+              <p className="text-xs text-muted-foreground">
+                Ask for trends
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="border-dashed">
+            <CardContent className="p-4 text-center">
+              <Sparkles className="h-5 w-5 text-muted-foreground/50 mx-auto mb-1" />
+              <p className="text-xs text-muted-foreground">
+                Request insights
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="border-dashed">
+            <CardContent className="p-4 text-center">
+              <LayoutDashboard className="h-5 w-5 text-muted-foreground/50 mx-auto mb-1" />
+              <p className="text-xs text-muted-foreground">
+                Create a dashboard
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
@@ -146,36 +293,47 @@ function DashboardContent({
     [dateRange, team, product],
   );
 
-  // Generate default trend data if not provided
-  const trendData = dashboard.chartData?.trend || [
-    { date: "Jan 6", interactions: 3842 },
-    { date: "Jan 13", interactions: 4156 },
-    { date: "Jan 20", interactions: 3987 },
-    { date: "Jan 27", interactions: 4523 },
-    { date: "Feb 3", interactions: 4891 },
-    { date: "Feb 10", interactions: 5234 },
-    { date: "Feb 17", interactions: 4978 },
-    { date: "Feb 24", interactions: 5412 },
-    { date: "Mar 3", interactions: 5687 },
-    { date: "Mar 10", interactions: 5321 },
-    { date: "Mar 17", interactions: 5843 },
-    { date: "Mar 24", interactions: 6102 },
-  ];
+  const trendFromDashboard = dashboard.chartData?.trend;
+  const breakdownFromDashboard = dashboard.chartData?.breakdown;
 
-  // Generate default breakdown data if not provided
-  const breakdownData = dashboard.chartData?.breakdown || [
-    { category: "Password Reset", volume: 1842 },
-    { category: "Billing Support", volume: 1356 },
-    { category: "Product Inquiry", volume: 987 },
-    { category: "Shipping Status", volume: 764 },
-    { category: "Returns & Refunds", volume: 623 },
-  ];
+  const trendData = useMemo(
+    () =>
+      trendFromDashboard && trendFromDashboard.length > 0
+        ? trendFromDashboard
+        : DEFAULT_CONVERSATION_TREND,
+    [trendFromDashboard],
+  );
+
+  const breakdownData = useMemo(
+    () =>
+      breakdownFromDashboard && breakdownFromDashboard.length > 0
+        ? breakdownFromDashboard
+        : DEFAULT_CONVERSATION_BREAKDOWN,
+    [breakdownFromDashboard],
+  );
+
+  const chartTrendDataset = useMemo(
+    () => ({
+      data: trendData,
+      xKey: "date",
+      yKey: "interactions",
+    }),
+    [trendData],
+  );
+
+  const chartCategoryDataset = useMemo(
+    () => ({
+      data: breakdownData,
+      xKey: "category",
+      yKey: "volume",
+    }),
+    [breakdownData],
+  );
 
   return (
     <div ref={dashboardContentRef} key="dashboard-content" className="flex h-full min-h-0 flex-col">
       <PageHeader>
-        <div>
-          <div className="flex items-center gap-2">
+          <section className="flex items-center gap-2">
             <h1 className="text-3xl tracking-tight">{dashboard.title}</h1>
             <div className="ml-auto flex items-center gap-2 shrink-0">
               {isSaved ? (
@@ -192,13 +350,11 @@ function DashboardContent({
               <DropdownMenu>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="inline-flex">
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="icon" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                    </span>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="icon" className="h-8 w-8">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">Dashboard options</TooltipContent>
                 </Tooltip>
@@ -214,7 +370,7 @@ function DashboardContent({
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-          </div>
+          </section>
           {dashboard.description && (
             <p className="text-muted-foreground mt-1">{dashboard.description}</p>
           )}
@@ -282,33 +438,153 @@ function DashboardContent({
               </Button>
             )}
           </div>
-        </div>
       </PageHeader>
 
       <div className="min-h-0 flex-1 overflow-auto">
-        <PageContent className="space-y-4 px-4 pt-6 pb-8 md:px-8">
+        <div className={cn(pageRootListScrollGutterClassName, "pb-8")}>
+        <div className={cn(pageMainColumnClassName, "space-y-4")}>
         <HeaderAIInsightsRow dashboardId={dashboard.id} dashboardData={dashboard} />
-        {/* Key Metrics with stagger animation */}
-        {dashboard.metrics && dashboard.metrics.length > 0 && (
-          <div
-            className={`grid gap-4 ${
-              isCompactDashboard
-                ? "grid-cols-1"
-                : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
-            }`}
-          >
-            {dashboard.metrics.map((metric, idx) => (
-              <div key={idx}>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardDescription>{metric.label}</CardDescription>
-                    <CardTitle className="text-3xl">{metric.value}</CardTitle>
-                  </CardHeader>
-                </Card>
+
+        <div className="flex flex-wrap items-center gap-4 !mt-8">
+          <h3 className="flex items-center gap-2 tracking-tight">
+            <CircleGauge className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+            Key Performance Indicators
+          </h3>
+        </div>
+
+        <div
+          className={`grid gap-4 ${
+            isCompactDashboard
+              ? "grid-cols-1"
+              : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
+          }`}
+        >
+          <Card className="group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
+            <CardHeader className="pb-0">
+              <div className="flex items-center gap-2">
+                <CardDescription className="flex-1">Total Escalations</CardDescription>
+                <WidgetAskAIAndOverflow
+                  widgetTitle="Total Escalations"
+                  chartType="metric"
+                  widgetAnchorId={`${dashboard.id}-kpi-total-escalations`}
+                  tooltipLabel="Ask AI about this metric"
+                />
               </div>
-            ))}
-          </div>
-        )}
+              <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
+                <KpiMetricValueTitle value="260" />
+                <Badge
+                  variant="secondary"
+                  className="shrink-0 border-transparent bg-emerald-600 text-xs text-white dark:bg-emerald-600 dark:text-white"
+                >
+                  <span className="inline-flex items-center gap-1">
+                    <TrendingUp className="h-3 w-3" />
+                    +12%
+                  </span>
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <KpiSparkline
+                values={[...KPI_SPARKLINE_SERIES.totalEscalations]}
+                seriesName="Escalations"
+                formatValue={(v) => v.toLocaleString()}
+              />
+            </CardContent>
+          </Card>
+
+          <Card className="group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
+            <CardHeader className="pb-0">
+              <div className="flex items-center gap-2">
+                <CardDescription className="flex-1">Avg Resolution Time</CardDescription>
+                <WidgetAskAIAndOverflow
+                  widgetTitle="Avg Resolution Time"
+                  chartType="metric"
+                  widgetAnchorId={`${dashboard.id}-kpi-avg-resolution`}
+                  tooltipLabel="Ask AI about this metric"
+                />
+              </div>
+              <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
+                <KpiMetricValueTitle value="4.3h" />
+                <Badge
+                  variant="secondary"
+                  className="shrink-0 border-transparent bg-red-600 text-xs text-white dark:bg-red-600 dark:text-white"
+                >
+                  <span className="inline-flex items-center gap-1">
+                    <TrendingDown className="h-3 w-3" />
+                    -8%
+                  </span>
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <KpiSparkline
+                values={[...KPI_SPARKLINE_SERIES.avgResolutionHours]}
+                seriesName="Avg. resolution"
+                formatValue={(v) => `${v.toFixed(1)} h`}
+              />
+            </CardContent>
+          </Card>
+
+          <Card className="group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
+            <CardHeader className="pb-0">
+              <div className="flex items-center gap-2">
+                <CardDescription className="flex-1">Customer Satisfaction</CardDescription>
+                <WidgetAskAIAndOverflow
+                  widgetTitle="Customer Satisfaction"
+                  chartType="metric"
+                  widgetAnchorId={`${dashboard.id}-kpi-csat`}
+                  tooltipLabel="Ask AI about this metric"
+                />
+              </div>
+              <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
+                <KpiMetricValueTitle value="94%" />
+                <Badge
+                  variant="secondary"
+                  className="shrink-0 border-transparent bg-emerald-600 text-xs text-white dark:bg-emerald-600 dark:text-white"
+                >
+                  <span className="inline-flex items-center gap-1">
+                    <TrendingUp className="h-3 w-3" />
+                    +2%
+                  </span>
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <KpiSparkline
+                values={[...KPI_SPARKLINE_SERIES.customerSatisfactionPct]}
+                seriesName="Satisfaction"
+                formatValue={(v) => `${v.toFixed(1)}%`}
+              />
+            </CardContent>
+          </Card>
+
+          <Card className="group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
+            <CardHeader className="pb-0">
+              <div className="flex items-center gap-2">
+                <CardDescription className="flex-1">Resolution Rate</CardDescription>
+                <WidgetAskAIAndOverflow
+                  widgetTitle="Resolution Rate"
+                  chartType="metric"
+                  widgetAnchorId={`${dashboard.id}-kpi-resolution-rate`}
+                  tooltipLabel="Ask AI about this metric"
+                />
+              </div>
+              <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
+                <KpiMetricValueTitle value="87%" />
+                <Badge variant="secondary" className="shrink-0 text-xs">
+                  No change
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <KpiSparkline
+                values={[...KPI_SPARKLINE_SERIES.resolutionRatePct]}
+                seriesName="Resolution rate"
+                formatValue={(v) => `${v.toFixed(1)}%`}
+              />
+            </CardContent>
+          </Card>
+        </div>
 
         <h3 className="!mt-8 flex items-center gap-2 tracking-tight">
           <LineChart className="h-4 w-4 shrink-0 text-primary" aria-hidden />
@@ -318,10 +594,11 @@ function DashboardContent({
         {/* Randomized Chart Grid */}
         <DashboardChartGrid
           dashboardId={dashboard.id}
-          trend={{ data: trendData, xKey: "date", yKey: "interactions" }}
-          category={{ data: breakdownData, xKey: "category", yKey: "volume" }}
+          trend={chartTrendDataset}
+          category={chartCategoryDataset}
         />
-        </PageContent>
+        </div>
+        </div>
       </div>
     </div>
   );
@@ -338,7 +615,7 @@ export function ConversationDashboardArea({
 }: ConversationDashboardAreaProps) {
   // Determine what to show
   if (isThinking && !dashboardData) {
-    return <ThinkingAnimation />;
+    return <DashboardBuildingAnimation />;
   }
 
   if (dashboardData) {

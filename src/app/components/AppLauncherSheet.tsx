@@ -99,18 +99,16 @@ export function AppLauncherSheet() {
     <Sheet open={open} onOpenChange={setOpen}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="inline-flex">
-            <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8"
-                aria-label="Applications"
-              >
-                <Grip className="h-4 w-4" />
-              </Button>
-            </SheetTrigger>
-          </span>
+          <SheetTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              aria-label="Applications"
+            >
+              <Grip className="h-4 w-4" />
+            </Button>
+          </SheetTrigger>
         </TooltipTrigger>
         <TooltipContent side="bottom">Applications</TooltipContent>
       </Tooltip>
@@ -128,7 +126,7 @@ export function AppLauncherSheet() {
         <ScrollArea className="flex-1 min-h-0">
           <div className="py-1">
             {APP_CATEGORIES.map((category, catIdx) => (
-              <div key={category.label}>
+              <section key={category.label}>
                 {catIdx > 0 && <Separator />}
                 <div className="px-2 py-1">
                   <p className="px-3 py-2 text-xs text-muted-foreground uppercase tracking-wider" style={{ fontWeight: 600 }}>
@@ -155,7 +153,7 @@ export function AppLauncherSheet() {
                     );
                   })}
                 </div>
-              </div>
+              </section>
             ))}
           </div>
         </ScrollArea>

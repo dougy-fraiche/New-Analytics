@@ -243,11 +243,11 @@ export function WidgetAIPromptButton({
     <div className="space-y-2">
       <div className="flex flex-col gap-0.5 mb-2">
         <span className="text-xs text-muted-foreground truncate">
-          Ask about <span className="font-medium text-foreground">{widgetTitle}</span>
+          Ask about <span className="font-normal text-foreground">{widgetTitle}</span>
         </span>
         {selectedKpiLabel && (
           <span className="text-xs text-muted-foreground truncate">
-            Selected: <span className="font-medium text-foreground">{selectedKpiLabel}</span>
+            Selected: <span className="font-normal text-foreground">{selectedKpiLabel}</span>
           </span>
         )}
       </div>
@@ -372,23 +372,21 @@ export function WidgetAIPromptButton({
       <Popover open={radixPopoverOpen} onOpenChange={setOpen} modal={false}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className="inline-flex">
-              <PopoverTrigger asChild>
-                <Button
-                  ref={triggerRef}
-                  variant="ghost"
-                  size="icon-xs"
-                  className={cn(
-                    "shrink-0 text-muted-foreground transition-colors hover:text-primary",
-                    triggerClassName,
-                  )}
-                  aria-expanded={radixPopoverOpen || isKpiPortal}
-                  aria-haspopup="dialog"
-                >
-                  <Sparkles className="shrink-0" />
-                </Button>
-              </PopoverTrigger>
-            </span>
+            <PopoverTrigger asChild>
+              <Button
+                ref={triggerRef}
+                variant="ghost"
+                size="icon-xs"
+                className={cn(
+                  "shrink-0 text-muted-foreground transition-colors hover:text-primary",
+                  triggerClassName,
+                )}
+                aria-expanded={radixPopoverOpen || isKpiPortal}
+                aria-haspopup="dialog"
+              >
+                <Sparkles className="shrink-0" />
+              </Button>
+            </PopoverTrigger>
           </TooltipTrigger>
           <TooltipContent side={tooltipSide}>{tooltipLabel}</TooltipContent>
         </Tooltip>

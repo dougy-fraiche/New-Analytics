@@ -5,13 +5,16 @@ import {
   Clock,
   XCircle,
   Loader2,
-  ArrowUpRight,
   Search,
   RotateCcw,
-  Trash2,
   MoreHorizontal,
 } from "lucide-react";
-import { PageContent, PageHeader } from "./PageChrome";
+import {
+  PageHeader,
+  pageMainColumnClassName,
+  pageRootListScrollGutterClassName,
+} from "./PageChrome";
+import { cn } from "./ui/utils";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import {
@@ -22,7 +25,6 @@ import {
   EmptyDescription,
 } from "./ui/empty";
 import { Input } from "./ui/input";
-import { Checkbox } from "./ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -39,8 +41,6 @@ import {
   TableRow,
   tableOverflowMenuColumnClassName,
 } from "./ui/table";
-import { toast } from "sonner";
-import { BulkActionBar } from "./BulkActionBar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { PageTransition } from "./PageTransition";
 import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
@@ -69,7 +69,7 @@ const initialActions: ActionRecord[] = [
   {
     id: "act-001",
     name: "Deploy Account Verification Agent",
-    type: "Agent Deployment",
+    type: "AI Agent",
     status: "completed",
     triggeredBy: "John Doe",
     startedAt: "Feb 20, 2026 09:14 AM",
@@ -81,7 +81,7 @@ const initialActions: ActionRecord[] = [
   {
     id: "act-002",
     name: "Update Knowledge Base — Password Reset",
-    type: "Knowledge Update",
+    type: "Deterministic Process",
     status: "completed",
     triggeredBy: "Emily Rodriguez",
     startedAt: "Feb 20, 2026 08:45 AM",
@@ -93,9 +93,9 @@ const initialActions: ActionRecord[] = [
   {
     id: "act-003",
     name: "Retrain Escalation Classifier",
-    type: "Model Training",
+    type: "AI Agent",
     status: "in_progress",
-    triggeredBy: "System (Scheduled)",
+    triggeredBy: "Alex Morgan",
     startedAt: "Feb 20, 2026 08:00 AM",
     completedAt: null,
     impactBadge: "+4%",
@@ -105,7 +105,7 @@ const initialActions: ActionRecord[] = [
   {
     id: "act-004",
     name: "Export Q4 Analytics Report",
-    type: "Report Export",
+    type: "Deterministic Process",
     status: "completed",
     triggeredBy: "Sarah Johnson",
     startedAt: "Feb 19, 2026 04:30 PM",
@@ -117,7 +117,7 @@ const initialActions: ActionRecord[] = [
   {
     id: "act-005",
     name: "Bulk Reassign Billing Tickets",
-    type: "Ticket Automation",
+    type: "AI Agent",
     status: "failed",
     triggeredBy: "Michael Chen",
     startedAt: "Feb 19, 2026 02:10 PM",
@@ -129,7 +129,7 @@ const initialActions: ActionRecord[] = [
   {
     id: "act-006",
     name: "Enable Copilot for Technical Team",
-    type: "Configuration",
+    type: "AI Agent",
     status: "completed",
     triggeredBy: "John Doe",
     startedAt: "Feb 19, 2026 11:00 AM",
@@ -141,9 +141,9 @@ const initialActions: ActionRecord[] = [
   {
     id: "act-007",
     name: "Generate Weekly Digest",
-    type: "Report Export",
+    type: "Deterministic Process",
     status: "pending",
-    triggeredBy: "System (Scheduled)",
+    triggeredBy: "Priya Patel",
     startedAt: "Feb 21, 2026 06:00 AM",
     completedAt: null,
     impactBadge: "Weekly",
@@ -153,9 +153,9 @@ const initialActions: ActionRecord[] = [
   {
     id: "act-008",
     name: "Archive Stale Conversations",
-    type: "Maintenance",
+    type: "Deterministic Process",
     status: "completed",
-    triggeredBy: "System (Automated)",
+    triggeredBy: "Jordan Lee",
     startedAt: "Feb 18, 2026 12:00 AM",
     completedAt: "Feb 18, 2026 12:02 AM",
     impactBadge: "312",
@@ -165,9 +165,9 @@ const initialActions: ActionRecord[] = [
   {
     id: "act-009",
     name: "Sync CRM Contact Data",
-    type: "Integration",
+    type: "AI Agent",
     status: "completed",
-    triggeredBy: "System (Scheduled)",
+    triggeredBy: "Chris Martinez",
     startedAt: "Feb 18, 2026 03:00 AM",
     completedAt: "Feb 18, 2026 03:04 AM",
     impactBadge: "1,847",
@@ -177,7 +177,7 @@ const initialActions: ActionRecord[] = [
   {
     id: "act-010",
     name: "Deploy Routing Rule Update",
-    type: "Configuration",
+    type: "Deterministic Process",
     status: "failed",
     triggeredBy: "David Kim",
     startedAt: "Feb 17, 2026 03:45 PM",
@@ -201,11 +201,10 @@ const statusConfig: Record<
 const allTypes = Array.from(new Set(initialActions.map((a) => a.type)));
 
 export function ActionsHistoryPage() {
-  const [actions, setActions] = useState<ActionRecord[]>(initialActions);
+  const actions = initialActions;
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const filtered = actions.filter((action) => {
     const matchesSearch =
@@ -227,93 +226,16 @@ export function ActionsHistoryPage() {
     active: actions.filter((a) => a.status === "in_progress" || a.status === "pending").length,
   };
 
-  // Selection helpers
-  const toggleSelected = (id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const toggleAll = () => {
-    if (selectedIds.size === filtered.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(filtered.map((a) => a.id)));
-    }
-  };
-
-  const clearSelection = () => setSelectedIds(new Set());
-
-  const handleBulkRetry = () => {
-    const ids = Array.from(selectedIds);
-    const failedIds = ids.filter((id) => {
-      const a = actions.find((act) => act.id === id);
-      return a && a.status === "failed";
-    });
-    if (failedIds.length === 0) {
-      toast.error("No failed actions selected to retry");
-      return;
-    }
-    setActions((prev) =>
-      prev.map((a) =>
-        failedIds.includes(a.id) ? { ...a, status: "pending" as ActionStatus } : a
-      )
-    );
-    clearSelection();
-    toast.success(`Retrying ${failedIds.length} failed action${failedIds.length > 1 ? "s" : ""}`);
-  };
-
-  const handleBulkRemove = () => {
-    const ids = Array.from(selectedIds);
-    const snapshots = actions.filter((a) => ids.includes(a.id));
-    setActions((prev) => prev.filter((a) => !ids.includes(a.id)));
-    clearSelection();
-    toast.success(`Removed ${ids.length} action${ids.length > 1 ? "s" : ""} from log`, {
-      action: {
-        label: "Undo",
-        onClick: () => {
-          setActions((prev) => [...snapshots, ...prev].sort(
-            (a, b) => initialActions.findIndex((x) => x.id === a.id) - initialActions.findIndex((x) => x.id === b.id)
-          ));
-          toast.success("Actions restored");
-        },
-      },
-    });
-  };
-
-  const handleBulkExport = () => {
-    const ids = Array.from(selectedIds);
-    clearSelection();
-    toast.success(`Exported ${ids.length} action${ids.length > 1 ? "s" : ""} to CSV`);
-  };
-
-  const allChecked = filtered.length > 0 && selectedIds.size === filtered.length;
-  const someChecked = selectedIds.size > 0 && selectedIds.size < filtered.length;
-
-  // Check if any selected items are failed
-  const hasFailedSelected = Array.from(selectedIds).some((id) => {
-    const a = actions.find((act) => act.id === id);
-    return a && a.status === "failed";
-  });
-
   return (
     <WidgetAIProvider persistKey={GLOBAL_AI_ASSISTANT_KEY} ootbTypeId="actions-history">
       <div className="flex flex-col flex-1 min-h-0">
       <PageHeader>
-        <div>
-          <div className="flex items-center gap-2">
+          <section className="flex items-center gap-2">
             <h1 className="text-3xl tracking-tight">History</h1>
             <Badge variant="secondary" className="text-xs px-2 py-0.5 shrink-0">
               {counts.total} total actions
             </Badge>
-            <Button variant="outline" size="sm" className="ml-auto">
-              <ArrowUpRight className="mr-2 h-4 w-4" />
-              Export Log
-            </Button>
-          </div>
+          </section>
             <p className="text-muted-foreground mt-2">
               Audit log of all automated and manual actions across the platform
             </p>
@@ -370,11 +292,10 @@ export function ActionsHistoryPage() {
                 )}
               </div>
             )}
-        </div>
       </PageHeader>
       <div className="flex-1 min-h-0 overflow-auto">
-        <PageContent className="space-y-6 p-8">
-      <PageTransition className="space-y-6">
+        <div className={cn(pageRootListScrollGutterClassName, "pb-8")}>
+      <PageTransition className={cn(pageMainColumnClassName, "space-y-6")}>
       <HeaderAIInsightsRow
         dashboardId="actions-history"
         dashboardData={{
@@ -437,59 +358,16 @@ export function ActionsHistoryPage() {
         <>
       {/* Actions Table */}
       {filtered.length > 0 ? (
-      <div className="space-y-3">
-          <BulkActionBar
-            selectedCount={selectedIds.size}
-            totalCount={filtered.length}
-            onClearSelection={clearSelection}
-          >
-            {hasFailedSelected && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={handleBulkRetry}
-              >
-                <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
-                Retry Failed
-              </Button>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={handleBulkExport}
-            >
-              <ArrowUpRight className="h-3.5 w-3.5 mr-1.5" />
-              Export
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-xs text-destructive hover:text-destructive"
-              onClick={handleBulkRemove}
-            >
-              <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-              Remove
-            </Button>
-          </BulkActionBar>
-
+      <div>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[40px]">
-                  <Checkbox
-                    checked={allChecked ? true : someChecked ? "indeterminate" : false}
-                    onCheckedChange={toggleAll}
-                    aria-label="Select all"
-                  />
-                </TableHead>
-                <TableHead>Action</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Triggered By</TableHead>
-                <TableHead>Started</TableHead>
-                <TableHead>Impact</TableHead>
+                <TableHead className="w-[340px]">Action</TableHead>
+                <TableHead className="w-[180px]">Type</TableHead>
+                <TableHead className="w-[128px]">Status</TableHead>
+                <TableHead className="w-[180px]">Triggered By</TableHead>
+                <TableHead className="w-[196px]">Started</TableHead>
+                <TableHead className="min-w-[22rem] w-[32%]">Impact</TableHead>
                 <TableHead className={tableOverflowMenuColumnClassName}>
                   <span className="sr-only">Actions</span>
                 </TableHead>
@@ -502,27 +380,19 @@ export function ActionsHistoryPage() {
                     <TableRow
                       key={action.id}
                       className="group"
-                      data-state={selectedIds.has(action.id) ? "selected" : undefined}
                     >
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedIds.has(action.id)}
-                          onCheckedChange={() => toggleSelected(action.id)}
-                          aria-label={`Select ${action.name}`}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{action.name}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                      <TableCell className="w-[340px] whitespace-normal">
+                        <section>
+                          <p className="font-medium break-words">{action.name}</p>
+                          <p className="mt-0.5 break-words text-xs leading-snug text-muted-foreground">
                             {action.details}
                           </p>
-                        </div>
+                        </section>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="w-[180px]">
                         <Badge variant="secondary">{action.type}</Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="w-[128px]">
                         <Badge variant={statusInfo.variant}>
                           {action.status === "in_progress" ? (
                             <Loader2
@@ -533,29 +403,14 @@ export function ActionsHistoryPage() {
                           {statusInfo.label}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-sm">{action.triggeredBy}</TableCell>
-                      <TableCell>
+                      <TableCell className="w-[180px] text-sm">{action.triggeredBy}</TableCell>
+                      <TableCell className="w-[196px]">
                         <div className="text-sm text-muted-foreground">{action.startedAt}</div>
                       </TableCell>
-                      <TableCell className="min-w-[10rem] max-w-[16rem] align-top">
-                        <div className="flex flex-col gap-1.5">
-                          <Badge
-                            variant="outline"
-                            className={
-                              action.status === "failed"
-                                ? "w-fit border-destructive/40 bg-destructive/5 px-2 py-0.5 text-xs font-medium text-destructive"
-                                : action.status === "pending" ||
-                                    action.status === "in_progress"
-                                  ? "w-fit border-amber-500/40 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900 dark:border-amber-600/50 dark:bg-amber-950/40 dark:text-amber-200"
-                                  : "w-fit border-green-500/50 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-900 dark:border-green-700 dark:bg-emerald-950/50 dark:text-emerald-200"
-                            }
-                          >
-                            {action.impactBadge}
-                          </Badge>
-                          <p className="text-xs leading-snug text-muted-foreground">
-                            {action.impactDescription}
-                          </p>
-                        </div>
+                      <TableCell className="min-w-[22rem] w-[32%] align-middle whitespace-normal">
+                        <p className="line-clamp-2 break-words text-sm leading-snug text-muted-foreground">
+                          {action.impactDescription}
+                        </p>
                       </TableCell>
                       <TableCell className={tableOverflowMenuColumnClassName}>
                         <Tooltip>
@@ -612,7 +467,7 @@ export function ActionsHistoryPage() {
         </Empty>
       )}
       </PageTransition>
-        </PageContent>
+        </div>
       </div>
     </div>
     </WidgetAIProvider>

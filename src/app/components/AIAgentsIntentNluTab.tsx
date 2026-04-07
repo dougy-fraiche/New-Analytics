@@ -867,17 +867,17 @@ export function AIAgentsIntentNluTab({
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div className="rounded-lg border bg-muted/30 p-3">
-                <p className="text-2xl font-semibold tabular-nums tracking-tight">0.90</p>
+                <p className="text-2xl font-normal tabular-nums tracking-tight">0.90</p>
                 <p className="text-xs text-muted-foreground">+0.03 vs prior</p>
               </div>
               <div className="rounded-lg border bg-muted/30 p-3">
                 <p className="text-xs text-muted-foreground">Max Score Intents</p>
-                <p className="text-xl font-semibold tabular-nums">8</p>
+                <p className="text-xl font-normal tabular-nums">8</p>
                 <p className="text-xs text-muted-foreground">40% of total +2</p>
               </div>
               <div className="rounded-lg border bg-muted/30 p-3">
                 <p className="text-xs text-muted-foreground">Total Intents</p>
-                <p className="text-xl font-semibold tabular-nums">20</p>
+                <p className="text-xl font-normal tabular-nums">20</p>
               </div>
             </div>
             <div className="h-[220px] w-full">
@@ -902,7 +902,7 @@ export function AIAgentsIntentNluTab({
               />
             </div>
             <div className="mt-1 flex flex-wrap items-end gap-2">
-              <span className="text-3xl font-semibold tabular-nums leading-none">34%</span>
+              <span className="text-3xl font-normal tabular-nums leading-none">34%</span>
               <Badge variant="secondary" className={`text-xs ${slotExtractionBadgeToneClass}`}>
                 <span className="inline-flex items-center gap-1">
                   <SlotExtractionTrendIcon className="h-3 w-3" />
@@ -1229,7 +1229,7 @@ export function AIAgentsIntentNluTab({
               />
             </div>
             <div className="mt-2 flex flex-wrap items-end gap-2">
-              <span className="text-3xl font-semibold tabular-nums leading-none tracking-tight">1,842ms</span>
+              <span className="text-3xl font-normal tabular-nums leading-none tracking-tight">1,842ms</span>
               <Badge variant="secondary" className={`text-xs ${nluExecutionBadgeToneClass}`}>
                 <span className="inline-flex items-center gap-1">
                   <NluExecutionTrendIcon className="h-3 w-3" />

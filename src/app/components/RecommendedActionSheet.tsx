@@ -31,7 +31,7 @@ export function RecommendedActionSheet({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[480px] w-full flex flex-col overflow-y-auto max-h-[calc(100vh-2rem)] p-0 gap-0">
-        <DialogHeader className="pb-0 px-4 pt-4 gap-0">
+        <DialogHeader className="pb-4 px-4 pt-4 gap-0">
           <div className="flex items-start gap-3">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
               <IconComp className="h-6 w-6 text-primary" />
@@ -60,13 +60,13 @@ export function RecommendedActionSheet({
               <p className="text-[11px] tracking-wider text-muted-foreground uppercase mb-1">
                 Affected Intent
               </p>
-              <p className="text-sm font-medium">{action.affectedIntent}</p>
+              <p className="text-sm font-normal">{action.affectedIntent}</p>
             </div>
             <div className="rounded-lg border border-border p-3">
               <p className="text-[11px] tracking-wider text-muted-foreground uppercase mb-1">
                 Escalations Today
               </p>
-              <p className="text-sm font-medium">
+              <p className="text-sm font-normal">
                 {action.escalationsToday.toLocaleString()}
               </p>
             </div>
@@ -74,13 +74,13 @@ export function RecommendedActionSheet({
               <p className="text-[11px] tracking-wider text-muted-foreground uppercase mb-1">
                 CSAT Impact
               </p>
-              <p className="text-sm font-medium">{action.csatImpact}</p>
+              <p className="text-sm font-normal">{action.csatImpact}</p>
             </div>
             <div className="rounded-lg border border-border p-3">
               <p className="text-[11px] tracking-wider text-muted-foreground uppercase mb-1">
                 Est. Fix Time
               </p>
-              <p className="text-sm font-medium">{action.estFixTime}</p>
+              <p className="text-sm font-normal">{action.estFixTime}</p>
             </div>
           </div>
 
@@ -100,7 +100,7 @@ export function RecommendedActionSheet({
               <p className="text-[11px] tracking-wider text-muted-foreground uppercase mb-1">
                 Projected ROI
               </p>
-              <p className="text-sm font-medium text-green-700 dark:text-green-400">
+              <p className="text-sm font-normal text-green-700 dark:text-green-400">
                 {action.projectedROI}
               </p>
             </div>
@@ -110,7 +110,7 @@ export function RecommendedActionSheet({
           <div className="rounded-lg border border-border bg-primary/5 p-4">
             <div className="flex items-center gap-1.5 mb-2">
               <Sparkles className="h-4 w-4 text-primary" />
-              <p className="text-xs tracking-wider text-primary uppercase font-medium">
+              <p className="text-xs tracking-wider text-primary uppercase font-normal">
                 What Will Happen
               </p>
             </div>
@@ -124,7 +124,7 @@ export function RecommendedActionSheet({
             <p className="text-[11px] tracking-wider text-muted-foreground uppercase mb-1">
               Projected Impact
             </p>
-            <p className="text-sm font-medium text-green-700 dark:text-green-400">
+            <p className="text-sm font-normal text-green-700 dark:text-green-400">
               {action.impactValue}
             </p>
             <p className="text-xs text-muted-foreground">
@@ -147,15 +147,6 @@ export function RecommendedActionSheet({
           >
             <Bot className="h-4 w-4 mr-2" />
             Deploy Agent Now
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => {
-              toast.info("Configuration preview coming soon");
-            }}
-          >
-            Preview Configuration
           </Button>
           {onDismiss && (
             <Button

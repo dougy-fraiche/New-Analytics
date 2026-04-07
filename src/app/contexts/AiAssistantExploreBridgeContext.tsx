@@ -19,11 +19,14 @@ export type ExploreAiSendHandler = (
 export type AiAssistantExploreBridgeState = {
   isThinking: boolean;
   onSend: ExploreAiSendHandler | null;
+  /** Cancels in-flight phased assistant reply and finalizes the stub message (Explore). */
+  onCancelInFlight: (() => void) | null;
 };
 
 const defaultState: AiAssistantExploreBridgeState = {
   isThinking: false,
   onSend: null,
+  onCancelInFlight: null,
 };
 
 type AiAssistantExploreBridgeContextValue = AiAssistantExploreBridgeState & {

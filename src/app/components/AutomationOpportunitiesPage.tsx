@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarRange,
   ChevronDown,
   Download,
+  Loader2,
   Mail,
   Play,
   MoreVertical,
@@ -32,7 +33,12 @@ import {
   SelectTrigger,
 } from "./ui/select";
 import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
-import { PageContent, PageHeader, pageHeaderTabsFooterClassName } from "./PageChrome";
+import {
+  PageHeader,
+  pageHeaderTabsFooterClassName,
+  pageMainColumnClassName,
+  pageRootListScrollGutterClassName,
+} from "./PageChrome";
 import { PageTransition } from "./PageTransition";
 import { WidgetAIProvider } from "../contexts/WidgetAIContext";
 import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
@@ -69,6 +75,8 @@ import { cn } from "./ui/utils";
 
 const DASHBOARD_ID = "automation-opportunities";
 
+const SUBTOPICS_OPPORTUNITIES_PAGE_SIZE = 20;
+
 /** Matches dashboard KPI / chart widget cards (DashboardPage, ChartVariants). */
 const AUTOMATION_CARD_HOVER =
   "group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30";
@@ -76,6 +84,9 @@ const AUTOMATION_CARD_HOVER =
 /** Match overflow trigger (`h-9 w-9`, `size-4` icon). */
 const AUTOMATION_ASK_AI_TRIGGER_CLASS =
   "size-9 rounded-md [&_svg:not([class*='size-'])]:size-4";
+
+/** 1rem vertical rhythm between header, body, and footer on Top Opportunities cards. */
+const TOP_OPPORTUNITY_CARD_GAP = "gap-4";
 
 const DEFAULT_FILTERS = {
   dateRange: "last-7-days",
@@ -118,7 +129,7 @@ function AnalyzedPeriodSection({
 }) {
   return (
     <section className="space-y-3">
-      <div>
+      <header>
         <h3 className="!mt-8 flex items-center gap-2 text-lg font-medium tracking-tight">
           <CalendarRange className="size-4 shrink-0 text-primary" aria-hidden />
           Analyzed Period
@@ -126,7 +137,7 @@ function AnalyzedPeriodSection({
         {subtitle ? (
           <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
         ) : null}
-      </div>
+      </header>
       {showStatGrid ? (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
           {stats.map((stat) => (
@@ -314,11 +325,9 @@ function TopicRow({
         <div className="px-4 pb-4 space-y-4">
           {topic.bars ? <ActionBarList title={topic.bars.title} items={topic.bars.items} /> : null}
           {topic.secondaryCta ? (
-            <div>
-              <Button variant="outline" size="sm">
-                {topic.secondaryCta.label}
-              </Button>
-            </div>
+            <Button variant="outline" size="sm">
+              {topic.secondaryCta.label}
+            </Button>
           ) : null}
         </div>
       ) : null}
@@ -338,59 +347,55 @@ function SubTopicSection({
   onOpenSampleInteractions: (categoryTitle: string) => void;
 }) {
   return (
-    <div>
-      <div className="flex items-start gap-3 py-3 pl-12 pr-4">
-        <div className="mt-0.5 flex w-6 shrink-0 justify-center">
-          <div className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
-            {index}
-          </div>
+    <div className="flex items-start gap-3 py-3 pl-12 pr-4">
+      <div className="mt-0.5 flex w-6 shrink-0 justify-center">
+        <div className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
+          {index}
         </div>
-        <div className="min-w-0 flex-1">
-          <div>
-            <div className="text-sm font-medium">{topic.title}</div>
-            {topic.subtitle ? (
-              <div className="mt-0.5 text-xs text-muted-foreground">{topic.subtitle}</div>
-            ) : null}
-          </div>
-          <div className="mt-3">
-            <MetricStrip metrics={topic.metrics} />
-          </div>
-          {topic.bars ? (
-            <div className="mt-4 space-y-4">
-              <div className="text-sm font-medium">{topic.bars.title}</div>
-              <div className="space-y-3">
-                {topic.bars.items.map((it) => (
-                  <div key={it.label} className="flex items-center gap-4">
-                    <div className="w-[200px] shrink-0 text-xs text-muted-foreground truncate">
-                      {it.label}
-                    </div>
-                    <div className="flex min-w-0 flex-1 items-center gap-2">
-                      <Progress
-                        value={(it.value / toMax(topic.bars!.items)) * 100}
-                        className="h-2 min-w-0 flex-1 border border-border/60 bg-muted mr-3"
-                        indicatorClassName="rounded-full"
-                      />
-                      <div className="shrink-0 text-xs text-muted-foreground tabular-nums text-right">
-                        {it.value.toLocaleString()}
-                      </div>
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-sm font-medium">{topic.title}</div>
+        {topic.subtitle ? (
+          <div className="mt-0.5 text-xs text-muted-foreground">{topic.subtitle}</div>
+        ) : null}
+        <div className="mt-3">
+          <MetricStrip metrics={topic.metrics} />
+        </div>
+        {topic.bars ? (
+          <div className="mt-4 space-y-4">
+            <div className="text-sm font-medium">{topic.bars.title}</div>
+            <div className="space-y-3">
+              {topic.bars.items.map((it) => (
+                <div key={it.label} className="flex items-center gap-4">
+                  <div className="w-[200px] shrink-0 text-xs text-muted-foreground truncate">
+                    {it.label}
+                  </div>
+                  <div className="flex min-w-0 flex-1 items-center gap-2">
+                    <Progress
+                      value={(it.value / toMax(topic.bars!.items)) * 100}
+                      className="h-2 min-w-0 flex-1 border border-border/60 bg-muted mr-3"
+                      indicatorClassName="rounded-full"
+                    />
+                    <div className="shrink-0 text-xs text-muted-foreground tabular-nums text-right">
+                      {it.value.toLocaleString()}
                     </div>
                   </div>
-                ))}
-              </div>
-              {topic.secondaryCta ? (
-                <Button variant="outline" size="sm">
-                  {topic.secondaryCta.label}
-                </Button>
-              ) : null}
+                </div>
+              ))}
             </div>
-          ) : null}
-        </div>
-        <div className="shrink-0">
-          <OverflowActionsMenu
-            categoryTitle={categoryTitle}
-            onOpenSampleInteractions={onOpenSampleInteractions}
-          />
-        </div>
+            {topic.secondaryCta ? (
+              <Button variant="outline" size="sm">
+                {topic.secondaryCta.label}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+      <div className="shrink-0">
+        <OverflowActionsMenu
+          categoryTitle={categoryTitle}
+          onOpenSampleInteractions={onOpenSampleInteractions}
+        />
       </div>
     </div>
   );
@@ -412,7 +417,7 @@ function AutomationTopicsTabTopicCard({
 }) {
   const canExpand = !!row.bars;
   return (
-    <Card className={cn(AUTOMATION_CARD_HOVER)}>
+    <Card className={cn(AUTOMATION_CARD_HOVER, TOP_OPPORTUNITY_CARD_GAP)}>
       <CardHeader>
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
@@ -493,7 +498,7 @@ function TopOpportunityCard({
   onOpenSampleInteractions: (categoryTitle: string) => void;
 }) {
   return (
-    <Card className={cn(AUTOMATION_CARD_HOVER)}>
+    <Card className={cn(AUTOMATION_CARD_HOVER, TOP_OPPORTUNITY_CARD_GAP)}>
       <CardHeader>
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
@@ -536,13 +541,12 @@ function TopOpportunityCard({
               />
             ) : null}
 
-            {category.topics.length > 0 ? (
-              <div>
-                {category.topics.map((t, idx) => {
+            {category.topics.length > 0
+              ? category.topics.map((t, idx) => {
                   const topicKey = `${category.id}:${t.id}`;
                   const topicOpen = expandedTopicIds.has(topicKey);
                   return (
-                    <div key={t.id}>
+                    <section key={t.id}>
                       <TopicRow
                         topic={t}
                         open={topicOpen}
@@ -559,7 +563,7 @@ function TopOpportunityCard({
                             <Separator className="mb-3" />
                           </div>
                           {(t.subTopics ?? []).map((st, sIdx, arr) => (
-                            <div key={st.id}>
+                            <section key={st.id}>
                               <SubTopicSection
                                 index={sIdx + 1}
                                 topic={st}
@@ -571,15 +575,14 @@ function TopOpportunityCard({
                                   <Separator />
                                 </div>
                               ) : null}
-                            </div>
+                            </section>
                           ))}
                         </div>
                       ) : null}
-                    </div>
+                    </section>
                   );
-                })}
-              </div>
-            ) : null}
+                })
+              : null}
           </div>
         ) : null}
       </CardContent>
@@ -614,6 +617,55 @@ export function AutomationOpportunitiesPage() {
   const [sampleInteractionsOpen, setSampleInteractionsOpen] = useState(false);
   const [sampleInteractionsCategory, setSampleInteractionsCategory] = useState("");
 
+  const automationMainScrollRef = useRef<HTMLDivElement>(null);
+  const [subtopicsLoadedCount, setSubtopicsLoadedCount] = useState(() =>
+    Math.min(SUBTOPICS_OPPORTUNITIES_PAGE_SIZE, automationSubtopicsTabTopicRows.length),
+  );
+  const [subtopicsLoadingMore, setSubtopicsLoadingMore] = useState(false);
+  const subtopicsLoadedCountRef = useRef(subtopicsLoadedCount);
+  const subtopicsLoadingMoreRef = useRef(subtopicsLoadingMore);
+  subtopicsLoadedCountRef.current = subtopicsLoadedCount;
+  subtopicsLoadingMoreRef.current = subtopicsLoadingMore;
+  const subtopicsLoadInFlightRef = useRef(false);
+
+  const visibleSubtopicsTabRows = useMemo(
+    () => automationSubtopicsTabTopicRows.slice(0, subtopicsLoadedCount),
+    [subtopicsLoadedCount],
+  );
+
+  useEffect(() => {
+    if (scope !== "subtopics") return;
+    const el = automationMainScrollRef.current;
+    if (!el) return;
+
+    const BOTTOM_SLACK_PX = 140;
+
+    const tryLoadMore = () => {
+      if (subtopicsLoadInFlightRef.current) return;
+      if (subtopicsLoadedCountRef.current >= automationSubtopicsTabTopicRows.length) return;
+      if (subtopicsLoadingMoreRef.current) return;
+
+      const { scrollTop, scrollHeight, clientHeight } = el;
+      const noOverflow = scrollHeight <= clientHeight + 2;
+      const nearBottom = scrollTop + clientHeight >= scrollHeight - BOTTOM_SLACK_PX;
+      if (!noOverflow && !nearBottom) return;
+
+      subtopicsLoadInFlightRef.current = true;
+      setSubtopicsLoadingMore(true);
+      window.setTimeout(() => {
+        setSubtopicsLoadedCount((c) =>
+          Math.min(c + SUBTOPICS_OPPORTUNITIES_PAGE_SIZE, automationSubtopicsTabTopicRows.length),
+        );
+        setSubtopicsLoadingMore(false);
+        subtopicsLoadInFlightRef.current = false;
+      }, 800);
+    };
+
+    el.addEventListener("scroll", tryLoadMore, { passive: true });
+    requestAnimationFrame(() => tryLoadMore());
+    return () => el.removeEventListener("scroll", tryLoadMore);
+  }, [scope]);
+
   const hasFilterChanges = useMemo(() => {
     return (
       dateRange !== DEFAULT_FILTERS.dateRange ||
@@ -634,12 +686,10 @@ export function AutomationOpportunitiesPage() {
       >
         <div className="flex flex-col flex-1 min-h-0">
           <PageHeader className={pageHeaderTabsFooterClassName}>
-            <div>
-              <h1 className="text-3xl tracking-tight">Automation Opportunities</h1>
-              <p className="text-muted-foreground mt-1">
-                Dashboard view of high-impact opportunities to improve efficiency and customer outcomes.
-              </p>
-            </div>
+            <h1 className="text-3xl tracking-tight">Automation Opportunities</h1>
+            <p className="text-muted-foreground mt-1">
+              Dashboard view of high-impact opportunities to improve efficiency and customer outcomes.
+            </p>
 
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <Select
@@ -798,9 +848,9 @@ export function AutomationOpportunitiesPage() {
             categoryTitle={sampleInteractionsCategory}
           />
 
-          <div className="flex-1 min-h-0 overflow-auto">
-            <PageContent className="space-y-8 p-4 md:p-8">
-              <PageTransition className="space-y-8">
+          <div ref={automationMainScrollRef} className="flex-1 min-h-0 overflow-auto">
+            <div className={cn(pageRootListScrollGutterClassName, "pb-4 md:pb-8")}>
+              <PageTransition className={cn(pageMainColumnClassName, "space-y-8")}>
                 <HeaderAIInsightsRow
                   dashboardId={DASHBOARD_ID}
                   dashboardData={{
@@ -896,7 +946,7 @@ export function AutomationOpportunitiesPage() {
                   <section className="space-y-4">
                     <TopOpportunitiesSectionHeading />
                     <div className="flex flex-col gap-4">
-                      {automationSubtopicsTabTopicRows.map((row) => (
+                      {visibleSubtopicsTabRows.map((row) => (
                         <AutomationTopicsTabTopicCard
                           key={row.id}
                           row={row}
@@ -916,11 +966,20 @@ export function AutomationOpportunitiesPage() {
                           }}
                         />
                       ))}
+                      {subtopicsLoadingMore ? (
+                        <div
+                          className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground"
+                          aria-live="polite"
+                        >
+                          <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+                          Loading more Opportunities…
+                        </div>
+                      ) : null}
                     </div>
                   </section>
                 </TabsContent>
               </PageTransition>
-            </PageContent>
+            </div>
           </div>
         </div>
       </Tabs>

@@ -221,8 +221,8 @@ export const automationTopicsTabTopicRows: TopicsTabTopicRow[] = [
   },
 ];
 
-/** Flat list rows for the Sub-topics tab (Figma: Sub-topics 1 / Sub-topics 2). */
-export const automationSubtopicsTabTopicRows: TopicsTabTopicRow[] = [
+/** Hand-authored rows for the Sub-topics tab (Figma: Sub-topics 1 / Sub-topics 2). */
+const automationSubtopicsHandAuthoredRows: TopicsTabTopicRow[] = [
   {
     id: "subtopics-charge-breakdown",
     title: "Charge Breakdown",
@@ -338,6 +338,84 @@ export const automationSubtopicsTabTopicRows: TopicsTabTopicRow[] = [
       ],
     },
   },
+];
+
+const SUBTOPICS_EXTRA_TITLES = [
+  "Payment Posting Delay",
+  "Refund Status Inquiry",
+  "Autopay Setup",
+  "Minimum Payment Questions",
+  "Credit Limit Review",
+  "Dispute Initial Filing",
+  "Paperless Enrollment",
+  "Statement Delivery Options",
+  "Interest Rate Inquiry",
+  "Payment Reversal Request",
+  "Split Payment Arrangements",
+  "Foreign Transaction Fees",
+  "Cash Advance Limits",
+  "Rewards Redemption",
+  "Merchant Charge Inquiry",
+  "Card Replacement Status",
+  "PIN Reset Request",
+  "Travel Notification",
+  "Authorized User Changes",
+  "Balance Transfer Offers",
+  "Delinquency Notices",
+  "Payment Extension Request",
+  "Tax Document Request",
+  "ACH Return Handling",
+] as const;
+
+function buildAutomationSubtopicsExtraRow(seed: number): TopicsTabTopicRow {
+  const title = SUBTOPICS_EXTRA_TITLES[seed]!;
+  const subVol = Math.max(800, 3900 - seed * 115);
+  const autoVol = Math.round(subVol * (0.82 + (seed % 7) * 0.02));
+  const autoPct = `${(0.45 + (seed % 18) * 0.06).toFixed(1)}%`;
+  const durM = 3 + (seed % 4);
+  const durS = 10 + (seed * 11) % 50;
+  const sent = (4.2 + (seed % 35) / 100).toFixed(2);
+
+  return {
+    id: `subtopics-extra-${seed + 1}`,
+    title,
+    description: `${title} interactions cluster around a narrow set of policy answers and system lookups — strong fit for guided flows, snippets, and exception routing to specialists when rules don’t apply (variant ${seed + 1}).`,
+    sampleInteractionsLabel: title,
+    chipMetrics: [
+      topicsTabChip("totalCalls", "Total Calls", "48,000"),
+      topicsTabChip("categoryVolume", "Sub-topic Volume", subVol.toLocaleString("en-US")),
+      topicsTabChip("automatableVolume", "Automatable Volume", autoVol.toLocaleString("en-US")),
+      topicsTabChip("automatablePercent", "Auto. Potential", autoPct),
+      topicsTabChip("duration", "Duration", `${durM}:${String(durS).padStart(2, "0")}`),
+      topicsTabChip("sentiment", "Sentiment", sent),
+    ],
+    bars: {
+      title: "Agent Actions for This Sub-topic",
+      items: [
+        {
+          label: "Policy or fee explanation",
+          value: 55 + (seed % 25),
+          display: `${55 + (seed % 25)}%`,
+        },
+        {
+          label: "Account or card lookup",
+          value: 30 + (seed % 20),
+          display: `${30 + (seed % 20)}%`,
+        },
+        {
+          label: "Escalation or exception",
+          value: 8 + (seed % 12),
+          display: `${8 + (seed % 12)}%`,
+        },
+      ],
+    },
+  };
+}
+
+/** Flat list rows for the Sub-topics tab — 5 curated + 24 generated (29 total). */
+export const automationSubtopicsTabTopicRows: TopicsTabTopicRow[] = [
+  ...automationSubtopicsHandAuthoredRows,
+  ...Array.from({ length: 24 }, (_, i) => buildAutomationSubtopicsExtraRow(i)),
 ];
 
 const topCategories: TopOpportunityCategory[] = [

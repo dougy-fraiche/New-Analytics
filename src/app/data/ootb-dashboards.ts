@@ -1,15 +1,6 @@
 import {
-  Bot,
   Brain,
-  FileSearch,
-  Sparkles,
-  Cog,
-  CheckSquare,
   Target,
-  Users,
-  BookOpen,
-  Lightbulb,
-  Cpu,
   LayoutDashboard,
   ClipboardCheck,
   type LucideIcon,
@@ -34,44 +25,9 @@ export interface OotbCategory {
 
 export const ootbCategories: OotbCategory[] = [
   {
-    id: "agents",
-    name: "Agents",
-    icon: Users,
-    dashboards: [
-      {
-        id: "agent-queries",
-        name: "Agent Queries",
-        icon: FileSearch,
-        description: "Analyze agent query patterns, volumes, and response effectiveness",
-        lastUpdated: "2 hours ago",
-      },
-      {
-        id: "auto-summary",
-        name: "Auto Summary",
-        icon: Sparkles,
-        description: "Monitor AI-generated conversation summaries and accuracy metrics",
-        lastUpdated: "3 hours ago",
-      },
-      {
-        id: "rules-engine",
-        name: "Rules Engine",
-        icon: Cog,
-        description: "Track rule execution, trigger rates, and automation outcomes",
-        lastUpdated: "1 hour ago",
-      },
-      {
-        id: "task-assist",
-        name: "Task Assist",
-        icon: CheckSquare,
-        description: "Measure task assist adoption, completion rates, and time savings",
-        lastUpdated: "4 hours ago",
-      },
-    ],
-  },
-  {
     id: "ai-agents",
     name: "AI Agents",
-    icon: Bot,
+    icon: Brain,
     pageDescription:
       "End-to-end visibility for your AI agents: health and volume, goals and outcomes, evaluation quality, and intent/NLU performance.",
     dashboards: [
@@ -102,48 +58,6 @@ export const ootbCategories: OotbCategory[] = [
         icon: Brain,
         description: "Track intent recognition accuracy, NLU confidence, and classification metrics",
         lastUpdated: "1 hour ago",
-      },
-    ],
-  },
-  {
-    id: "knowledge-performance",
-    name: "Knowledge Performance",
-    icon: BookOpen,
-    dashboards: [
-      {
-        id: "knowledge-responses",
-        name: "Knowledge Responses",
-        icon: BookOpen,
-        description: "Analyze knowledge base response quality, coverage, and usage patterns",
-        lastUpdated: "3 hours ago",
-      },
-      {
-        id: "improve-knowledge",
-        name: "Improve Knowledge",
-        icon: Lightbulb,
-        description: "Identify knowledge gaps, suggested articles, and improvement opportunities",
-        lastUpdated: "4 hours ago",
-      },
-    ],
-  },
-  {
-    id: "llm-usage",
-    name: "LLM Usage",
-    icon: Cpu,
-    dashboards: [
-      {
-        id: "llm-ai-agent",
-        name: "AI Agent",
-        icon: Bot,
-        description: "Track LLM token usage, costs, and performance for AI agent interactions",
-        lastUpdated: "1 hour ago",
-      },
-      {
-        id: "llm-agent",
-        name: "Agent",
-        icon: Users,
-        description: "Monitor LLM usage for agent-assist features and copilot integrations",
-        lastUpdated: "2 hours ago",
       },
     ],
   },

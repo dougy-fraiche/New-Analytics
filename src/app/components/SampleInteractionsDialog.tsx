@@ -199,7 +199,7 @@ export function SampleInteractionsDialog({
             {sampleInteractionKpis.map((k) => (
               <Card key={k.label}>
                 <CardContent className="space-y-1.5 p-4">
-                  <p className="text-3xl font-semibold tracking-tight tabular-nums text-foreground">{k.value}</p>
+                  <p className="text-3xl font-normal tracking-tight tabular-nums text-foreground">{k.value}</p>
                   <p className="text-xs text-muted-foreground">{k.label}</p>
                 </CardContent>
               </Card>
@@ -224,7 +224,7 @@ export function SampleInteractionsDialog({
               <TableBody>
                 {sampleInteractionRows.map((row) => (
                   <TableRow key={row.id}>
-                    <TableCell className="font-medium">{row.agentName}</TableCell>
+                    <TableCell className="font-normal">{row.agentName}</TableCell>
                     <TableCell>{row.team}</TableCell>
                     <TableCell className="whitespace-pre-wrap">{row.dateTime}</TableCell>
                     <TableCell>{row.duration}</TableCell>

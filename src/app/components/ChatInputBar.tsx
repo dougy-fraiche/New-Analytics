@@ -1,41 +1,18 @@
-import { useState, type LegacyRef, type RefObject } from "react";
-import {
-  Plus,
-  ArrowRight,
-  Mic,
-  Square,
-  Upload,
-  Image,
-  Paperclip,
-  Zap,
-  Telescope,
-  CalendarDays,
-  ChevronDown,
-} from "lucide-react";
+import { type LegacyRef, type RefObject } from "react";
+import { Plus, ArrowRight, Mic, Square, Upload, Image, Paperclip } from "lucide-react";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
-import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { TypeaheadSuggestions } from "./TypeaheadSuggestions";
 import { toast } from "sonner";
 import { useTypingPlaceholder } from "../hooks/useTypingPlaceholder";
 import { placeholderSuffixes } from "../data/explore-data";
-import {
-  DATE_RANGE_CUSTOM_OPTION,
-  DATE_RANGE_LABELS,
-  DATE_RANGE_PRIMARY_OPTIONS,
-  DATE_RANGE_SECONDARY_OPTIONS,
-  type DateRangeOption,
-} from "../data/date-ranges";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
-import { Calendar } from "./ui/calendar";
-import type { DateRange } from "react-day-picker";
 
 interface ChatInputBarProps {
   variant: "hero" | "chat";
@@ -55,9 +32,9 @@ interface ChatInputBarProps {
   onShowTypeahead?: (show: boolean) => void;
   forcedSuggestions?: string[];
   onForcedSuggestionsChange?: (s: string[]) => void;
+  /** Fired when the user picks a row from the hero typeahead (not free‑typed send). */
+  onTypeaheadSuggestionPicked?: () => void;
 }
-
-// Date range options are shared across the app (see `src/app/data/date-ranges.ts`).
 
 export function ChatInputBar({
   variant,
@@ -70,13 +47,9 @@ export function ChatInputBar({
   onShowTypeahead,
   forcedSuggestions = [],
   onForcedSuggestionsChange,
+  onTypeaheadSuggestionPicked,
 }: ChatInputBarProps) {
   const isHero = variant === "hero";
-  const [researchMode, setResearchMode] = useState<"fast" | "deep">("fast");
-  const [dateRange, setDateRange] = useState<DateRangeOption>("last-7-days");
-  const [isDateMenuOpen, setIsDateMenuOpen] = useState(false);
-  const [showCustomRangeCalendar, setShowCustomRangeCalendar] = useState(false);
-  const [customRange, setCustomRange] = useState<DateRange | undefined>();
   // The typing animation runs inside ChatInputBar so only this component
   // re-renders every ~45ms, instead of the entire ExplorePhase tree.
   const animatedSuffix = useTypingPlaceholder(isHero ? placeholderSuffixes : []);
@@ -85,15 +58,9 @@ export function ChatInputBar({
     : "Ask a follow-up question\u2026";
 
   const handleSend = () => {
+    if (voice.isListening) voice.stop();
     if (isHero) onShowTypeahead?.(false);
     onSend();
-  };
-
-  const formatCustomRange = (range: DateRange | undefined) => {
-    if (!range?.from) return "Custom range";
-    const from = range.from.toLocaleDateString();
-    const to = range.to ? range.to.toLocaleDateString() : "Select end";
-    return `${from} - ${to}`;
   };
 
   return (
@@ -141,13 +108,11 @@ export function ChatInputBar({
               <DropdownMenu>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="inline-flex">
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className={`${isHero ? "h-9 w-9" : "h-8 w-8"}`}>
-                          <Plus className={`${isHero ? "h-5 w-5" : "h-4 w-4"}`} />
-                        </Button>
-                      </DropdownMenuTrigger>
-                    </span>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className={`${isHero ? "h-9 w-9" : "h-8 w-8"}`}>
+                        <Plus className={`${isHero ? "h-5 w-5" : "h-4 w-4"}`} />
+                      </Button>
+                    </DropdownMenuTrigger>
                   </TooltipTrigger>
                   <TooltipContent side={isHero ? "bottom" : "top"}>Attach</TooltipContent>
                 </Tooltip>
@@ -164,127 +129,6 @@ export function ChatInputBar({
                     <Paperclip className="h-4 w-4 mr-2" />
                     Attach data source
                   </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <ToggleGroup
-                type="single"
-                value={researchMode}
-                onValueChange={(value) => {
-                  if (value === "fast" || value === "deep") setResearchMode(value);
-                }}
-                variant="default"
-                className="w-auto shrink-0 gap-2 rounded-none bg-transparent"
-                aria-label="Explore mode"
-              >
-                <ToggleGroupItem
-                  value="fast"
-                  aria-label="Fast mode"
-                  className="h-9 !flex-none gap-1.5 rounded-md px-3 py-1 first:rounded-md last:rounded-md"
-                >
-                  <Zap className="h-3.5 w-3.5" />
-                  Fast
-                </ToggleGroupItem>
-                <ToggleGroupItem
-                  value="deep"
-                  aria-label="Deep research mode"
-                  className="h-9 !flex-none gap-1.5 rounded-md px-3 py-1 first:rounded-md last:rounded-md"
-                >
-                  <Telescope className="h-3.5 w-3.5" />
-                  Deep Research
-                </ToggleGroupItem>
-              </ToggleGroup>
-
-              <DropdownMenu
-                open={isDateMenuOpen}
-                onOpenChange={(open) => {
-                  setIsDateMenuOpen(open);
-                  if (open) {
-                    setShowCustomRangeCalendar(dateRange === "custom-range");
-                  } else {
-                    setShowCustomRangeCalendar(false);
-                  }
-                }}
-              >
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="h-9 w-fit max-w-full gap-2 px-3" aria-label="Date range">
-                    <CalendarDays className="h-4 w-4 shrink-0" />
-                    <span className="min-w-0 max-w-[18rem] truncate">
-                      {dateRange === "custom-range"
-                        ? formatCustomRange(customRange)
-                        : DATE_RANGE_LABELS[dateRange]}
-                    </span>
-                    <ChevronDown className="h-4 w-4 shrink-0 opacity-60" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="start"
-                  side={isHero ? "bottom" : "top"}
-                  className={
-                    showCustomRangeCalendar
-                      ? "w-auto max-w-[calc(100vw-2rem)] min-w-0 overflow-visible p-0"
-                      : "w-72"
-                  }
-                >
-                  {showCustomRangeCalendar ? (
-                    <div className="space-y-2 p-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-full justify-start"
-                        onClick={() => setShowCustomRangeCalendar(false)}
-                      >
-                        Presets
-                      </Button>
-                      <Calendar
-                        mode="range"
-                        selected={customRange}
-                        defaultMonth={customRange?.from}
-                        onSelect={(range) => {
-                          setCustomRange(range);
-                          setDateRange("custom-range");
-                        }}
-                        numberOfMonths={2}
-                        className="[--cell-size:2.25rem]"
-                      />
-                    </div>
-                  ) : (
-                    <>
-                      {DATE_RANGE_PRIMARY_OPTIONS.map((opt) => (
-                        <DropdownMenuItem
-                          key={opt}
-                          onClick={() => {
-                            setDateRange(opt);
-                            setIsDateMenuOpen(false);
-                          }}
-                        >
-                          {DATE_RANGE_LABELS[opt]}
-                        </DropdownMenuItem>
-                      ))}
-                      <DropdownMenuSeparator />
-                      {DATE_RANGE_SECONDARY_OPTIONS.map((opt) => (
-                        <DropdownMenuItem
-                          key={opt}
-                          onClick={() => {
-                            setDateRange(opt);
-                            setIsDateMenuOpen(false);
-                          }}
-                        >
-                          {DATE_RANGE_LABELS[opt]}
-                        </DropdownMenuItem>
-                      ))}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onSelect={(event) => {
-                          event.preventDefault();
-                          setDateRange(DATE_RANGE_CUSTOM_OPTION);
-                          setShowCustomRangeCalendar(true);
-                        }}
-                      >
-                        {DATE_RANGE_LABELS[DATE_RANGE_CUSTOM_OPTION]}
-                      </DropdownMenuItem>
-                    </>
-                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -331,6 +175,7 @@ export function ChatInputBar({
         <TypeaheadSuggestions
           query={query}
           onSelect={(suggestion) => {
+            onTypeaheadSuggestionPicked?.();
             onQueryChange(suggestion);
             onForcedSuggestionsChange?.([]);
             onShowTypeahead?.(false);

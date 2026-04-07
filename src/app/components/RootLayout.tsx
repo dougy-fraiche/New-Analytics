@@ -10,37 +10,46 @@ import { DashboardChatProvider } from "../contexts/DashboardChatContext";
 import { AiAssistantExploreBridgeProvider } from "../contexts/AiAssistantExploreBridgeContext";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import { findOotbDashboardById, ootbCategories } from "../data/ootb-dashboards";
+import { findOotbDashboardById } from "../data/ootb-dashboards";
 import { ChatPanelSlotContext } from "../contexts/ChatPanelSlotContext";
 import { HeaderActionsSlotContext } from "../contexts/HeaderActionsSlotContext";
 import { Toaster } from "./ui/sonner";
 import { KeyboardShortcutProvider, useKeyboardShortcut } from "../hooks/useKeyboardShortcuts";
 import { PortalContainerContext } from "../contexts/PortalContainerContext";
-import { CreateAIAgentJobsProvider } from "../contexts/CreateAIAgentJobsContext";
-import { CreateAIAgentJobsLayer } from "./CreateAIAgentJobsLayer";
+import { CreateAIAgentJobsProvider, useCreateAIAgentJobs } from "../contexts/CreateAIAgentJobsContext";
 import { DashboardChatPanel } from "./DashboardChatPanel";
-import { GlobalAiExploreHistorySeed } from "./GlobalAiExploreHistorySeed";
 import { resolveAiAssistantRouteContext } from "../lib/resolve-ai-assistant-route-context";
 import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 import { AiAssistantPanelControlProvider } from "../contexts/AiAssistantPanelControlContext";
+import { ROUTES } from "../routes";
+import { cn } from "./ui/utils";
 
 const AI_ASSISTANT_OPEN_STORAGE_KEY = "ai-assistant-panel-open";
 const WIDGET_AI_MESSAGE_SENT_EVENT = "widget-ai-message-sent";
+/** Fallback until ResizeObserver runs; matches `CHAT_PANEL_DEFAULT_WIDTH_REM` in DashboardChatPanel (22 × 16px). */
+const CHAT_PANEL_FALLBACK_WIDTH_PX = 352;
 
 /** Inner layout — safely consumes all providers mounted by the outer RootLayout wrapper. */
 function RootLayoutInner() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [chatPanelSlot, setChatPanelSlot] = useState<HTMLDivElement | null>(null);
+  const [chatPanelWidthPx, setChatPanelWidthPx] = useState(0);
+  /** When true, main shell width tracks the panel immediately (no CSS transition lag). */
+  const [assistantPanelResizing, setAssistantPanelResizing] = useState(false);
   const [headerActionsSlot, setHeaderActionsSlot] = useState<HTMLDivElement | null>(null);
   const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(null);
   const location = useLocation();
   const params = useParams();
   const navigate = useNavigate();
+  const { getAgentById } = useCreateAIAgentJobs();
   const { conversations } = useConversations();
   const { projects, standaloneDashboards } = useProjects();
 
   /** Explore hero only — AI panel is collapsed/disabled here; conversation URLs use the global panel. */
   const isExploreHome = location.pathname === "/";
+
+  /** Explore home (`/`) only — hero gradient sits on the page canvas; conversation + all other routes use white `main`. */
+  const isExploreRoute = location.pathname === "/";
 
   const [aiAssistantOpen, setAiAssistantOpenState] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -96,6 +105,19 @@ function RootLayoutInner() {
     return () => window.removeEventListener(WIDGET_AI_MESSAGE_SENT_EVENT, handler as EventListener);
   }, [isExploreHome, setAiAssistantOpen]);
 
+  useEffect(() => {
+    if (!chatPanelSlot) {
+      setChatPanelWidthPx(0);
+      return;
+    }
+    const el = chatPanelSlot;
+    const measure = () => setChatPanelWidthPx(el.getBoundingClientRect().width);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [chatPanelSlot]);
+
   const aiRouteContext = useMemo(
     () =>
       resolveAiAssistantRouteContext(location.pathname, params, {
@@ -132,23 +154,26 @@ function RootLayoutInner() {
       return [{ label: "Explore" }];
     }
 
-    if (location.pathname === "/observability") {
-      return [{ label: "Observability" }];
-    }
-
     if (location.pathname === "/automation-opportunities") {
       return [{ label: "Automation Opportunities" }];
     }
 
-    // Observability category folder
-    if (location.pathname.startsWith("/observability/") && params.categoryId) {
-      const category = ootbCategories.find((c) => c.id === params.categoryId);
-      if (category) {
-        return [
-          { label: "Observability", href: "/observability" },
-          { label: category.name },
-        ];
-      }
+    if (
+      params.agentId &&
+      location.pathname.startsWith(`${ROUTES.AUTOMATION_OPPORTUNITIES}/agent/`)
+    ) {
+      const agent = getAgentById(params.agentId);
+      return [
+        { label: "Automation Opportunities", href: ROUTES.AUTOMATION_OPPORTUNITIES },
+        { label: agent?.scopeTitle ?? "Agent" },
+      ];
+    }
+
+    if (
+      location.pathname === ROUTES.AI_AGENTS ||
+      location.pathname.startsWith(`${ROUTES.AI_AGENTS}/`)
+    ) {
+      return [{ label: "AI Agents" }];
     }
 
     if (location.pathname === "/saved") {
@@ -206,19 +231,15 @@ function RootLayoutInner() {
       }
     }
 
-    // Observability dashboard
+    // Standalone OOTB dashboard URLs
     if (location.pathname.startsWith("/dashboard/")) {
       const dashboardId = params.dashboardId;
       const ootbInfo = dashboardId ? findOotbDashboardById(dashboardId) : undefined;
       const dashboardName = ootbInfo?.name || "Dashboard";
-      const crumbs: { label: string; href?: string }[] = [
-        { label: "Observability", href: "/observability" },
+      return [
+        { label: "AI Agents", href: ROUTES.AI_AGENTS },
+        { label: dashboardName },
       ];
-      if (ootbInfo?.categoryName && ootbInfo?.categoryId) {
-        crumbs.push({ label: ootbInfo.categoryName, href: `/observability/${ootbInfo.categoryId}` });
-      }
-      crumbs.push({ label: dashboardName });
-      return crumbs;
     }
 
     // Standalone custom dashboard (not in a folder)
@@ -265,7 +286,7 @@ function RootLayoutInner() {
     }
 
     return [];
-  }, [location.pathname, params, conversations, projects, standaloneDashboards]);
+  }, [location.pathname, params, conversations, projects, standaloneDashboards, getAgentById]);
 
   /** Short label for the AI Assistant input context pill (last breadcrumb, else route fallbacks). */
   const aiPageContextLabel = useMemo(() => {
@@ -274,10 +295,20 @@ function RootLayoutInner() {
       label = breadcrumbs[breadcrumbs.length - 1]!.label;
     } else if (location.pathname === "/insights") {
       label = "All Insights";
-    } else if (location.pathname === "/automation-opportunities") {
-      label = "Automation Opportunities";
-    } else if (location.pathname === "/observability") {
-      label = "Observability";
+    } else if (
+      location.pathname === "/automation-opportunities" ||
+      location.pathname.startsWith(`${ROUTES.AUTOMATION_OPPORTUNITIES}/agent/`)
+    ) {
+      if (params.agentId) {
+        label = getAgentById(params.agentId)?.scopeTitle ?? "Agent";
+      } else {
+        label = "Automation Opportunities";
+      }
+    } else if (
+      location.pathname === ROUTES.AI_AGENTS ||
+      location.pathname.startsWith(`${ROUTES.AI_AGENTS}/`)
+    ) {
+      label = "AI Agents";
     } else if (location.pathname === "/saved") {
       label = "Saved";
     } else if (location.pathname === "/recommended-actions") {
@@ -288,19 +319,14 @@ function RootLayoutInner() {
       label = "Settings";
     }
 
-    // Breadcrumbs omit the active tab dashboard on `/observability/:cat/:dash`; use dashboard title for the pill.
-    if (
-      location.pathname.startsWith("/observability/") &&
-      params.categoryId &&
-      params.dashboardId
-    ) {
+    if (location.pathname.startsWith(`${ROUTES.AI_AGENTS}/`) && params.dashboardId) {
       const dash = findOotbDashboardById(params.dashboardId);
       if (dash?.name) label = dash.name;
     }
 
     const trimmed = label?.trim();
     return trimmed || undefined;
-  }, [breadcrumbs, location.pathname, params.categoryId, params.dashboardId]);
+  }, [breadcrumbs, location.pathname, params.dashboardId, params.agentId, getAgentById]);
 
   // Check if current route needs full-height layout (no outer scroll/padding — page manages its own)
   const isFullHeightPage =
@@ -309,65 +335,87 @@ function RootLayoutInner() {
     location.pathname === '/' ||
     location.pathname === '/insights' ||
     location.pathname === '/automation-opportunities' ||
-    (location.pathname.startsWith('/observability/') && location.pathname !== '/observability');
+    location.pathname.startsWith(`${ROUTES.AUTOMATION_OPPORTUNITIES}/agent/`) ||
+    location.pathname === ROUTES.AI_AGENTS ||
+    location.pathname.startsWith(`${ROUTES.AI_AGENTS}/`);
+
+  const assistantLayoutInset = aiAssistantOpen && !isExploreHome;
+  const assistantChromeWidthPx =
+    isExploreHome || !aiAssistantOpen
+      ? 0
+      : Math.max(chatPanelWidthPx || CHAT_PANEL_FALLBACK_WIDTH_PX, 120);
 
   return (
     <PortalContainerContext.Provider value={portalContainer}>
     <ChatPanelSlotContext.Provider value={chatPanelSlot}>
       <HeaderActionsSlotContext.Provider value={headerActionsSlot}>
         <AiAssistantPanelControlProvider openPanel={openPanel}>
-        <GlobalAiExploreHistorySeed />
         <SidebarProvider className="h-screen w-full">
-          <div className="flex h-full w-full">
-            <AppSidebar />
-            {/* Row: [top nav + page content] | AI assistant — panel sits at the far right; nav/content shrink when open */}
-            <div className="flex min-h-0 min-w-0 flex-1 flex-row">
+          <div className="relative flex h-full w-full min-h-0 min-w-0 flex-row">
+            {/* AI assistant — fixed width, absolutely positioned; revealed when the shell above slides away (no panel entry animation). */}
+            {!isExploreHome ? (
               <div
-                data-panel-container
-                className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
-                style={{ minWidth: "min(420px, 100%)" }}
+                ref={setChatPanelSlot}
+                className={cn(
+                  "absolute inset-y-0 right-0 z-0 flex h-full min-h-0 shrink-0 transition-opacity duration-200 ease-linear",
+                  aiAssistantOpen ? "opacity-100" : "pointer-events-none opacity-0",
+                )}
+                aria-hidden={!aiAssistantOpen}
               >
-                <TopNavBar
-                  onSearchClick={() => setSearchOpen(true)}
-                  breadcrumbs={breadcrumbs}
-                  onActionsSlotRef={setHeaderActionsSlot}
-                  aiAssistantOpen={aiAssistantOpen}
-                  onAiAssistantOpenChange={setAiAssistantOpen}
-                  aiAssistantDisabled={isExploreHome}
+                <DashboardChatPanel
+                  dashboardId={aiRouteContext.dashboardId}
+                  sourceOotbId={aiRouteContext.sourceOotbId}
+                  pageContextLabel={aiPageContextLabel}
+                  onAssistantPanelResizeStart={() => setAssistantPanelResizing(true)}
+                  onAssistantPanelResizeEnd={() => setAssistantPanelResizing(false)}
                 />
-                <main
-                  className={`min-h-0 flex-1 ${isFullHeightPage ? "flex min-h-0 flex-col overflow-hidden" : "overflow-auto"}`}
+              </div>
+            ) : null}
+            {/* App shell — sits above the assistant; width + padding animate to expose the panel behind */}
+            <div
+              className={cn(
+                "relative z-10 flex h-full min-h-0 min-w-0 flex-row",
+                !assistantPanelResizing &&
+                  "transition-[padding,width] duration-200 ease-linear",
+                assistantLayoutInset && "bg-page pt-4 pl-4 pb-4",
+              )}
+              style={{
+                width:
+                  isExploreHome || !aiAssistantOpen
+                    ? "100%"
+                    : `calc(100% - ${assistantChromeWidthPx}px)`,
+              }}
+            >
+              <div
+                className={cn(
+                  "relative flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden transition-[border-radius,box-shadow] duration-200 ease-linear",
+                  assistantLayoutInset ? "rounded-xl shadow-md" : "rounded-none shadow-none",
+                )}
+              >
+                <AppSidebar />
+                <div
+                  data-panel-container
+                  className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+                  style={{ minWidth: "min(420px, 100%)" }}
                 >
-                  <div
-                    className={`w-full min-h-0 ${isFullHeightPage ? "flex min-h-0 flex-1 flex-col" : ""}`}
+                  <TopNavBar
+                    onSearchClick={() => setSearchOpen(true)}
+                    breadcrumbs={breadcrumbs}
+                    onActionsSlotRef={setHeaderActionsSlot}
+                    aiAssistantOpen={aiAssistantOpen}
+                    onAiAssistantOpenChange={setAiAssistantOpen}
+                    aiAssistantDisabled={isExploreHome}
+                  />
+                  <main
+                    className={cn(
+                      "w-full min-h-0 flex-1",
+                      isFullHeightPage ? "flex flex-col overflow-hidden" : "overflow-auto",
+                      !isExploreRoute && "bg-background",
+                    )}
                   >
                     <Outlet />
-                  </div>
-                </main>
-              </div>
-              {/* Global AI assistant mount; Explore hero (`/`) omits the panel */}
-              <div ref={setChatPanelSlot} className="flex h-full min-h-0 shrink-0 self-stretch">
-                {!isExploreHome ? (
-                  <div
-                    className={[
-                      "relative flex h-full min-h-0 shrink-0 overflow-hidden transition-[max-width] duration-200 ease-linear",
-                      aiAssistantOpen ? "max-w-[40rem]" : "max-w-0",
-                    ].join(" ")}
-                  >
-                    <div
-                      className={[
-                        "h-full min-h-0 shrink-0 transition-transform duration-200 ease-linear will-change-transform",
-                        aiAssistantOpen ? "translate-x-0" : "translate-x-full",
-                      ].join(" ")}
-                    >
-                      <DashboardChatPanel
-                        dashboardId={aiRouteContext.dashboardId}
-                        sourceOotbId={aiRouteContext.sourceOotbId}
-                        pageContextLabel={aiPageContextLabel}
-                      />
-                    </div>
-                  </div>
-                ) : null}
+                  </main>
+                </div>
               </div>
             </div>
           </div>
@@ -382,7 +430,6 @@ function RootLayoutInner() {
           id="radix-portal-root"
           className="fixed inset-0 pointer-events-none overflow-visible z-[9999] [&>*]:pointer-events-auto"
         />
-        <CreateAIAgentJobsLayer />
         </AiAssistantPanelControlProvider>
       </HeaderActionsSlotContext.Provider>
     </ChatPanelSlotContext.Provider>

@@ -35,6 +35,10 @@ export async function runPhasedExploreAssistantReply(options: {
     );
   };
 
+  const withStreamStart: Record<string, unknown> = {};
+  if (final.widgetData !== undefined) withStreamStart.widgetData = final.widgetData;
+  if (final.dashboardData !== undefined) withStreamStart.dashboardData = final.dashboardData;
+
   await runPhasedAssistantReply({
     final: {
       content: final.content,
@@ -44,14 +48,6 @@ export async function runPhasedExploreAssistantReply(options: {
     },
     isCancelled,
     patch: (partial) => applyPartial(partial as Partial<Message>),
+    ...(Object.keys(withStreamStart).length > 0 ? { withStreamStart } : {}),
   });
-
-  if (isCancelled()) return;
-
-  const extra: Partial<Message> = {};
-  if (final.widgetData !== undefined) extra.widgetData = final.widgetData;
-  if (final.dashboardData !== undefined) extra.dashboardData = final.dashboardData;
-  if (Object.keys(extra).length > 0) {
-    applyPartial(extra);
-  }
 }

@@ -8,8 +8,8 @@ import {
   Compass,
   Clock,
   X,
-  Activity,
   Bot,
+  Brain,
   Sparkles,
   Settings,
   Bookmark,
@@ -29,6 +29,11 @@ import { useProjects } from "../contexts/ProjectContext";
 import { useConversations } from "../contexts/ConversationContext";
 import { ootbCategories } from "../data/ootb-dashboards";
 import { ROUTES } from "../routes";
+
+const AI_AGENTS_OVERVIEW_PATH = (() => {
+  const first = ootbCategories.find((c) => c.id === "ai-agents")?.dashboards[0]?.id;
+  return first ? ROUTES.AI_AGENTS_DASHBOARD(first) : ROUTES.AI_AGENTS;
+})();
 
 const RECENT_SEARCHES_KEY = "search-recent";
 const MAX_RECENT = 5;
@@ -170,9 +175,9 @@ export function SearchOverlay({ open, onOpenChange }: SearchOverlayProps) {
                 <span>Explore</span>
                 <span className="ml-auto text-xs text-muted-foreground">E</span>
               </CommandItem>
-              <CommandItem value="Observability" onSelect={() => handleSelect(ROUTES.OBSERVABILITY, "Observability")}>
-                <Activity className="mr-2 h-4 w-4" />
-                <span>Observability</span>
+              <CommandItem value="AI Agents" onSelect={() => handleSelect(AI_AGENTS_OVERVIEW_PATH, "AI Agents")}>
+                <Brain className="mr-2 h-4 w-4" />
+                <span>AI Agents</span>
               </CommandItem>
               <CommandItem
                 value="Automation Opportunities"

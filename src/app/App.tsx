@@ -1,6 +1,8 @@
 import {
   createBrowserRouter,
+  Navigate,
   RouterProvider,
+  useParams,
 } from "react-router";
 import { ThemeProvider } from "next-themes";
 import { RootLayout } from "./components/RootLayout";
@@ -21,6 +23,15 @@ function NotFound() {
 
 function HydrateFallback() {
   return null;
+}
+
+/** Legacy `/observability/*` bookmarks → `/ai-agents` routes. */
+function LegacyObservabilityRedirect() {
+  const { categoryId, dashboardId } = useParams<{ categoryId?: string; dashboardId?: string }>();
+  if (categoryId === "ai-agents" && dashboardId) {
+    return <Navigate to={ROUTES.AI_AGENTS_DASHBOARD(dashboardId)} replace />;
+  }
+  return <Navigate to={ROUTES.AI_AGENTS} replace />;
 }
 
 function ErrorBoundary() {
@@ -71,10 +82,19 @@ const router = createBrowserRouter([
       { index: true, Component: ExplorePage },
       { path: "conversation/:conversationId", Component: ExplorePage },
       { path: "conversations", ...lazyRoute(() => import("./components/AllConversationsPage"), "AllConversationsPage") },
+      {
+        path: "automation-opportunities/agent/:agentId",
+        ...lazyRoute(
+          () => import("./components/AutomationOpportunitiesAgentPage"),
+          "AutomationOpportunitiesAgentPage",
+        ),
+      },
       { path: "automation-opportunities", ...lazyRoute(() => import("./components/AutomationOpportunitiesPage"), "AutomationOpportunitiesPage") },
-      { path: "observability", ...lazyRoute(() => import("./components/ObservabilityPage"), "ObservabilityPage") },
-      { path: "observability/:categoryId", ...lazyRoute(() => import("./components/ObservabilityCategoryPage"), "ObservabilityCategoryPage") },
-      { path: "observability/:categoryId/:dashboardId", ...lazyRoute(() => import("./components/ObservabilityCategoryPage"), "ObservabilityCategoryPage") },
+      { path: "observability", element: <Navigate to={ROUTES.AI_AGENTS} replace /> },
+      { path: "observability/:categoryId", element: <LegacyObservabilityRedirect /> },
+      { path: "observability/:categoryId/:dashboardId", element: <LegacyObservabilityRedirect /> },
+      { path: "ai-agents", ...lazyRoute(() => import("./components/ObservabilityCategoryPage"), "ObservabilityCategoryPage") },
+      { path: "ai-agents/:dashboardId", ...lazyRoute(() => import("./components/ObservabilityCategoryPage"), "ObservabilityCategoryPage") },
       { path: "saved", ...lazyRoute(() => import("./components/SavedFoldersPage"), "SavedFoldersPage") },
       { path: "saved/:folderId", ...lazyRoute(() => import("./components/SavedFoldersPage"), "SavedFoldersPage") },
       { path: "saved/:folderId/dashboard/:dashboardId", ...lazyRoute(() => import("./components/DashboardPage"), "DashboardPage") },

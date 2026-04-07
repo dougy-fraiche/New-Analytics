@@ -1,4 +1,5 @@
 import type { ChatMessage } from "../contexts/DashboardChatContext";
+import { defaultPhasedToolSteps } from "./mock-assistant-structure";
 import type { AssistantReplyPayload, AssistantToolStep } from "../types/conversation-types";
 
 function sleep(ms: number): Promise<void> {
@@ -46,6 +47,11 @@ export async function runPhasedAssistantReply(options: {
   charsPerTypeTick?: number;
   isCancelled: () => boolean;
   patch: (partial: Partial<ChatMessage>) => void;
+  /**
+   * Merged into the first patch when the assistant starts typing (after mock tool steps).
+   * Explore uses this to attach `dashboardData` / `widgetData` while the reply streams.
+   */
+  withStreamStart?: Record<string, unknown>;
 }): Promise<void> {
   const { final, patch, isCancelled } = options;
   const beforeFirstStepMs = options.beforeFirstStepMs ?? 500;
@@ -53,7 +59,8 @@ export async function runPhasedAssistantReply(options: {
   const typeTickMs = options.typeTickMs ?? 16;
   const charsPerTypeTick = options.charsPerTypeTick ?? 2;
 
-  const defs = final.toolSteps ?? [];
+  const defs: AssistantToolStep[] =
+    final.toolSteps && final.toolSteps.length > 0 ? final.toolSteps : defaultPhasedToolSteps;
 
   const finishWithStream = async () => {
     if (isCancelled()) return;
@@ -61,7 +68,8 @@ export async function runPhasedAssistantReply(options: {
       reasoning: final.reasoning,
       isTypingContent: true,
       toolSteps: undefined,
-    });
+      ...(options.withStreamStart ?? {}),
+    } as Partial<ChatMessage>);
     await streamAssistantContent({
       fullText: final.content,
       patch,
@@ -76,15 +84,6 @@ export async function runPhasedAssistantReply(options: {
       isTypingContent: false,
     });
   };
-
-  if (defs.length === 0) {
-    await sleep(beforeFirstStepMs);
-    if (isCancelled()) return;
-    await sleep(stepMs);
-    if (isCancelled()) return;
-    await finishWithStream();
-    return;
-  }
 
   await sleep(beforeFirstStepMs);
   if (isCancelled()) return;

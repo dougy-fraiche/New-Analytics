@@ -77,7 +77,7 @@ export function WidgetAIExplanation({ widgetTitle, chartType }: WidgetAIExplanat
             type="button"
           >
             <Sparkles className="h-3 w-3 text-primary shrink-0" />
-            <span className="font-medium">AI Explanation</span>
+            <span className="font-normal">AI Explanation</span>
           </button>
         </PopoverTrigger>
         <PopoverContent align="start" className="w-80 p-3">

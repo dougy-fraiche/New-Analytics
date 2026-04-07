@@ -41,7 +41,13 @@ import {
   EmptyTitle,
   EmptyDescription,
 } from "./ui/empty";
-import { PageContent, PageHeader, pageHeaderTabsFooterClassName } from "./PageChrome";
+import {
+  PageHeader,
+  pageHeaderTabsFooterClassName,
+  pageMainColumnClassName,
+  pageRootListScrollGutterClassName,
+} from "./PageChrome";
+import { cn } from "./ui/utils";
 import { PageTransition } from "./PageTransition";
 import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
 // @tanstack/react-virtual is installed and ready for virtualization
@@ -126,14 +132,14 @@ export function AllConversationsPage() {
   return (
     <Tabs value={tab} onValueChange={handleTabChange} className="flex flex-col flex-1 min-h-0">
       <PageHeader className={pageHeaderTabsFooterClassName}>
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
+        <section>
+          <section className="flex flex-wrap items-center gap-2">
             <h1 className="text-3xl tracking-tight">Draft Insights</h1>
             <Badge variant="secondary" className="shrink-0 text-xs font-normal">
               {activeConversations.length}{" "}
               {activeConversations.length === 1 ? "draft" : "drafts"}
             </Badge>
-          </div>
+          </section>
           <p className="text-muted-foreground mt-2">
             Browse and manage your drafts
           </p>
@@ -161,15 +167,15 @@ export function AllConversationsPage() {
               )}
             </div>
           )}
-        </div>
+        </section>
         <TabsList variant="line" className="mt-4">
           <TabsTrigger value="active">Active ({activeConversations.length})</TabsTrigger>
           <TabsTrigger value="archived">Archived ({archivedConversations.length})</TabsTrigger>
         </TabsList>
       </PageHeader>
       <div className="flex-1 min-h-0 overflow-auto">
-        <PageContent className="p-8">
-        <PageTransition className="space-y-6">
+        <div className={cn(pageRootListScrollGutterClassName, "pb-8")}>
+        <PageTransition className={cn(pageMainColumnClassName, "space-y-6")}>
       <HeaderAIInsightsRow
         dashboardId="draft-insights"
         dashboardData={{
@@ -297,7 +303,7 @@ export function AllConversationsPage() {
                           to={`/conversation/${conversation.id}`}
                           className="flex items-center gap-3 hover:underline"
                         >
-                          <span className="font-medium truncate">{conversation.name}</span>
+                          <span className="font-normal truncate">{conversation.name}</span>
                         </Link>
                       </TableCell>
                       <TableCell className="text-muted-foreground whitespace-nowrap">
@@ -311,18 +317,16 @@ export function AllConversationsPage() {
                         <DropdownMenu>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <span className="inline-flex">
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                  >
-                                    <MoreHorizontal className="h-4 w-4" />
-                                    <span className="sr-only">More options</span>
-                                  </Button>
-                                </DropdownMenuTrigger>
-                              </span>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                >
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">More options</span>
+                                </Button>
+                              </DropdownMenuTrigger>
                             </TooltipTrigger>
                             <TooltipContent side="left">More options</TooltipContent>
                           </Tooltip>
@@ -441,25 +445,23 @@ export function AllConversationsPage() {
             <DialogTitle>Rename draft</DialogTitle>
             <DialogDescription>Enter a new name for your draft.</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="rename-conv">Draft name</Label>
-              <Input
-                id="rename-conv"
-                value={renameDialog?.name || ""}
-                onChange={(e) =>
-                  setRenameDialog(
-                    renameDialog ? { ...renameDialog, name: e.target.value } : null
-                  )
+          <div className="grid gap-2 py-4">
+            <Label htmlFor="rename-conv">Draft name</Label>
+            <Input
+              id="rename-conv"
+              value={renameDialog?.name || ""}
+              onChange={(e) =>
+                setRenameDialog(
+                  renameDialog ? { ...renameDialog, name: e.target.value } : null
+                )
+              }
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && renameDialog && renameDialog.name.trim()) {
+                  renameConversation(renameDialog.conversationId, renameDialog.name);
+                  setRenameDialog(null);
                 }
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && renameDialog && renameDialog.name.trim()) {
-                    renameConversation(renameDialog.conversationId, renameDialog.name);
-                    setRenameDialog(null);
-                  }
-                }}
-              />
-            </div>
+              }}
+            />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRenameDialog(null)}>
@@ -479,7 +481,7 @@ export function AllConversationsPage() {
         </DialogContent>
       </Dialog>
         </PageTransition>
-        </PageContent>
+        </div>
       </div>
     </Tabs>
   );

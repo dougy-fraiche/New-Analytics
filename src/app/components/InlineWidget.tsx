@@ -55,7 +55,7 @@ export function InlineWidget({ widget }: InlineWidgetProps) {
       <CardHeader className="pb-2 space-y-0">
         <div className="flex items-start justify-between gap-2">
           <div className="space-y-0.5 min-w-0">
-            <CardTitle className="text-sm font-medium">{widget.title}</CardTitle>
+            <CardTitle className="text-sm font-normal">{widget.title}</CardTitle>
             <CardDescription className="text-xs">{widget.description}</CardDescription>
           </div>
           <div className="flex items-start gap-1 shrink-0">

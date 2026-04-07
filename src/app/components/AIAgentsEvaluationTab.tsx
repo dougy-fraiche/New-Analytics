@@ -1067,7 +1067,7 @@ export function AIAgentsEvaluationTab({
             <Alert className="border-primary/20 bg-primary/5 py-3">
               <Info className="size-4 shrink-0 text-primary" />
               <AlertDescription className="text-xs text-muted-foreground sm:text-sm">
-                <span className="font-medium text-primary">530 potentially avoidable</span>
+                <span className="font-normal text-primary">530 potentially avoidable</span>
                 <span> — complex issues and user requests may be automatable</span>
               </AlertDescription>
             </Alert>

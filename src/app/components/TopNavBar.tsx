@@ -15,7 +15,6 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
 import { useSidebar } from "./ui/sidebar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import {
@@ -45,7 +44,6 @@ export function TopNavBar({
   onAiAssistantOpenChange,
   aiAssistantDisabled = false,
 }: TopNavBarProps) {
-  const unreadNotifications = 3;
   const { state: sidebarState, toggleSidebar } = useSidebar();
   const isCollapsed = sidebarState === "collapsed";
   const hasBreadcrumbs = breadcrumbs.length > 0;
@@ -133,22 +131,12 @@ export function TopNavBar({
         <DropdownMenu>
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="inline-flex">
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="size-8 relative">
-                    <Bell className="h-4 w-4" />
-                    {unreadNotifications > 0 && (
-                      <Badge
-                        variant="destructive"
-                        className="absolute -top-0.5 -right-0.5 h-4 min-w-4 flex items-center justify-center p-0 text-[10px]"
-                      >
-                        {unreadNotifications}
-                      </Badge>
-                    )}
-                    <span className="sr-only">Notifications</span>
-                  </Button>
-                </DropdownMenuTrigger>
-              </span>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="size-8">
+                  <Bell className="h-4 w-4" />
+                  <span className="sr-only">Notifications</span>
+                </Button>
+              </DropdownMenuTrigger>
             </TooltipTrigger>
             <TooltipContent side="bottom">Notifications</TooltipContent>
           </Tooltip>
@@ -158,9 +146,9 @@ export function TopNavBar({
             <div className="max-h-96 overflow-y-auto">
               <DropdownMenuItem className="flex flex-col items-start py-3 cursor-pointer">
                 <div className="flex items-start gap-2 w-full">
-                  <div className="h-2 w-2 bg-primary rounded-full mt-1.5 shrink-0" />
+                  <div className="h-2 w-2 bg-muted-foreground/40 rounded-full mt-1.5 shrink-0" aria-hidden />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm" style={{ fontWeight: 500 }}>New recommended action available</p>
+                    <p className="text-sm font-normal text-foreground">New recommended action available</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Deploy Account Verification AI Agent - High Priority
                     </p>
@@ -170,9 +158,9 @@ export function TopNavBar({
               </DropdownMenuItem>
               <DropdownMenuItem className="flex flex-col items-start py-3 cursor-pointer">
                 <div className="flex items-start gap-2 w-full">
-                  <div className="h-2 w-2 bg-primary rounded-full mt-1.5 shrink-0" />
+                  <div className="h-2 w-2 bg-muted-foreground/40 rounded-full mt-1.5 shrink-0" aria-hidden />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm" style={{ fontWeight: 500 }}>Dashboard saved successfully</p>
+                    <p className="text-sm font-normal text-foreground">Dashboard saved successfully</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Custom Support Analytics Dashboard saved to Q1 Analytics
                     </p>
@@ -182,9 +170,9 @@ export function TopNavBar({
               </DropdownMenuItem>
               <DropdownMenuItem className="flex flex-col items-start py-3 cursor-pointer">
                 <div className="flex items-start gap-2 w-full">
-                  <div className="h-2 w-2 bg-muted-foreground/40 rounded-full mt-1.5 shrink-0" />
+                  <div className="h-2 w-2 bg-muted-foreground/40 rounded-full mt-1.5 shrink-0" aria-hidden />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm" style={{ fontWeight: 500 }}>Escalation rate alert</p>
+                    <p className="text-sm font-normal text-foreground">Escalation rate alert</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Escalation rate increased by 8% in the last 7 days
                     </p>

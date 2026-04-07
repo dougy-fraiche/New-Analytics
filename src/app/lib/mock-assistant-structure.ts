@@ -1,4 +1,25 @@
-import type { AssistantStructuredFields } from "../types/conversation-types";
+import type { AssistantStructuredFields, AssistantToolStep } from "../types/conversation-types";
+
+/**
+ * Generic phased steps when a caller omits `toolSteps` — keeps the assistant panel processing UI consistent.
+ */
+export const defaultPhasedToolSteps: AssistantToolStep[] = [
+  {
+    label: "Parse prompt and intent",
+    status: "done",
+    detail: "Detected the question focus from your message.",
+  },
+  {
+    label: "Resolve page context",
+    status: "done",
+    detail: "Used what’s visible on this page and the active context.",
+  },
+  {
+    label: "Draft answer with references",
+    status: "done",
+    detail: "Grounded the reply in on-screen signals and citations.",
+  },
+];
 
 /** Resolve label + path for “current page” source chips (browser only). */
 export function getClientPageSourceMeta(overrides?: {

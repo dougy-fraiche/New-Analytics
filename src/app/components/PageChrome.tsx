@@ -19,11 +19,11 @@ export const cardIconWellClassName =
   "inline-flex shrink-0 items-center justify-center rounded-full bg-primary-soft p-2 text-primary";
 
 /**
- * Page title region: full width of the main column, background edge-to-edge,
- * subtle bottom border, equal top/bottom padding (2rem).
+ * Page title region: full width, background edge-to-edge, subtle bottom border.
+ * Horizontal/top padding live on the inner shell (see `PageHeader`) to match `PageContent`.
  */
 export const pageHeaderClassName =
-  "shrink-0 sticky top-0 z-10 w-full border-b border-border/60 bg-background pt-8 pb-8 [&_h1]:text-primary-900";
+  "shrink-0 sticky top-0 z-10 w-full border-b border-border/60 bg-background [&_h1]:text-primary-900";
 
 /**
  * Merge onto `<PageHeader className={pageHeaderTabsFooterClassName}>` when the last row
@@ -32,12 +32,25 @@ export const pageHeaderClassName =
  */
 export const pageHeaderTabsFooterClassName = "pb-0";
 
-/** Constrains title/actions to the same max width as `PageContent` (1280px). */
-export const pageHeaderInnerClassName =
-  "mx-auto w-full max-w-[1280px] px-4 md:px-8";
+/** Full-width page shell: 2rem inset left, right, and top (viewport gutters). */
+export const pageMainShellClassName = "w-full min-w-0 px-8 pt-8";
 
-/** Max width for scrollable page body (app-wide content column). */
-export const pageContentMaxWidthClassName = "mx-auto w-full max-w-[1280px]";
+/**
+ * Viewport gutters + top padding for scrollable **root list** and **dashboard** bodies. Add
+ * `pb-*` on the same element. Put `pageMainColumnClassName` on `PageTransition` or an inner
+ * wrapper instead of `PageContent`, so the 1440px column is full width inside the gutters (not
+ * shrunk by `px-*` and `max-w-*` on one node).
+ */
+export const pageRootListScrollGutterClassName = "w-full min-w-0 px-8 pt-8";
+
+/**
+ * Max-width column token (1440px, centered). Composed with `pageMainShellClassName` on
+ * `PageContent` as a single root node — use `space-y-*`, `gap-*`, or `pb-*` on `className` for rhythm.
+ */
+export const pageMainColumnClassName = "mx-auto w-full min-w-0 max-w-[1440px]";
+
+/** Alias for the inner column (max-width shell). */
+export const pageContentMaxWidthClassName = pageMainColumnClassName;
 
 export function PageContent({
   className,
@@ -47,11 +60,13 @@ export function PageContent({
   children: ReactNode;
 }) {
   return (
-    <div className={cn(pageContentMaxWidthClassName, className)}>{children}</div>
+    <div className={cn(pageMainShellClassName, pageMainColumnClassName, className)}>
+      {children}
+    </div>
   );
 }
 
-/** Page title bar: full-bleed background + inner content capped at 1280px. */
+/** Page title bar: full-bleed background; same shell + column as `PageContent`. */
 export function PageHeader({
   children,
   className,
@@ -60,8 +75,10 @@ export function PageHeader({
   className?: string;
 }) {
   return (
-    <header className={cn(pageHeaderClassName, className)}>
-      <div className={pageHeaderInnerClassName}>{children}</div>
+    <header className={pageHeaderClassName}>
+      <div className={cn("w-full min-w-0 px-8 pt-8 pb-8", className)}>
+        <div className={pageMainColumnClassName}>{children}</div>
+      </div>
     </header>
   );
 }

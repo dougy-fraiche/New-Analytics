@@ -35,7 +35,7 @@ function InfoItem({ label, children }: { label: string; children: React.ReactNod
   return (
     <span className="inline-flex items-baseline gap-1.5 whitespace-nowrap">
       <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium text-foreground">{children}</span>
+      <span className="font-normal text-foreground">{children}</span>
     </span>
   );
 }
@@ -191,13 +191,13 @@ export function InteractionPlaybackPage() {
         <div className="flex min-h-0 min-w-0 flex-[1490] flex-col border-r">
           <div className="flex min-h-0 flex-1 gap-2 p-2">
             <div className="relative flex min-h-[220px] flex-1 flex-col overflow-hidden rounded-lg border bg-gradient-to-b from-muted/50 to-muted/20">
-              <span className="text-muted-foreground absolute left-3 top-2 text-xs font-medium">Agent view</span>
+              <span className="text-muted-foreground absolute left-3 top-2 text-xs font-normal">Agent view</span>
               <div className="flex flex-1 items-center justify-center">
                 <Monitor className="text-muted-foreground/40 size-16" aria-hidden />
               </div>
             </div>
             <div className="relative flex min-h-[220px] flex-1 flex-col overflow-hidden rounded-lg border bg-gradient-to-b from-muted/50 to-muted/20">
-              <span className="text-muted-foreground absolute left-3 top-2 text-xs font-medium">Customer view</span>
+              <span className="text-muted-foreground absolute left-3 top-2 text-xs font-normal">Customer view</span>
               <div className="flex flex-1 items-center justify-center">
                 <Monitor className="text-muted-foreground/40 size-16" aria-hidden />
               </div>
@@ -228,7 +228,7 @@ export function InteractionPlaybackPage() {
 
           {/* Audio bar — Figma h=174 */}
           <div className="flex min-h-[120px] shrink-0 flex-col justify-end gap-2 border-t bg-muted/10 px-6 pb-4 pt-4 sm:min-h-[154px]">
-            <div className="text-muted-foreground flex justify-between text-[10px] font-medium uppercase tracking-wide">
+            <div className="text-muted-foreground flex justify-between text-[10px] font-normal uppercase tracking-wide">
               <span>Left</span>
               <span>Right</span>
             </div>
@@ -301,14 +301,14 @@ export function InteractionPlaybackPage() {
                 {/* Segment 01 header + speaker (Figma 3592:44252 area) */}
                 <div className="border-b px-4 py-4">
                   <div className="text-foreground flex flex-wrap items-start justify-between gap-2 text-xs">
-                    <span className="font-semibold">{pb.segmentLabel}</span>
+                    <span className="font-normal">{pb.segmentLabel}</span>
                     <span className="text-muted-foreground tabular-nums">{pb.segmentTimeRange}</span>
                   </div>
-                  <p className="text-muted-foreground mt-2 text-sm font-medium">{pb.customerDisplayName}</p>
+                  <p className="text-muted-foreground mt-2 text-sm font-normal">{pb.customerDisplayName}</p>
                 </div>
 
                 <Collapsible open={interactionDetailsOpen} onOpenChange={setInteractionDetailsOpen} className="border-b">
-                  <CollapsibleTrigger className="text-foreground flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-medium hover:bg-muted/40">
+                  <CollapsibleTrigger className="text-foreground flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-normal hover:bg-muted/40">
                     <ChevronDown
                       className={cn("text-muted-foreground size-4 shrink-0 transition-transform", interactionDetailsOpen && "rotate-180")}
                     />
@@ -332,7 +332,7 @@ export function InteractionPlaybackPage() {
                       <ChevronDown className="text-muted-foreground size-4 shrink-0 opacity-60" aria-hidden />
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
-                          <span className="font-medium">{seg.label}</span>
+                          <span className="font-normal">{seg.label}</span>
                           <span className="text-muted-foreground text-xs tabular-nums">{seg.timeRange}</span>
                         </div>
                       </div>
@@ -350,7 +350,7 @@ export function InteractionPlaybackPage() {
 
                 {/* Chat cards */}
                 <div className="space-y-4 px-4 py-4">
-                  <p className="text-muted-foreground text-[11px] font-semibold uppercase tracking-wide">
+                  <p className="text-muted-foreground text-[11px] font-normal uppercase tracking-wide">
                     {sourceCategory}
                   </p>
                   {transcript.map((line) => (
@@ -364,7 +364,7 @@ export function InteractionPlaybackPage() {
                           line.role === "agent" && "flex-row-reverse",
                         )}
                       >
-                        <span className="font-medium text-foreground">{line.speakerLabel}</span>
+                        <span className="font-normal text-foreground">{line.speakerLabel}</span>
                         <span className="tabular-nums">{line.time}</span>
                       </div>
                       <div
@@ -383,7 +383,7 @@ export function InteractionPlaybackPage() {
                   {/* Agent note row (Figma 3592:44374+) */}
                   <div className="flex flex-col gap-1.5 items-end pt-1">
                     <div className="text-muted-foreground flex flex-row-reverse items-center gap-2 text-xs">
-                      <span className="font-medium text-foreground">Agent note</span>
+                      <span className="font-normal text-foreground">Agent note</span>
                       <span className="tabular-nums">{meta.duration}</span>
                     </div>
                     <div className="flex max-w-[98%] items-start gap-2 rounded-lg border border-border/80 bg-muted/40 px-3 py-2.5 text-sm">
@@ -402,7 +402,7 @@ export function InteractionPlaybackPage() {
                 {/* Coach card — Figma Jean Gray / 0:10 */}
                 <div className="space-y-3 rounded-lg border bg-muted/20 p-4">
                   <div className="flex items-center gap-3">
-                    <div className="bg-primary/20 flex size-8 items-center justify-center rounded-full text-xs font-bold text-primary">
+                    <div className="bg-primary/20 flex size-8 items-center justify-center rounded-full text-xs font-normal text-primary">
                       {pb.coachAgentName
                         .split(" ")
                         .map((n) => n[0])
@@ -410,33 +410,33 @@ export function InteractionPlaybackPage() {
                         .slice(0, 2)}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold">{pb.coachAgentName}</p>
+                      <p className="text-sm font-normal">{pb.coachAgentName}</p>
                     </div>
                     <span className="text-muted-foreground text-sm tabular-nums">{pb.coachTimestamp}</span>
                   </div>
                   <p className="text-muted-foreground text-sm leading-relaxed">{pb.coachMessage}</p>
                 </div>
 
-                <div>
-                  <p className="mb-3 text-sm font-semibold">Business Data</p>
+                <section>
+                  <p className="mb-3 text-sm font-normal">Business Data</p>
                   <div className="space-y-2 rounded-md border bg-card p-3">
                     {pb.businessData.map((row) => (
                       <div key={row.label} className="flex flex-wrap gap-x-2 text-sm">
                         <span className="text-muted-foreground shrink-0 text-xs leading-6">{row.label}</span>
-                        <span className="font-medium">{row.value}</span>
+                        <span className="font-normal">{row.value}</span>
                       </div>
                     ))}
                   </div>
-                </div>
+                </section>
 
                 <div className="space-y-2 rounded-lg border border-dashed bg-muted/15 p-3">
-                  <p className="text-sm font-semibold">{pb.enlightenSentimentLabel}</p>
+                  <p className="text-sm font-normal">{pb.enlightenSentimentLabel}</p>
                   <p className="text-muted-foreground text-xs">
                     Model blend reflects CSAT {meta.csat} and segment-level tone shifts; review negatives in Segment 3.
                   </p>
                 </div>
                 <div className="space-y-2 rounded-lg border border-dashed bg-muted/15 p-3">
-                  <p className="text-sm font-semibold">{pb.behaviorScoreLabel}</p>
+                  <p className="text-sm font-normal">{pb.behaviorScoreLabel}</p>
                   <p className="text-muted-foreground text-xs">
                     Adherence to greeting and verification steps within target; one missed recap opportunity before wrap.
                   </p>

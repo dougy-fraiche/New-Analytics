@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useNavigate } from "react-router";
+import { useParams, useNavigate, useLocation } from "react-router";
 import {
   Calendar,
   Download,
@@ -47,7 +47,12 @@ import {
 } from "./ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { useContainerBreakpoint } from "../hooks/useContainerBreakpoint";
-import { PageContent, PageHeader, pageHeaderTabsFooterClassName } from "./PageChrome";
+import {
+  PageHeader,
+  pageHeaderTabsFooterClassName,
+  pageMainColumnClassName,
+  pageRootListScrollGutterClassName,
+} from "./PageChrome";
 import { PageTransition } from "./PageTransition";
 import { KpiSparkline, KPI_SPARKLINE_SERIES } from "./KpiSparkline";
 import { KpiMetricValueTitle } from "./KpiMetricValueTitle";
@@ -55,6 +60,8 @@ import { LabeledFilterInline, LabeledSelectValue } from "./HeaderFilters";
 import { AIAgentsOverviewTab } from "./AIAgentsOverviewTab";
 import { AIAgentsEvaluationTab } from "./AIAgentsEvaluationTab";
 import { AIAgentsIntentNluTab } from "./AIAgentsIntentNluTab";
+import { cn } from "./ui/utils";
+import { ROUTES } from "../routes";
 import {
   DATE_RANGE_CUSTOM_OPTION,
   DATE_RANGE_LABELS,
@@ -110,8 +117,16 @@ const tableData = [
 ];
 
 export function ObservabilityCategoryPage() {
-  const { categoryId, dashboardId: urlDashboardId } = useParams();
+  const params = useParams<{ categoryId?: string; dashboardId?: string }>();
+  const { pathname } = useLocation();
   const navigate = useNavigate();
+
+  const categoryId =
+    params.categoryId ??
+    (pathname === ROUTES.AI_AGENTS || pathname.startsWith(`${ROUTES.AI_AGENTS}/`)
+      ? "ai-agents"
+      : undefined);
+  const urlDashboardId = params.dashboardId;
 
   const category = ootbCategories.find((c) => c.id === categoryId);
 
@@ -138,6 +153,13 @@ export function ObservabilityCategoryPage() {
     }
   }, [standaloneCategoryId, navigate]);
 
+  useEffect(() => {
+    if (pathname !== ROUTES.AI_AGENTS) return;
+    const cat = ootbCategories.find((c) => c.id === categoryId);
+    const first = cat?.dashboards[0]?.id;
+    if (first) navigate(ROUTES.AI_AGENTS_DASHBOARD(first), { replace: true });
+  }, [pathname, categoryId, navigate]);
+
   if (!category) {
     return (
       <div className="flex items-center justify-center h-full p-8">
@@ -163,12 +185,7 @@ export function ObservabilityCategoryPage() {
   const headerSubtitle = category.pageDescription ?? activeDashboard.description;
 
   const handleTabChange = (tabValue: string) => {
-    // Navigate to update the URL
-    if (tabValue === defaultDashboard.id) {
-      navigate(`/observability/${categoryId}`, { replace: true });
-    } else {
-      navigate(`/observability/${categoryId}/${tabValue}`, { replace: true });
-    }
+    navigate(ROUTES.AI_AGENTS_DASHBOARD(tabValue), { replace: true });
   };
 
   return (
@@ -176,20 +193,18 @@ export function ObservabilityCategoryPage() {
       <Tabs value={activeDashboardId} onValueChange={handleTabChange} className="flex flex-col h-full min-h-0">
         <div className="flex flex-col h-full min-h-0">
           <PageHeader className={pageHeaderTabsFooterClassName}>
-            <div>
-              <div className="flex items-center gap-2">
+            <section>
+              <section className="flex items-center gap-2">
                 <h1 className="text-3xl tracking-tight">{category.name}</h1>
                 <div className="ml-auto flex items-center gap-2">
                   <DropdownMenu>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <span className="inline-flex">
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="icon" className="h-8 w-8">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                        </span>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
                       </TooltipTrigger>
                       <TooltipContent side="bottom">Dashboard options</TooltipContent>
                     </Tooltip>
@@ -209,11 +224,11 @@ export function ObservabilityCategoryPage() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-              </div>
+              </section>
               <p className="text-muted-foreground mt-1">
                 {headerSubtitle}
               </p>
-            </div>
+            </section>
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRangeOption)}>
                 <SelectTrigger className="h-8 w-auto shrink-0">
@@ -287,8 +302,8 @@ export function ObservabilityCategoryPage() {
             </TabsList>
           </PageHeader>
           <div className="flex-1 min-h-0 overflow-auto">
-            <PageContent className="p-4 md:p-8">
-            <PageTransition>
+            <div className={cn(pageRootListScrollGutterClassName, "pb-4 md:pb-8")}>
+            <PageTransition className={pageMainColumnClassName}>
             <div ref={dashboardContentRef} className="space-y-4">
             <HeaderAIInsightsRow
               dashboardId={activeDashboard.id}
@@ -504,7 +519,7 @@ export function ObservabilityCategoryPage() {
             ))}
           </div>
             </PageTransition>
-            </PageContent>
+            </div>
         </div>
       </div>
       </Tabs>

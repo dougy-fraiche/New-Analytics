@@ -11,7 +11,12 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { PageContent, PageHeader } from "./PageChrome";
+import {
+  PageHeader,
+  pageMainColumnClassName,
+  pageRootListScrollGutterClassName,
+} from "./PageChrome";
+import { cn } from "./ui/utils";
 import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
 import { Input } from "./ui/input";
 import {
@@ -38,7 +43,7 @@ export function ObservabilityPage() {
       ...d,
       categoryName: cat.name,
       categoryId: cat.id,
-      path: `/observability/${cat.id}/${d.id}`,
+      path: `/ai-agents/${d.id}`,
     }));
   });
 
@@ -56,15 +61,14 @@ export function ObservabilityPage() {
   const hasActiveFilters = searchQuery.length > 0 || categoryFilter !== "all";
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
-      <PageHeader>
-        <div>
-          <div className="flex items-center gap-3">
+      <div className="flex flex-col flex-1 min-h-0">
+        <PageHeader>
+          <section className="flex items-center gap-3">
             <h1 className="text-3xl tracking-tight">Observability</h1>
             <Badge variant="secondary" className="text-xs px-2 py-0.5">
               {totalOotbDashboardCount} total dashboards
             </Badge>
-          </div>
+          </section>
           <p className="text-muted-foreground mt-2">
             Out-of-the-box dashboards providing comprehensive insights into your conversational analytics platform
           </p>
@@ -106,11 +110,10 @@ export function ObservabilityPage() {
               </Button>
             )}
           </div>
-        </div>
       </PageHeader>
       <div className="flex-1 min-h-0 overflow-auto">
-        <PageContent className="space-y-6 p-8">
-      <PageTransition className="space-y-6">
+        <div className={cn(pageRootListScrollGutterClassName, "pb-8")}>
+      <PageTransition className={cn(pageMainColumnClassName, "space-y-6")}>
       <HeaderAIInsightsRow
         dashboardId="observability"
         dashboardData={{
@@ -171,7 +174,7 @@ export function ObservabilityPage() {
           </Table>
       </div>
       </PageTransition>
-        </PageContent>
+        </div>
       </div>
     </div>
   );

@@ -41,7 +41,12 @@ import {
   priorityColors,
   type RecommendedAction,
 } from "../data/recommended-actions";
-import { PageContent, PageHeader } from "./PageChrome";
+import {
+  PageHeader,
+  pageMainColumnClassName,
+  pageRootListScrollGutterClassName,
+} from "./PageChrome";
+import { cn } from "./ui/utils";
 import { RecommendedActionSheet } from "./RecommendedActionSheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { useNavigate } from "react-router";
@@ -195,8 +200,7 @@ export function RecommendedActionsPage() {
     <WidgetAIProvider persistKey={GLOBAL_AI_ASSISTANT_KEY} ootbTypeId="recommended-actions">
       <div className="flex flex-col flex-1 min-h-0">
       <PageHeader>
-        <div>
-          <div className="flex items-center gap-3">
+          <section className="flex items-center gap-3">
             <h1 className="text-3xl tracking-tight">Recommended Actions</h1>
             <Badge variant="secondary" className="text-xs px-2 py-0.5">
               {pendingCount} pending actions
@@ -204,7 +208,7 @@ export function RecommendedActionsPage() {
             <Badge variant="secondary" className="text-xs px-2 py-0.5">
               {highPriorityCount} high priority
             </Badge>
-          </div>
+          </section>
           <p className="text-muted-foreground mt-2">
             AI-generated recommendations to improve your customer experience
           </p>
@@ -264,11 +268,10 @@ export function RecommendedActionsPage() {
               )}
             </div>
           )}
-        </div>
       </PageHeader>
       <div className="flex-1 min-h-0 overflow-auto">
-        <PageContent className="space-y-6 p-8">
-      <PageTransition className="space-y-6">
+        <div className={cn(pageRootListScrollGutterClassName, "pb-8")}>
+      <PageTransition className={cn(pageMainColumnClassName, "space-y-6")}>
       <HeaderAIInsightsRow
         dashboardId="recommended-actions"
         dashboardData={{
@@ -294,7 +297,7 @@ export function RecommendedActionsPage() {
               </div>
               <div className="flex min-w-0 flex-col gap-2.5 pr-10">
                 <p className="text-xs text-muted-foreground">Potential Customer Impact</p>
-                <p className="text-xl font-semibold leading-6 tracking-tight text-foreground">142K</p>
+                <p className="text-xl font-normal leading-6 tracking-tight text-foreground">142K</p>
                 <p className="text-sm leading-snug text-foreground/80">
                   Estimated weekly reach across affected conversations
                 </p>
@@ -314,7 +317,7 @@ export function RecommendedActionsPage() {
               </div>
               <div className="flex min-w-0 flex-col gap-2.5 pr-10">
                 <p className="text-xs text-muted-foreground">Projected ROI</p>
-                <p className="text-xl font-semibold leading-6 tracking-tight text-foreground">
+                <p className="text-xl font-normal leading-6 tracking-tight text-foreground">
                   ${(totalROI / 1000).toFixed(0)}K/wk
                 </p>
                 <p className="text-sm leading-snug text-foreground/80">
@@ -395,7 +398,7 @@ export function RecommendedActionsPage() {
                     </TableCell>
                     <TableCell className="w-[520px] py-4 whitespace-normal">
                       <div className="min-w-0">
-                        <p className="font-medium">{action.title}</p>
+                        <p className="font-normal">{action.title}</p>
                         <p className="text-sm text-muted-foreground mt-0.5">
                           {action.description}
                         </p>
@@ -419,14 +422,14 @@ export function RecommendedActionsPage() {
                       </span>
                     </TableCell>
                     <TableCell className="w-[220px]">
-                      <p className="text-sm font-medium text-green-700">
+                      <p className="text-sm font-normal text-green-700">
                         {action.impactValue}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {action.impactLabel}
                       </p>
                     </TableCell>
-                    <TableCell className="w-[120px] text-right font-medium tabular-nums">
+                    <TableCell className="w-[120px] text-right font-normal tabular-nums">
                       {action.projectedROI}
                     </TableCell>
                     <TableCell className="text-right whitespace-normal">
@@ -510,7 +513,7 @@ export function RecommendedActionsPage() {
         }}
       />
       </PageTransition>
-        </PageContent>
+        </div>
       </div>
     </div>
     </WidgetAIProvider>

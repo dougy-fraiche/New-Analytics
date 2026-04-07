@@ -1,15 +1,22 @@
 import type { LegacyRef, RefObject } from "react";
-import { useLayoutEffect, useMemo, useRef } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Card, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
+import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
 import { ChatInputBar } from "./ChatInputBar";
 import { PageContent } from "./PageChrome";
+import { RecommendedActionSheet } from "./RecommendedActionSheet";
+import { WidgetAIPromptButton } from "./WidgetAIPromptButton";
+import type { RecommendedAction } from "../data/recommended-actions";
+import { topInsightCardToRecommendedAction } from "../lib/top-insight-to-recommended-action";
 import {
   exploreHeadings,
   suggestedActions,
   topInsightsCards,
 } from "../data/explore-data";
+
+type TopInsightsFilter = "all" | "anomalies" | "actions";
 
 interface ExplorePhaseProps {
   query: string;
@@ -30,6 +37,8 @@ interface ExplorePhaseProps {
   onForcedSuggestionsChange: (s: string[]) => void;
   onActionClick: (label: string, prompts: string[]) => void;
   onSend: () => void;
+  /** Hero typeahead row selected — used to seed a dashboard on first send. */
+  onTypeaheadSuggestionPicked?: () => void;
 }
 
 export function ExplorePhase({
@@ -45,7 +54,12 @@ export function ExplorePhase({
   onForcedSuggestionsChange,
   onActionClick,
   onSend,
+  onTypeaheadSuggestionPicked,
 }: ExplorePhaseProps) {
+  const [topInsightsFilter, setTopInsightsFilter] = useState<TopInsightsFilter>("all");
+  const [topInsightSheetAction, setTopInsightSheetAction] = useState<RecommendedAction | null>(
+    null,
+  );
   const exploreSurfaceRef = useRef<HTMLDivElement>(null);
   const heroHeading = useMemo(
     () => exploreHeadings[Math.floor(Math.random() * exploreHeadings.length)],
@@ -88,17 +102,38 @@ export function ExplorePhase({
     };
   }, [heroInputBarRef]);
 
+  const filteredTopInsights = useMemo(() => {
+    switch (topInsightsFilter) {
+      case "anomalies":
+        return topInsightsCards.filter((c) => c.segment === "anomaly");
+      case "actions":
+        return topInsightsCards.filter(
+          (c) => c.segment === "opportunity" && c.showActionPill,
+        );
+      default:
+        return topInsightsCards;
+    }
+  }, [topInsightsFilter]);
+
   return (
     <>
+      <RecommendedActionSheet
+        action={topInsightSheetAction}
+        open={!!topInsightSheetAction}
+        onOpenChange={(open) => {
+          if (!open) setTopInsightSheetAction(null);
+        }}
+        onDismiss={() => setTopInsightSheetAction(null)}
+      />
       <div
         ref={exploreSurfaceRef}
         key="explore"
         className="explore-page-gradient flex min-h-0 flex-1 flex-col overflow-y-auto"
       >
-        <PageContent className="flex h-full max-h-[800px] shrink-0 flex-col items-center justify-center px-4 pt-24 pb-24 md:px-8">
-          <div className="relative mx-auto flex w-full max-w-[64rem] flex-col items-stretch gap-6 text-center">
+        <PageContent className="flex h-full max-h-[800px] shrink-0 flex-col items-center justify-center pb-24">
+          <div className="relative mx-auto flex w-full max-w-[64rem] flex-col items-stretch gap-8 text-center">
             <h1
-              className="animate-gradient-text w-full text-[32px] font-semibold leading-[48px] tracking-tight"
+              className="animate-gradient-text w-full text-[36px] font-normal leading-[44px] tracking-tight sm:text-[40px] sm:leading-[48px]"
               style={{ fontWeight: 600 }}
             >
               {heroHeading}
@@ -123,6 +158,7 @@ export function ExplorePhase({
                 onShowTypeahead={onShowTypeahead}
                 forcedSuggestions={forcedSuggestions}
                 onForcedSuggestionsChange={onForcedSuggestionsChange}
+                onTypeaheadSuggestionPicked={onTypeaheadSuggestionPicked}
               />
             </div>
 
@@ -146,51 +182,128 @@ export function ExplorePhase({
           </div>
         </PageContent>
 
-        <div className="mt-auto shrink-0 px-8 pb-8">
-          <PageContent className="flex flex-col items-center rounded-xl border border-border/60 bg-background p-8 shadow-sm">
-            <div className="mx-auto w-full">
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl">Top Insights</h2>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Anomalies, automation opportunities, and recommended actions
-                  </p>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-                {topInsightsCards.map((card) => {
-                  const badgeVariant =
-                    card.category === "Critical"
-                      ? "destructive"
-                      : card.category === "High"
-                      ? "secondary"
-                      : card.category === "Action"
-                      ? "default"
-                      : "outline";
-
-                  return (
-                    <Card
-                      key={card.id}
-                      className="group/widget h-full transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30"
-                    >
-                      <CardHeader className="pb-2">
-                        <div className="mb-2 flex items-center justify-between gap-2">
-                          <Badge variant={badgeVariant}>{card.category}</Badge>
-                          <span className="text-xs text-muted-foreground">{card.timestamp}</span>
-                        </div>
-                        <CardTitle className="text-xl leading-tight">{card.title}</CardTitle>
-                        <CardDescription>{card.description}</CardDescription>
-                      </CardHeader>
-                      <CardContent className="pt-0">
-                        <p className="text-sm text-muted-foreground">{card.detail}</p>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
+        <PageContent className="mt-auto shrink-0 px-8 mb-8 flex flex-col items-center rounded-xl border border-border/60 bg-background p-8 shadow-sm">
+          <div className="mx-auto w-full">
+            <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <section className="min-w-0">
+                <h2 className="text-xl">Top Insights</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Anomalies and opportunities surfaced from your operations data
+                </p>
+              </section>
+              <ToggleGroup
+                type="single"
+                value={topInsightsFilter}
+                onValueChange={(v) => {
+                  if (v === "all" || v === "anomalies" || v === "actions") {
+                    setTopInsightsFilter(v);
+                  }
+                }}
+                variant="outline"
+                size="sm"
+                className="w-fit shrink-0 justify-end sm:justify-start"
+                aria-label="Filter insights"
+              >
+                <ToggleGroupItem
+                  value="all"
+                  aria-label="Show all insights"
+                  className="flex-none px-3"
+                >
+                  All
+                </ToggleGroupItem>
+                <ToggleGroupItem
+                  value="anomalies"
+                  aria-label="Show anomalies only"
+                  className="flex-none px-3"
+                >
+                  Anomalies
+                </ToggleGroupItem>
+                <ToggleGroupItem
+                  value="actions"
+                  aria-label="Show actions only"
+                  className="flex-none px-3"
+                >
+                  Actions
+                </ToggleGroupItem>
+              </ToggleGroup>
             </div>
-          </PageContent>
-        </div>
+            <div className="grid min-h-[calc(180px*2+1rem)] grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {filteredTopInsights.map((card) => {
+                return (
+                  <Card
+                    key={card.id}
+                    className="group/widget relative flex h-[180px] shrink-0 flex-col overflow-hidden transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30"
+                  >
+                    <div className="absolute right-2 top-2 z-10">
+                      <WidgetAIPromptButton
+                        widgetTitle={card.title}
+                        chartType="insight"
+                        widgetAnchorId={`explore-top-insight-${card.id}`}
+                        tooltipLabel="Ask AI about this insight"
+                        tooltipSide="bottom"
+                      />
+                    </div>
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`View details: ${card.title}`}
+                      className="flex min-h-0 w-full flex-1 cursor-pointer flex-col rounded-xl text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      onClick={() =>
+                        setTopInsightSheetAction(topInsightCardToRecommendedAction(card))
+                      }
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setTopInsightSheetAction(topInsightCardToRecommendedAction(card));
+                        }
+                      }}
+                    >
+                      <CardHeader className="shrink-0 gap-1 space-y-0 px-4 pb-1.5 pr-11 pt-3">
+                        <CardTitle className="line-clamp-2 text-base font-semibold leading-snug">
+                          {card.title}
+                        </CardTitle>
+                        <CardDescription className="line-clamp-2 text-xs leading-snug">
+                          {card.description}
+                        </CardDescription>
+                      </CardHeader>
+                      <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pr-11">
+                        <p className="min-h-0 flex-1 overflow-y-auto text-xs leading-snug text-muted-foreground">
+                          {card.detail}
+                        </p>
+                      </div>
+                      <div className="mt-auto flex w-full min-w-0 shrink-0 flex-wrap items-center justify-between gap-2 px-4 pb-3 pt-2">
+                        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+                          {card.segment === "anomaly" ? (
+                            <>
+                              <Badge variant="outline">Anomaly</Badge>
+                              <Badge
+                                variant={
+                                  card.severity === "Critical" ? "destructive" : "secondary"
+                                }
+                              >
+                                {card.severity}
+                              </Badge>
+                            </>
+                          ) : (
+                            <>
+                              {card.showActionPill ? (
+                                <Badge variant="default">Action</Badge>
+                              ) : null}
+                              <Badge variant="outline">Opportunity</Badge>
+                            </>
+                          )}
+                        </div>
+                        <span className="shrink-0 text-xs text-muted-foreground">
+                          {card.timestamp}
+                        </span>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        </PageContent>
       </div>
     </>
   );

@@ -139,12 +139,17 @@ export function EChartsCanvas({
   const onDataSelectRef = useRef(onDataSelect);
   onDataSelectRef.current = onDataSelect;
 
+  /** Keep latest option for theme init without re-running the init effect when only data changes. */
+  const optionForThemeRef = useRef(optionForTheme);
+  optionForThemeRef.current = optionForTheme;
+
+  // Init / dispose only when ECharts theme changes — option updates go through the second effect.
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
     const chart = echarts.init(el, theme, { renderer: "canvas" });
-    chart.setOption(resolveCssVars(optionForTheme, el), { notMerge: true });
+    chart.setOption(resolveCssVars(optionForThemeRef.current, el), { notMerge: true });
 
     const handleClick = (params: ECElementEvent) => {
       const { clientX, clientY } = resolveChartClickClientXY(params, el);
@@ -168,15 +173,14 @@ export function EChartsCanvas({
       ro.disconnect();
       chart.dispose();
     };
-  }, [theme, optionForTheme]);
+  }, [theme]);
 
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const chart = echarts.getInstanceByDom(el);
-    if (chart) {
-      chart.setOption(resolveCssVars(optionForTheme, el), { notMerge: true });
-    }
+    if (!chart) return;
+    chart.setOption(resolveCssVars(optionForTheme, el), { notMerge: true, lazyUpdate: true });
   }, [optionForTheme]);
 
   return (

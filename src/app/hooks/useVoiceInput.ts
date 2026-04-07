@@ -52,6 +52,8 @@ export function useVoiceInput({ onTranscript, onError, lang = "en-US" }: UseVoic
     ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
 
   const stop = useCallback(() => {
+    setIsListening(false);
+    setInterimText("");
     if (recognitionRef.current) {
       recognitionRef.current.stop();
     }
@@ -70,7 +72,8 @@ export function useVoiceInput({ onTranscript, onError, lang = "en-US" }: UseVoic
       window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognitionCtor();
 
-    recognition.continuous = true;
+    /* One utterance per tap; avoids endless “listening” / stop icon until manual stop(). */
+    recognition.continuous = false;
     recognition.interimResults = true;
     recognition.lang = lang;
 

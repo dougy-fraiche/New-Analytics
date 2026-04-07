@@ -1,4 +1,12 @@
-import { useState, useCallback, useEffect, useRef, useMemo, type RefObject } from "react";
+import {
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  useMemo,
+  type MutableRefObject,
+  type RefObject,
+} from "react";
 import {
   MoreVertical,
   Pencil,
@@ -49,8 +57,12 @@ import { useHeaderActionsSlot } from "../contexts/HeaderActionsSlotContext";
 import { generateAIResponse } from "../data/explore-data";
 import { useKeyboardShortcut } from "../hooks/useKeyboardShortcuts";
 import { useDashboardChat } from "../contexts/DashboardChatContext";
-import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
+import {
+  EXPLORE_THREAD_USER_TURN_EVENT,
+  GLOBAL_AI_ASSISTANT_KEY,
+} from "../lib/ai-assistant-global";
 import { conversationMessageToGlobalChat } from "../lib/conversation-message-to-global-chat";
+import { exploreAssistantPartialToGlobalPatch } from "../lib/explore-to-global-ai-patch";
 import { runPhasedExploreAssistantReply } from "../lib/run-phased-explore-assistant-reply";
 import {
   useAiAssistantExploreBridge,
@@ -84,6 +96,8 @@ interface ConversationPhaseProps {
   inputAnimStartLeft: number;
   inputAnimStartWidth: number;
   containerRef: RefObject<HTMLDivElement | null>;
+  /** Shared with ExplorePage hero send — single generation counter for phased assistant runs. */
+  assistantPhaseGenRef: MutableRefObject<number>;
 }
 
 // ── Component ─────────────────────────────────────────────────────────
@@ -106,6 +120,7 @@ export function ConversationPhase({
   inputAnimStartLeft,
   inputAnimStartWidth,
   containerRef,
+  assistantPhaseGenRef,
 }: ConversationPhaseProps) {
   // ── External hooks ────────────────────────────────────────────────
   const {
@@ -166,7 +181,36 @@ export function ConversationPhase({
   const conversationIdRef = useRef(currentConversationId);
   conversationIdRef.current = currentConversationId;
 
-  const explorePhaseGenerationRef = useRef(0);
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
+
+  const handleCancelExploreInFlight = useCallback(() => {
+    assistantPhaseGenRef.current += 1;
+    setIsThinking(false);
+    const convId = currentConversationId;
+    if (!convId) return;
+    const prev = messagesRef.current;
+    const last = prev[prev.length - 1];
+    if (last?.role !== "assistant") return;
+    const partial: Partial<Message> = {
+      content: last.content.trim() ? last.content : "Stopped.",
+      isTypingContent: false,
+      toolSteps: undefined,
+    };
+    patchMessageInConversation(convId, last.id, partial);
+    const g = exploreAssistantPartialToGlobalPatch(partial);
+    if (Object.keys(g).length > 0) {
+      patchMessage(GLOBAL_AI_ASSISTANT_KEY, last.id, g);
+    }
+    setMessages((p) => p.map((m) => (m.id === last.id ? { ...m, ...partial } : m)));
+  }, [
+    assistantPhaseGenRef,
+    currentConversationId,
+    patchMessage,
+    patchMessageInConversation,
+    setIsThinking,
+    setMessages,
+  ]);
 
   const handleUserMessage = useCallback(
     (
@@ -174,6 +218,9 @@ export function ConversationPhase({
       meta?: ExploreWidgetPromptMeta,
     ) => {
       if (!message.trim() || !currentConversationId) return;
+
+      voice.stop();
+      window.dispatchEvent(new Event(EXPLORE_THREAD_USER_TURN_EVENT));
 
       const targetConversationId = currentConversationId;
 
@@ -190,7 +237,7 @@ export function ConversationPhase({
       onQueryChange("");
       setIsThinking(true);
 
-      const gen = ++explorePhaseGenerationRef.current;
+      const gen = ++assistantPhaseGenRef.current;
       const assistantId = crypto.randomUUID();
       const aiResponse = generateAIResponse(message);
       const stub: Message = {
@@ -202,22 +249,26 @@ export function ConversationPhase({
       addMessageToConversation(targetConversationId, stub);
       appendMessage(GLOBAL_AI_ASSISTANT_KEY, conversationMessageToGlobalChat(stub));
       setMessages((prev) => [...prev, stub]);
-      setIsThinking(false);
 
       void runPhasedExploreAssistantReply({
         conversationId: targetConversationId,
         assistantId,
         final: aiResponse,
         isCancelled: () =>
-          gen !== explorePhaseGenerationRef.current ||
+          gen !== assistantPhaseGenRef.current ||
           conversationIdRef.current !== targetConversationId,
         patchMessageInConversation,
         patchGlobalMessage: (messageId, partial) =>
           patchMessage(GLOBAL_AI_ASSISTANT_KEY, messageId, partial),
         syncLocalMessages: (updater) => setMessages(updater),
+      }).finally(() => {
+        if (gen === assistantPhaseGenRef.current) {
+          setIsThinking(false);
+        }
       });
     },
     [
+      assistantPhaseGenRef,
       currentConversationId,
       addMessageToConversation,
       appendMessage,
@@ -226,6 +277,7 @@ export function ConversationPhase({
       setMessages,
       onQueryChange,
       setIsThinking,
+      voice.stop,
     ],
   );
 
@@ -233,9 +285,11 @@ export function ConversationPhase({
     setExploreBridge({
       isThinking,
       onSend: handleUserMessage,
+      onCancelInFlight: handleCancelExploreInFlight,
     });
-    return () => setExploreBridge({ isThinking: false, onSend: null });
-  }, [isThinking, handleUserMessage, setExploreBridge]);
+    return () =>
+      setExploreBridge({ isThinking: false, onSend: null, onCancelInFlight: null });
+  }, [isThinking, handleUserMessage, handleCancelExploreInFlight, setExploreBridge]);
 
   const handleWidgetPrompt = useCallback(
     (
