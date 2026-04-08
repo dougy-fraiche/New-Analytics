@@ -2,7 +2,7 @@ import { Outlet, useLocation, useParams, useNavigate } from "react-router";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { SidebarProvider } from "./ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
-import { TopNavBar, PageHeaderBreadcrumbRow } from "./TopNavBar";
+import { TopNavBar } from "./TopNavBar";
 import { SearchOverlay } from "./SearchOverlay";
 import { ConversationProvider, useConversations } from "../contexts/ConversationContext";
 import { ProjectProvider, useProjects } from "../contexts/ProjectContext";
@@ -23,6 +23,7 @@ import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 import { AiAssistantPanelControlProvider } from "../contexts/AiAssistantPanelControlContext";
 import { ROUTES, ROUTE_PREFIXES } from "../routes";
 import { cn } from "./ui/utils";
+import { PageBreadcrumbsContext } from "../contexts/PageBreadcrumbsContext";
 
 const AI_ASSISTANT_OPEN_STORAGE_KEY = "ai-assistant-panel-open";
 const WIDGET_AI_MESSAGE_SENT_EVENT = "widget-ai-message-sent";
@@ -149,17 +150,17 @@ function RootLayoutInner() {
 
   // Generate breadcrumbs based on current route (memoized to avoid recomputation)
   const breadcrumbs = useMemo(() => {
-    // Root pages — keep a single breadcrumb visible
+    // Root pages — hide breadcrumbs; show only on drilled-in pages.
     if (location.pathname === ROUTES.EXPLORE) {
-      return [{ label: "Explore" }];
+      return [];
     }
 
     if (location.pathname === ROUTES.AUTOMATION_OPPORTUNITIES) {
-      return [{ label: "Automation Opportunities" }];
+      return [];
     }
 
     if (location.pathname === ROUTES.OBSERVABILITY) {
-      return [{ label: "Observability" }];
+      return [];
     }
 
     if (
@@ -191,27 +192,27 @@ function RootLayoutInner() {
     }
 
     if (location.pathname === ROUTES.SAVED) {
-      return [{ label: "Saved" }];
+      return [];
     }
 
     // Recommended Actions
     if (location.pathname === ROUTES.RECOMMENDED_ACTIONS) {
-      return [{ label: "Recommended Actions" }];
+      return [];
     }
 
     // Actions history
     if (location.pathname === ROUTES.ACTIONS_HISTORY) {
-      return [{ label: "History" }];
+      return [];
     }
 
     // All Insights
     if (location.pathname === ROUTES.INSIGHTS) {
-      return [{ label: "All Insights" }];
+      return [];
     }
 
     // Settings
     if (location.pathname === ROUTES.SETTINGS) {
-      return [{ label: "Settings" }];
+      return [];
     }
 
     // Draft Insights list (sub of Explore)
@@ -429,16 +430,17 @@ function RootLayoutInner() {
                     className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
                     style={{ minWidth: "min(420px, 100%)" }}
                   >
-                    {!isExploreHome && <PageHeaderBreadcrumbRow breadcrumbs={breadcrumbs} />}
-                    <main
-                      className={cn(
-                        "w-full min-h-0 flex-1",
-                        isFullHeightPage ? "flex flex-col overflow-hidden" : "overflow-auto",
-                        !isExploreHomeCanvasRoute && "bg-background",
-                      )}
-                    >
-                      <Outlet />
-                    </main>
+                    <PageBreadcrumbsContext.Provider value={breadcrumbs}>
+                      <main
+                        className={cn(
+                          "w-full min-h-0 flex-1",
+                          isFullHeightPage ? "flex flex-col overflow-hidden" : "overflow-auto",
+                          !isExploreHomeCanvasRoute && "bg-background",
+                        )}
+                      >
+                        <Outlet />
+                      </main>
+                    </PageBreadcrumbsContext.Provider>
                   </div>
                 </div>
               </div>

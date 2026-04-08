@@ -2,7 +2,7 @@ import {
   Bell,
   Search,
   Sparkles,
-  ChevronsUpDown,
+  ChevronDown,
   Settings,
   BarChart2,
   LayoutDashboard,
@@ -23,7 +23,6 @@ import {
   Diamond,
   type LucideIcon,
 } from "lucide-react";
-import { Link } from "react-router";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,14 +34,6 @@ import {
 } from "./ui/dropdown-menu";
 import { Button } from "./ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "./ui/breadcrumb";
 
 interface AppItem {
   name: string;
@@ -129,11 +120,11 @@ export function TopNavBar({
           >
             <img
               src="/app-icon.svg"
-              alt="New Analytics"
+              alt="Agentic Analytics"
               className="size-7 shrink-0 object-contain"
             />
-            <span className="truncate text-sm leading-tight">New Analytics</span>
-            <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 text-white/80" />
+            <span className="truncate text-sm leading-tight">Agentic Analytics</span>
+            <ChevronDown className="ml-auto h-4 w-4 shrink-0 text-white/80" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
@@ -281,48 +272,5 @@ export function TopNavBar({
         </Tooltip>
       </div>
     </header>
-  );
-}
-
-interface PageHeaderBreadcrumbRowProps {
-  breadcrumbs?: Array<{ label: string; href?: string }>;
-}
-
-export function PageHeaderBreadcrumbRow({
-  breadcrumbs = [],
-}: PageHeaderBreadcrumbRowProps) {
-  if (breadcrumbs.length === 0) return null;
-
-  return (
-    <div className="shrink-0 bg-background px-4 py-4">
-      <div className="min-w-0">
-        <Breadcrumb>
-          <BreadcrumbList>
-            {breadcrumbs.flatMap((crumb, index) => {
-              const items = [];
-              items.push(
-                <BreadcrumbItem key={`item-${index}`}>
-                  {index < breadcrumbs.length - 1 ? (
-                    crumb.href ? (
-                      <BreadcrumbLink asChild>
-                        <Link to={crumb.href}>{crumb.label}</Link>
-                      </BreadcrumbLink>
-                    ) : (
-                      <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
-                    )
-                  ) : (
-                    <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
-                  )}
-                </BreadcrumbItem>
-              );
-              if (index < breadcrumbs.length - 1) {
-                items.push(<BreadcrumbSeparator key={`sep-${index}`} />);
-              }
-              return items;
-            })}
-          </BreadcrumbList>
-        </Breadcrumb>
-      </div>
-    </div>
   );
 }

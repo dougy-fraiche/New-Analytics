@@ -1,6 +1,16 @@
 import type { ReactNode } from "react";
+import { Link } from "react-router";
 
 import { cn } from "./ui/utils";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "./ui/breadcrumb";
+import { usePageBreadcrumbs } from "../contexts/PageBreadcrumbsContext";
 
 /**
  * Layout patterns aligned with C26 / token-based UI (see `src/styles/tailwind.css`).
@@ -74,10 +84,44 @@ export function PageHeader({
   children: ReactNode;
   className?: string;
 }) {
+  const breadcrumbs = usePageBreadcrumbs();
+
   return (
     <header className={pageHeaderClassName}>
       <div className={cn("w-full min-w-0 px-8 pt-8 pb-8", className)}>
-        <div className={pageMainColumnClassName}>{children}</div>
+        <div className={pageMainColumnClassName}>
+          {breadcrumbs.length > 0 && (
+            <div className="mb-4 min-w-0">
+              <Breadcrumb>
+                <BreadcrumbList>
+                  {breadcrumbs.flatMap((crumb, index) => {
+                    const items = [];
+                    items.push(
+                      <BreadcrumbItem key={`item-${index}`}>
+                        {index < breadcrumbs.length - 1 ? (
+                          crumb.href ? (
+                            <BreadcrumbLink asChild>
+                              <Link to={crumb.href}>{crumb.label}</Link>
+                            </BreadcrumbLink>
+                          ) : (
+                            <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+                          )
+                        ) : (
+                          <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+                        )}
+                      </BreadcrumbItem>
+                    );
+                    if (index < breadcrumbs.length - 1) {
+                      items.push(<BreadcrumbSeparator key={`sep-${index}`} />);
+                    }
+                    return items;
+                  })}
+                </BreadcrumbList>
+              </Breadcrumb>
+            </div>
+          )}
+          {children}
+        </div>
       </div>
     </header>
   );
