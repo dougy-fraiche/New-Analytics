@@ -331,11 +331,11 @@ export function AppSidebar() {
                   >
                     <img
                       src="/app-icon.svg"
-                      alt="New Analytics"
+                      alt="Agentic Analytics"
                       className="size-8 shrink-0 object-contain"
                     />
                     <span className="truncate flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                      New Analytics
+                      Agentic Analytics
                     </span>
                     <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 text-muted-foreground group-data-[collapsible=icon]:hidden" />
                   </SidebarMenuButton>
