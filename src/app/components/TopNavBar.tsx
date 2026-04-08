@@ -1,9 +1,27 @@
 import {
-  PanelLeftClose,
-  PanelLeftOpen,
   Bell,
   Search,
   Sparkles,
+  ChevronsUpDown,
+  Settings,
+  BarChart2,
+  LayoutDashboard,
+  FileBarChart,
+  BotMessageSquare,
+  BrainCircuit,
+  Cable,
+  CloudCog,
+  PhoneForwarded,
+  Headset,
+  Eye,
+  Clapperboard,
+  CalendarClock,
+  ClipboardCheck,
+  Target,
+  GraduationCap,
+  MessageSquare,
+  Diamond,
+  type LucideIcon,
 } from "lucide-react";
 import { Link } from "react-router";
 import {
@@ -11,11 +29,11 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuGroup,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { Button } from "./ui/button";
-import { useSidebar } from "./ui/sidebar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import {
   Breadcrumb,
@@ -26,9 +44,66 @@ import {
   BreadcrumbSeparator,
 } from "./ui/breadcrumb";
 
+interface AppItem {
+  name: string;
+  icon: LucideIcon;
+  active?: boolean;
+}
+
+interface AppCategory {
+  label: string;
+  items: AppItem[];
+}
+
+const APP_CATEGORIES: AppCategory[] = [
+  {
+    label: "General",
+    items: [{ name: "Admin", icon: Settings }],
+  },
+  {
+    label: "Omnichannel Routing",
+    items: [
+      { name: "ACD", icon: PhoneForwarded },
+      { name: "Agent", icon: Headset },
+      { name: "Supervisor", icon: Eye },
+      { name: "Studio", icon: Clapperboard },
+    ],
+  },
+  {
+    label: "Workforce Engagement",
+    items: [
+      { name: "Workforce Management", icon: CalendarClock },
+      { name: "QM Analytics", icon: ClipboardCheck },
+      { name: "inView PM", icon: Target },
+      { name: "Coaching", icon: GraduationCap },
+      { name: "Interactions", icon: MessageSquare },
+      { name: "My Zone", icon: Diamond },
+    ],
+  },
+  {
+    label: "Data & Analytics",
+    items: [
+      { name: "Analytics", icon: BarChart2, active: true },
+      { name: "Dashboard", icon: LayoutDashboard },
+      { name: "Reporting", icon: FileBarChart },
+      { name: "Self-Service Analytics", icon: BotMessageSquare },
+    ],
+  },
+  {
+    label: "Automation",
+    items: [{ name: "Workforce Intelligence", icon: BrainCircuit }],
+  },
+  {
+    label: "Partner",
+    items: [
+      { name: "Adapters", icon: Cable },
+      { name: "Partner Hub", icon: CloudCog },
+    ],
+  },
+];
+
 interface TopNavBarProps {
   onSearchClick?: () => void;
-  breadcrumbs?: Array<{ label: string; href?: string }>;
   onActionsSlotRef?: (el: HTMLDivElement | null) => void;
   aiAssistantOpen?: boolean;
   onAiAssistantOpenChange?: (open: boolean) => void;
@@ -38,78 +113,63 @@ interface TopNavBarProps {
 
 export function TopNavBar({
   onSearchClick,
-  breadcrumbs = [],
   onActionsSlotRef,
   aiAssistantOpen = false,
   onAiAssistantOpenChange,
   aiAssistantDisabled = false,
 }: TopNavBarProps) {
-  const { state: sidebarState, toggleSidebar } = useSidebar();
-  const isCollapsed = sidebarState === "collapsed";
-  const hasBreadcrumbs = breadcrumbs.length > 0;
-
   return (
-    <header className="flex h-16 w-full items-center border-b border-border bg-background shrink-0 z-50 px-4">
-      {/* Sidebar toggle */}
-      <div className="flex items-center h-full">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8"
-              onClick={toggleSidebar}
-            >
-              {isCollapsed ? (
-                <PanelLeftOpen className="size-4" />
-              ) : (
-                <PanelLeftClose className="size-4" />
-              )}
-              <span className="sr-only">{isCollapsed ? "Expand sidebar" : "Collapse sidebar"}</span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            {isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          </TooltipContent>
-        </Tooltip>
-      </div>
-
-      {/* Breadcrumbs */}
-      {hasBreadcrumbs && (
-        <div className="flex items-center px-3">
-          <Breadcrumb>
-            <BreadcrumbList>
-              {breadcrumbs.flatMap((crumb, index) => {
-                const items = [];
-                items.push(
-                  <BreadcrumbItem key={`item-${index}`}>
-                    {index < breadcrumbs.length - 1 ? (
-                      crumb.href ? (
-                        <BreadcrumbLink asChild>
-                          <Link to={crumb.href}>{crumb.label}</Link>
-                        </BreadcrumbLink>
-                      ) : (
-                        <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
-                      )
-                    ) : (
-                      <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
-                    )}
-                  </BreadcrumbItem>
+    <header className="relative z-50 flex h-16 w-full shrink-0 items-center border-b border-[#005E8D] bg-[#007AB8] pl-3 pr-4 text-white">
+      {/* App switcher dropdown */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            className="h-10 max-w-[220px] justify-start gap-2 px-2 text-white hover:bg-black/20 hover:text-white data-[state=open]:bg-black/25 data-[state=open]:text-white"
+          >
+            <img
+              src="/app-icon.svg"
+              alt="New Analytics"
+              className="size-7 shrink-0 object-contain"
+            />
+            <span className="truncate text-sm leading-tight">New Analytics</span>
+            <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 text-white/80" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          side="bottom"
+          align="start"
+          className="w-56 max-h-[70vh] overflow-y-auto"
+        >
+          {APP_CATEGORIES.map((category, catIdx) => (
+            <DropdownMenuGroup key={category.label}>
+              {catIdx > 0 && <DropdownMenuSeparator />}
+              <DropdownMenuLabel className="text-xs uppercase tracking-wider">
+                {category.label}
+              </DropdownMenuLabel>
+              {category.items.map((app) => {
+                return (
+                  <DropdownMenuItem
+                    key={app.name}
+                    className={app.active ? "bg-accent text-accent-foreground" : ""}
+                  >
+                    <span className="truncate">{app.name}</span>
+                  </DropdownMenuItem>
                 );
-                if (index < breadcrumbs.length - 1) {
-                  items.push(<BreadcrumbSeparator key={`sep-${index}`} />);
-                }
-                return items;
               })}
-            </BreadcrumbList>
-          </Breadcrumb>
-        </div>
-      )}
+            </DropdownMenuGroup>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+        <img src="/cxone-on-blue-gradient.svg" alt="CXone" className="h-5 w-auto" />
+      </div>
 
       {/* Page-level actions slot (portaled into by child pages) + global actions */}
       <div className="ml-auto flex items-center gap-2">
         {/* Page-level actions slot */}
-        <div ref={onActionsSlotRef} className="flex items-center gap-1" />
+        <div ref={onActionsSlotRef} className="flex items-center gap-1 text-white" />
 
         {/* Search Button */}
         <Tooltip>
@@ -117,7 +177,7 @@ export function TopNavBar({
             <Button
               variant="ghost"
               size="icon"
-              className="size-8"
+              className="size-8 text-white hover:bg-black/20 hover:text-white data-[state=open]:bg-black/25 data-[state=open]:text-white"
               onClick={onSearchClick}
             >
               <Search className="h-4 w-4" />
@@ -132,7 +192,11 @@ export function TopNavBar({
           <Tooltip>
             <TooltipTrigger asChild>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="size-8">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 text-white hover:bg-black/20 hover:text-white data-[state=open]:bg-black/25 data-[state=open]:text-white"
+                >
                   <Bell className="h-4 w-4" />
                   <span className="sr-only">Notifications</span>
                 </Button>
@@ -195,11 +259,6 @@ export function TopNavBar({
               <Button
                 variant="outline"
                 size="sm"
-                className={[
-                  "h-8 gap-2",
-                  "border-primary/40 text-primary hover:bg-primary/5 hover:text-primary",
-                  aiAssistantOpen ? "bg-primary/10 border-primary/60" : "",
-                ].join(" ")}
                 disabled={aiAssistantDisabled}
                 aria-pressed={aiAssistantOpen}
                 onClick={() => onAiAssistantOpenChange?.(!aiAssistantOpen)}
@@ -222,5 +281,48 @@ export function TopNavBar({
         </Tooltip>
       </div>
     </header>
+  );
+}
+
+interface PageHeaderBreadcrumbRowProps {
+  breadcrumbs?: Array<{ label: string; href?: string }>;
+}
+
+export function PageHeaderBreadcrumbRow({
+  breadcrumbs = [],
+}: PageHeaderBreadcrumbRowProps) {
+  if (breadcrumbs.length === 0) return null;
+
+  return (
+    <div className="shrink-0 bg-background px-4 py-4">
+      <div className="min-w-0">
+        <Breadcrumb>
+          <BreadcrumbList>
+            {breadcrumbs.flatMap((crumb, index) => {
+              const items = [];
+              items.push(
+                <BreadcrumbItem key={`item-${index}`}>
+                  {index < breadcrumbs.length - 1 ? (
+                    crumb.href ? (
+                      <BreadcrumbLink asChild>
+                        <Link to={crumb.href}>{crumb.label}</Link>
+                      </BreadcrumbLink>
+                    ) : (
+                      <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+                    )
+                  ) : (
+                    <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+                  )}
+                </BreadcrumbItem>
+              );
+              if (index < breadcrumbs.length - 1) {
+                items.push(<BreadcrumbSeparator key={`sep-${index}`} />);
+              }
+              return items;
+            })}
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
+    </div>
   );
 }

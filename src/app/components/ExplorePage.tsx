@@ -12,6 +12,7 @@ import { conversationMessageToGlobalChat } from "../lib/conversation-message-to-
 import { runPhasedExploreAssistantReply } from "../lib/run-phased-explore-assistant-reply";
 import { useVoiceInput } from "../hooks/useVoiceInput";
 import { generateConversationName, generateAIResponse } from "../data/explore-data";
+import { ROUTES } from "../routes";
 
 import { WidgetAIProvider } from "../contexts/WidgetAIContext";
 import { ExplorePhase } from "./ExplorePhase";
@@ -135,13 +136,16 @@ export function ExplorePage() {
         setConversationName(conversation.name);
         setMessages(conversation.messages ?? []);
         setPhase("conversation");
+      } else {
+        // Unknown / stale conversation URLs should never render a blank screen.
+        navigate(ROUTES.CONVERSATIONS, { replace: true });
       }
     } else {
       setPhase("explore");
       setConversationName("");
       setMessages([]);
     }
-  }, [params.conversationId]);
+  }, [params.conversationId, navigate]);
 
   // ── Explore phase handlers ────────────────────────────────────────
   const handleActionClick = useCallback((label: string, prompts: string[]) => {

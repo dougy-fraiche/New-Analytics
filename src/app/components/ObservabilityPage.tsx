@@ -38,7 +38,7 @@ export function ObservabilityPage() {
   const allItems = ootbCategories.flatMap((cat) => {
     if (cat.dashboards.length === 0) {
       // Standalone category — treat category itself as a dashboard
-      return [{ id: cat.id, name: cat.name, icon: cat.icon, categoryName: "Standalone", categoryId: cat.id, description: `${cat.name} comparison and analytics`, lastUpdated: "Recently", path: `/dashboard/${cat.id}` }];
+      return [{ id: cat.id, name: cat.name, icon: cat.icon, categoryName: "Standalone", categoryId: cat.id, description: `${cat.name} comparison and analytics`, lastUpdated: "Recently", path: ROUTES.DASHBOARD(cat.id) }];
     }
     return cat.dashboards.map((d) => ({
       ...d,

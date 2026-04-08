@@ -2,7 +2,7 @@ import { Outlet, useLocation, useParams, useNavigate } from "react-router";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { SidebarProvider } from "./ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
-import { TopNavBar } from "./TopNavBar";
+import { TopNavBar, PageHeaderBreadcrumbRow } from "./TopNavBar";
 import { SearchOverlay } from "./SearchOverlay";
 import { ConversationProvider, useConversations } from "../contexts/ConversationContext";
 import { ProjectProvider, useProjects } from "../contexts/ProjectContext";
@@ -21,7 +21,7 @@ import { DashboardChatPanel } from "./DashboardChatPanel";
 import { resolveAiAssistantRouteContext } from "../lib/resolve-ai-assistant-route-context";
 import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 import { AiAssistantPanelControlProvider } from "../contexts/AiAssistantPanelControlContext";
-import { ROUTES } from "../routes";
+import { ROUTES, ROUTE_PREFIXES } from "../routes";
 import { cn } from "./ui/utils";
 
 const AI_ASSISTANT_OPEN_STORAGE_KEY = "ai-assistant-panel-open";
@@ -46,10 +46,10 @@ function RootLayoutInner() {
   const { projects, standaloneDashboards } = useProjects();
 
   /** Explore hero only — AI panel is collapsed/disabled here; conversation URLs use the global panel. */
-  const isExploreHome = location.pathname === "/";
+  const isExploreHome = location.pathname === ROUTES.EXPLORE;
 
   /** Explore home (`/`) only — hero gradient sits on the page canvas; conversation + all other routes use white `main`. */
-  const isExploreRoute = location.pathname === "/";
+  const isExploreHomeCanvasRoute = location.pathname === ROUTES.EXPLORE;
 
   const [aiAssistantOpen, setAiAssistantOpenState] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -87,7 +87,7 @@ function RootLayoutInner() {
 
   // Open the assistant automatically when viewing an Explore conversation thread.
   useEffect(() => {
-    if (location.pathname.startsWith("/conversation/")) {
+    if (location.pathname.startsWith(ROUTE_PREFIXES.conversation)) {
       setAiAssistantOpen(true);
     }
   }, [location.pathname, setAiAssistantOpen]);
@@ -138,7 +138,7 @@ function RootLayoutInner() {
           key: "e",
           handler: (e: KeyboardEvent) => {
             e.preventDefault();
-            navigate("/");
+            navigate(ROUTES.EXPLORE);
             setTimeout(() => {
               window.dispatchEvent(new Event("focusExploreInput"));
             }, 50);
@@ -150,11 +150,11 @@ function RootLayoutInner() {
   // Generate breadcrumbs based on current route (memoized to avoid recomputation)
   const breadcrumbs = useMemo(() => {
     // Root pages — keep a single breadcrumb visible
-    if (location.pathname === "/") {
+    if (location.pathname === ROUTES.EXPLORE) {
       return [{ label: "Explore" }];
     }
 
-    if (location.pathname === "/automation-opportunities") {
+    if (location.pathname === ROUTES.AUTOMATION_OPPORTUNITIES) {
       return [{ label: "Automation Opportunities" }];
     }
 
@@ -164,7 +164,7 @@ function RootLayoutInner() {
 
     if (
       params.agentId &&
-      location.pathname.startsWith(`${ROUTES.AUTOMATION_OPPORTUNITIES}/agent/`)
+      location.pathname.startsWith(ROUTE_PREFIXES.automationOpportunitiesAgent)
     ) {
       const agent = getAgentById(params.agentId);
       return [
@@ -190,34 +190,34 @@ function RootLayoutInner() {
       ];
     }
 
-    if (location.pathname === "/saved") {
+    if (location.pathname === ROUTES.SAVED) {
       return [{ label: "Saved" }];
     }
 
     // Recommended Actions
-    if (location.pathname === "/recommended-actions") {
+    if (location.pathname === ROUTES.RECOMMENDED_ACTIONS) {
       return [{ label: "Recommended Actions" }];
     }
 
     // Actions history
-    if (location.pathname === "/actions/history") {
+    if (location.pathname === ROUTES.ACTIONS_HISTORY) {
       return [{ label: "History" }];
     }
 
     // All Insights
-    if (location.pathname === "/insights") {
+    if (location.pathname === ROUTES.INSIGHTS) {
       return [{ label: "All Insights" }];
     }
 
     // Settings
-    if (location.pathname === "/settings") {
+    if (location.pathname === ROUTES.SETTINGS) {
       return [{ label: "Settings" }];
     }
 
     // Draft Insights list (sub of Explore)
-    if (location.pathname === "/conversations") {
+    if (location.pathname === ROUTES.CONVERSATIONS) {
       return [
-        { label: "Explore", href: "/" },
+        { label: "Explore", href: ROUTES.EXPLORE },
         { label: "Draft Insights" },
       ];
     }
@@ -236,17 +236,17 @@ function RootLayoutInner() {
         }
         if (latestDashboardTitle) {
           return [
-            { label: "Explore", href: "/" },
+            { label: "Explore", href: ROUTES.EXPLORE },
             { label: latestDashboardTitle },
           ];
         }
         // No dashboard yet — show a generic crumb so the user can navigate back
-        return [{ label: "Explore", href: "/" }, { label: "New Thread" }];
+        return [{ label: "Explore", href: ROUTES.EXPLORE }, { label: "New Thread" }];
       }
     }
 
     // Standalone OOTB dashboard URLs
-    if (location.pathname.startsWith("/dashboard/")) {
+    if (location.pathname.startsWith(ROUTE_PREFIXES.dashboard)) {
       const dashboardId = params.dashboardId;
       const ootbInfo = dashboardId ? findOotbDashboardById(dashboardId) : undefined;
       const dashboardName = ootbInfo?.name || "Dashboard";
@@ -261,43 +261,43 @@ function RootLayoutInner() {
     }
 
     // Standalone custom dashboard (not in a folder)
-    if (location.pathname.startsWith("/saved/dashboard/") && params.dashboardId) {
+    if (location.pathname.startsWith(ROUTE_PREFIXES.savedDashboard) && params.dashboardId) {
       const standaloneDb = standaloneDashboards.find(d => d.id === params.dashboardId);
       return [
-        { label: "Saved", href: "/saved" },
+        { label: "Saved", href: ROUTES.SAVED },
         { label: standaloneDb?.name || "Dashboard" },
       ];
     }
 
     // Saved folder view
-    if (location.pathname.startsWith("/saved/") && params.folderId) {
+    if (location.pathname.startsWith(ROUTE_PREFIXES.saved) && params.folderId) {
       const folder = projects.find(p => p.id === params.folderId);
       if (folder) {
         // Check if we're viewing a dashboard within the folder
-        if (location.pathname.includes("/dashboard/")) {
+        if (location.pathname.includes(ROUTE_PREFIXES.dashboard)) {
           const dashboard = folder.dashboards.find(d => d.id === params.dashboardId);
           return [
-            { label: "Saved", href: "/saved" },
-            { label: folder.name, href: `/saved/${folder.id}` },
+            { label: "Saved", href: ROUTES.SAVED },
+            { label: folder.name, href: ROUTES.SAVED_FOLDER(folder.id) },
             { label: dashboard?.name || "Dashboard" },
           ];
         }
         // Just viewing the folder
         return [
-          { label: "Saved", href: "/saved" },
+          { label: "Saved", href: ROUTES.SAVED },
           { label: folder.name },
         ];
       }
     }
 
     // Project dashboard (saved dashboard)
-    if (location.pathname.startsWith("/project/") && params.projectId && params.dashboardId) {
+    if (location.pathname.startsWith(ROUTE_PREFIXES.project) && params.projectId && params.dashboardId) {
       const project = projects.find(p => p.id === params.projectId);
       const dashboard = project?.dashboards.find(d => d.id === params.dashboardId);
       if (project && dashboard) {
         return [
-          { label: "Saved", href: "/saved" },
-          { label: project.name, href: `/saved/${project.id}` },
+          { label: "Saved", href: ROUTES.SAVED },
+          { label: project.name, href: ROUTES.SAVED_FOLDER(project.id) },
           { label: dashboard.name },
         ];
       }
@@ -311,11 +311,11 @@ function RootLayoutInner() {
     let label: string | undefined;
     if (breadcrumbs.length > 0) {
       label = breadcrumbs[breadcrumbs.length - 1]!.label;
-    } else if (location.pathname === "/insights") {
+    } else if (location.pathname === ROUTES.INSIGHTS) {
       label = "All Insights";
     } else if (
-      location.pathname === "/automation-opportunities" ||
-      location.pathname.startsWith(`${ROUTES.AUTOMATION_OPPORTUNITIES}/agent/`)
+      location.pathname === ROUTES.AUTOMATION_OPPORTUNITIES ||
+      location.pathname.startsWith(ROUTE_PREFIXES.automationOpportunitiesAgent)
     ) {
       if (params.agentId) {
         label = getAgentById(params.agentId)?.scopeTitle ?? decodeURIComponent(params.agentId) ?? "Agent";
@@ -331,13 +331,13 @@ function RootLayoutInner() {
       label = "Copilot";
     } else if (location.pathname === ROUTES.OBSERVABILITY) {
       label = "Observability";
-    } else if (location.pathname === "/saved") {
+    } else if (location.pathname === ROUTES.SAVED) {
       label = "Saved";
-    } else if (location.pathname === "/recommended-actions") {
+    } else if (location.pathname === ROUTES.RECOMMENDED_ACTIONS) {
       label = "Recommended Actions";
-    } else if (location.pathname === "/actions/history") {
+    } else if (location.pathname === ROUTES.ACTIONS_HISTORY) {
       label = "History";
-    } else if (location.pathname === "/settings") {
+    } else if (location.pathname === ROUTES.SETTINGS) {
       label = "Settings";
     }
 
@@ -352,12 +352,12 @@ function RootLayoutInner() {
 
   // Check if current route needs full-height layout (no outer scroll/padding — page manages its own)
   const isFullHeightPage =
-    location.pathname.includes('/dashboard') ||
-    location.pathname.startsWith('/conversation/') ||
-    location.pathname === '/' ||
-    location.pathname === '/insights' ||
-    location.pathname === '/automation-opportunities' ||
-    location.pathname.startsWith(`${ROUTES.AUTOMATION_OPPORTUNITIES}/agent/`) ||
+    location.pathname.includes(ROUTE_PREFIXES.dashboard) ||
+    location.pathname.startsWith(ROUTE_PREFIXES.conversation) ||
+    location.pathname === ROUTES.EXPLORE ||
+    location.pathname === ROUTES.INSIGHTS ||
+    location.pathname === ROUTES.AUTOMATION_OPPORTUNITIES ||
+    location.pathname.startsWith(ROUTE_PREFIXES.automationOpportunitiesAgent) ||
     location.pathname === ROUTES.COPILOT ||
     location.pathname === ROUTES.AI_AGENTS ||
     location.pathname.startsWith(`${ROUTES.AI_AGENTS}/`);
@@ -411,33 +411,35 @@ function RootLayoutInner() {
             >
               <div
                 className={cn(
-                  "relative flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden transition-[border-radius,box-shadow] duration-200 ease-linear",
+                  "relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden transition-[border-radius,box-shadow] duration-200 ease-linear",
                   assistantLayoutInset ? "rounded-xl shadow-md" : "rounded-none shadow-none",
                 )}
               >
-                <AppSidebar />
-                <div
-                  data-panel-container
-                  className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
-                  style={{ minWidth: "min(420px, 100%)" }}
-                >
-                  <TopNavBar
-                    onSearchClick={() => setSearchOpen(true)}
-                    breadcrumbs={breadcrumbs}
-                    onActionsSlotRef={setHeaderActionsSlot}
-                    aiAssistantOpen={aiAssistantOpen}
-                    onAiAssistantOpenChange={setAiAssistantOpen}
-                    aiAssistantDisabled={isExploreHome}
-                  />
-                  <main
-                    className={cn(
-                      "w-full min-h-0 flex-1",
-                      isFullHeightPage ? "flex flex-col overflow-hidden" : "overflow-auto",
-                      !isExploreRoute && "bg-background",
-                    )}
+                <TopNavBar
+                  onSearchClick={() => setSearchOpen(true)}
+                  onActionsSlotRef={setHeaderActionsSlot}
+                  aiAssistantOpen={aiAssistantOpen}
+                  onAiAssistantOpenChange={setAiAssistantOpen}
+                  aiAssistantDisabled={isExploreHome}
+                />
+                <div className="relative flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden">
+                  <AppSidebar />
+                  <div
+                    data-panel-container
+                    className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+                    style={{ minWidth: "min(420px, 100%)" }}
                   >
-                    <Outlet />
-                  </main>
+                    {!isExploreHome && <PageHeaderBreadcrumbRow breadcrumbs={breadcrumbs} />}
+                    <main
+                      className={cn(
+                        "w-full min-h-0 flex-1",
+                        isFullHeightPage ? "flex flex-col overflow-hidden" : "overflow-auto",
+                        !isExploreHomeCanvasRoute && "bg-background",
+                      )}
+                    >
+                      <Outlet />
+                    </main>
+                  </div>
                 </div>
               </div>
             </div>

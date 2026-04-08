@@ -69,6 +69,7 @@ import {
   type DashboardProductFilter,
   type DashboardTeamFilter,
 } from "../data/dashboard-filters";
+import { ROUTES } from "../routes";
 import { LabeledFilterInline, LabeledSelectValue } from "./HeaderFilters";
 
 import {
@@ -291,7 +292,7 @@ export function DashboardPage() {
       const project = projects.find((p) => p.id === projectId);
       const dashboardSnapshot = project?.dashboards.find((d) => d.id === dashboardId);
       deleteDashboardFromProject(projectId, dashboardId);
-      navigate("/saved");
+      navigate(ROUTES.SAVED);
       toast.success("Dashboard deleted", {
         description: `"${meta.title}" has been deleted.`,
         action: {
@@ -307,7 +308,7 @@ export function DashboardPage() {
     } else if (isStandaloneDashboard && standaloneMatch && dashboardId) {
       const snapshot = { ...standaloneMatch };
       deleteStandaloneDashboard(dashboardId);
-      navigate("/saved");
+      navigate(ROUTES.SAVED);
       toast.success("Dashboard deleted", {
         description: `"${meta.title}" has been deleted.`,
         action: {

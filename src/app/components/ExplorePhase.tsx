@@ -1,16 +1,16 @@
 import type { LegacyRef, RefObject } from "react";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { CircleAlert, Zap } from "lucide-react";
 import { Card, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
 import { ChatInputBar } from "./ChatInputBar";
 import { PageContent, pageMainColumnClassName, pageRootListScrollGutterClassName } from "./PageChrome";
-import { RecommendedActionSheet } from "./RecommendedActionSheet";
+import { ExploreInsightDialog } from "./ExploreInsightDialog";
 import { WidgetAIPromptButton } from "./WidgetAIPromptButton";
-import type { RecommendedAction } from "../data/recommended-actions";
-import { topInsightCardToRecommendedAction } from "../lib/top-insight-to-recommended-action";
 import {
+  type TopInsightCard,
   exploreHeadings,
   suggestedActions,
   topInsightsCards,
@@ -60,7 +60,7 @@ export function ExplorePhase({
   onTypeaheadSuggestionPicked,
 }: ExplorePhaseProps) {
   const [topInsightsFilter, setTopInsightsFilter] = useState<TopInsightsFilter>("all");
-  const [topInsightSheetAction, setTopInsightSheetAction] = useState<RecommendedAction | null>(
+  const [topInsightDialogCard, setTopInsightDialogCard] = useState<TopInsightCard | null>(
     null,
   );
   const [heroSectionHeightPx, setHeroSectionHeightPx] = useState<number | null>(null);
@@ -154,13 +154,12 @@ export function ExplorePhase({
 
   return (
     <>
-      <RecommendedActionSheet
-        action={topInsightSheetAction}
-        open={!!topInsightSheetAction}
+      <ExploreInsightDialog
+        insight={topInsightDialogCard}
+        open={!!topInsightDialogCard}
         onOpenChange={(open) => {
-          if (!open) setTopInsightSheetAction(null);
+          if (!open) setTopInsightDialogCard(null);
         }}
-        onDismiss={() => setTopInsightSheetAction(null)}
       />
       <div
         ref={exploreSurfaceRef}
@@ -295,13 +294,11 @@ export function ExplorePhase({
                       tabIndex={0}
                       aria-label={`View details: ${card.title}`}
                       className="flex min-h-0 w-full flex-1 cursor-pointer flex-col rounded-xl text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                      onClick={() =>
-                        setTopInsightSheetAction(topInsightCardToRecommendedAction(card))
-                      }
+                      onClick={() => setTopInsightDialogCard(card)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
                           e.preventDefault();
-                          setTopInsightSheetAction(topInsightCardToRecommendedAction(card));
+                          setTopInsightDialogCard(card);
                         }
                       }}
                     >
@@ -322,10 +319,18 @@ export function ExplorePhase({
                         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
                           {card.segment === "anomaly" ? (
                             <>
-                              <Badge variant="outline">Anomaly</Badge>
+                              <Badge variant="outline" className="gap-1">
+                                <CircleAlert className="h-3 w-3" />
+                                Anomaly
+                              </Badge>
                               <Badge
                                 variant={
                                   card.severity === "Critical" ? "destructive" : "secondary"
+                                }
+                                className={
+                                  card.severity === "High"
+                                    ? "border-orange-200 bg-orange-100 text-orange-800 dark:border-orange-900 dark:bg-orange-950/40 dark:text-orange-300"
+                                    : undefined
                                 }
                               >
                                 {card.severity}
@@ -334,7 +339,10 @@ export function ExplorePhase({
                           ) : (
                             <>
                               {card.showActionPill ? (
-                                <Badge variant="default">Action</Badge>
+                                <Badge variant="default" className="gap-1">
+                                  <Zap className="h-3 w-3" />
+                                  Action
+                                </Badge>
                               ) : null}
                               <Badge variant="outline">Opportunity</Badge>
                             </>

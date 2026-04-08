@@ -30,6 +30,7 @@ export const ROUTES = {
  */
 export const ROUTE_PREFIXES = {
   conversation: "/conversation/",
+  automationOpportunitiesAgent: `${ROUTES.AUTOMATION_OPPORTUNITIES}/agent/`,
   dashboard: "/dashboard/",
   aiAgentsNested: `${ROUTES.AI_AGENTS}/`,
   copilot: ROUTES.COPILOT,

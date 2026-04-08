@@ -3,8 +3,9 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
+  PanelLeftClose,
+  PanelLeftOpen,
   Compass,
-  LayoutDashboard,
   FolderInput,
   History,
   Bookmark,
@@ -13,27 +14,9 @@ import {
   Settings,
   LogOut,
   User,
-  ChevronsUpDown,
   ChevronDown,
-  BarChart2,
-  PhoneForwarded,
-  Headset,
-  Eye,
-  Clapperboard,
-  CalendarClock,
-  ClipboardCheck,
-  Target,
   Bot,
-  GraduationCap,
-  MessageSquare,
-  Diamond,
   Plus,
-  FileBarChart,
-  BotMessageSquare,
-  BrainCircuit,
-  Cable,
-  CloudCog,
-  type LucideIcon,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { type ReactNode } from "react";
@@ -51,14 +34,13 @@ import {
   SidebarMenuAction,
   SidebarHeader,
   SidebarFooter,
+  useSidebar,
 } from "./ui/sidebar";
 import { Collapsible, CollapsibleContent } from "./ui/collapsible";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuGroup,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
@@ -72,8 +54,7 @@ import { useSidebarDialogs } from "../hooks/useSidebarDialogs";
 import { usePersistedState } from "../hooks/usePersistedState";
 import { useKeyboardShortcut } from "../hooks/useKeyboardShortcuts";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { useSidebar } from "./ui/sidebar";
-import { ROUTES } from "../routes";
+import { ROUTES, ROUTE_PREFIXES } from "../routes";
 import {
   DropdownMenu as UserDropdownMenu,
   DropdownMenuContent as UserDropdownMenuContent,
@@ -84,64 +65,6 @@ import {
 } from "./ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { cn } from "./ui/utils";
-
-interface AppItem {
-  name: string;
-  icon: LucideIcon;
-  active?: boolean;
-}
-
-interface AppCategory {
-  label: string;
-  items: AppItem[];
-}
-
-const APP_CATEGORIES: AppCategory[] = [
-  {
-    label: "General",
-    items: [{ name: "Admin", icon: Settings }],
-  },
-  {
-    label: "Omnichannel Routing",
-    items: [
-      { name: "ACD", icon: PhoneForwarded },
-      { name: "Agent", icon: Headset },
-      { name: "Supervisor", icon: Eye },
-      { name: "Studio", icon: Clapperboard },
-    ],
-  },
-  {
-    label: "Workforce Engagement",
-    items: [
-      { name: "Workforce Management", icon: CalendarClock },
-      { name: "QM Analytics", icon: ClipboardCheck },
-      { name: "inView PM", icon: Target },
-      { name: "Coaching", icon: GraduationCap },
-      { name: "Interactions", icon: MessageSquare },
-      { name: "My Zone", icon: Diamond },
-    ],
-  },
-  {
-    label: "Data & Analytics",
-    items: [
-      { name: "Analytics", icon: BarChart2, active: true },
-      { name: "Dashboard", icon: LayoutDashboard },
-      { name: "Reporting", icon: FileBarChart },
-      { name: "Self-Service Analytics", icon: BotMessageSquare },
-    ],
-  },
-  {
-    label: "Automation",
-    items: [{ name: "Workforce Intelligence", icon: BrainCircuit }],
-  },
-  {
-    label: "Partner",
-    items: [
-      { name: "Adapters", icon: Cable },
-      { name: "Partner Hub", icon: CloudCog },
-    ],
-  },
-];
 
 const DASHBOARD_DND_TYPE = "SIDEBAR_DASHBOARD";
 
@@ -318,66 +241,34 @@ export function AppSidebar() {
   return (
     <>
       <Sidebar collapsible="icon">
-        <SidebarHeader className="pt-4 pb-2">
-          {/* App switcher dropdown */}
-          <SidebarMenu className="mb-0">
-            <SidebarMenuItem>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <SidebarMenuButton
-                    size="lg"
-                    className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground group-data-[collapsible=icon]:justify-center"
-                    tooltip="Switch application"
-                  >
-                    <img
-                      src="/app-icon.svg"
-                      alt="New Analytics"
-                      className="size-8 shrink-0 object-contain"
-                    />
-                    <span className="truncate flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                      New Analytics
-                    </span>
-                    <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 text-muted-foreground group-data-[collapsible=icon]:hidden" />
-                  </SidebarMenuButton>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  side="bottom"
-                  align="start"
-                  className="w-56 max-h-[70vh] overflow-y-auto"
+        <SidebarHeader className="border-b border-sidebar-border px-2 py-2 group-data-[collapsible=icon]:p-4">
+          <div className="flex items-center justify-end group-data-[collapsible=icon]:justify-center">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="flex size-8 items-center justify-center rounded-md text-sidebar-foreground outline-hidden ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2"
+                  onClick={toggleSidebar}
                 >
-                  {APP_CATEGORIES.map((category, catIdx) => (
-                    <DropdownMenuGroup key={category.label}>
-                      {catIdx > 0 && <DropdownMenuSeparator />}
-                      <DropdownMenuLabel className="text-xs uppercase tracking-wider">
-                        {category.label}
-                      </DropdownMenuLabel>
-                      {category.items.map((app) => {
-                        return (
-                          <DropdownMenuItem
-                            key={app.name}
-                            className={app.active ? "bg-accent text-accent-foreground" : ""}
-                          >
-                            <span className="truncate">{app.name}</span>
-                          </DropdownMenuItem>
-                        );
-                      })}
-                    </DropdownMenuGroup>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </SidebarMenuItem>
-          </SidebarMenu>
+                  {isCollapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
+                  <span className="sr-only">{isCollapsed ? "Expand sidebar" : "Collapse sidebar"}</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </SidebarHeader>
-
-        <SidebarContent className="gap-1 pt-2 group-data-[collapsible=icon]:pt-4">
+        <SidebarContent className="gap-1 pt-4 group-data-[collapsible=icon]:pt-4">
           {/* Explore — collapsible draft threads (`E` still navigates to Explore via RootLayout) */}
           <CollapsibleSidebarSection
             icon={Compass}
             label="Explore"
-            path="/"
+            path={ROUTES.EXPLORE}
             open={exploreOpen}
             onToggle={setExploreOpen}
-            headerIsActive={location.pathname === "/"}
+            headerIsActive={location.pathname === ROUTES.EXPLORE}
           >
             {activeConversations.length === 0 ? (
               <SidebarMenuSubItem>
@@ -386,12 +277,12 @@ export function AppSidebar() {
             ) : (
               <>
                 {visibleConversations.map((conversation) => {
-                  const isActive = location.pathname === `/conversation/${conversation.id}`;
+                  const isActive = location.pathname === ROUTES.CONVERSATION(conversation.id);
                   return (
                     <SidebarMenuSubItem key={conversation.id}>
                       <div className={SUB_ITEM_ROW_WRAPPER_CLASS}>
                         <SidebarMenuSubButton asChild isActive={isActive} className="group-hover/subitem:pr-8 group-focus-within/subitem:pr-8">
-                          <Link to={`/conversation/${conversation.id}`}>
+                          <Link to={ROUTES.CONVERSATION(conversation.id)}>
                             <span className="truncate">{conversation.name}</span>
                           </Link>
                         </SidebarMenuSubButton>
@@ -439,8 +330,8 @@ export function AppSidebar() {
                 })}
                 {hasMore && (
                   <SidebarMenuSubItem>
-                    <SidebarMenuSubButton asChild isActive={location.pathname === "/conversations"}>
-                      <Link to="/conversations" className="text-muted-foreground">
+                    <SidebarMenuSubButton asChild isActive={location.pathname === ROUTES.CONVERSATIONS}>
+                      <Link to={ROUTES.CONVERSATIONS} className="text-muted-foreground">
                         <span>View all →</span>
                       </Link>
                     </SidebarMenuSubButton>
@@ -454,8 +345,8 @@ export function AppSidebar() {
             <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">Actions</SidebarGroupLabel>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={location.pathname === "/actions/history"} tooltip="History">
-                  <Link to="/actions/history">
+                <SidebarMenuButton asChild isActive={location.pathname === ROUTES.ACTIONS_HISTORY} tooltip="History">
+                  <Link to={ROUTES.ACTIONS_HISTORY}>
                     <History />
                     <span>History</span>
                   </Link>
@@ -475,12 +366,12 @@ export function AppSidebar() {
                 <SidebarMenuButton
                   asChild
                   isActive={
-                    location.pathname === "/automation-opportunities" ||
-                    location.pathname.startsWith("/automation-opportunities/agent/")
+                    location.pathname === ROUTES.AUTOMATION_OPPORTUNITIES ||
+                    location.pathname.startsWith(ROUTE_PREFIXES.automationOpportunitiesAgent)
                   }
                   tooltip="Automation Opportunities"
                 >
-                  <Link to="/automation-opportunities">
+                  <Link to={ROUTES.AUTOMATION_OPPORTUNITIES}>
                     <Bot />
                     <span>Automation Opportunities</span>
                   </Link>
@@ -492,7 +383,7 @@ export function AppSidebar() {
           <CollapsibleSidebarSection
             icon={ChartLine}
             label="Observability"
-            path="/observability"
+            path={ROUTES.OBSERVABILITY}
             open={observabilityOpen}
             onToggle={setObservabilityOpen}
             headerIsActive={location.pathname === ROUTES.OBSERVABILITY}
@@ -534,7 +425,7 @@ export function AppSidebar() {
           <CollapsibleSidebarSection
             icon={Bookmark}
             label="Saved"
-            path="/saved"
+            path={ROUTES.SAVED}
             open={savedOpen}
             onToggle={setSavedOpen}
             itemAction={
@@ -588,12 +479,12 @@ export function AppSidebar() {
                     <div className={SUB_ITEM_ROW_WRAPPER_CLASS}>
                       <SidebarMenuSubButton
                         asChild
-                        isActive={location.pathname === `/saved/${project.id}`}
+                        isActive={location.pathname === ROUTES.SAVED_FOLDER(project.id)}
                         className="group-hover/subitem:pr-8 group-focus-within/subitem:pr-8 p-0"
                       >
                         <div className="group/folder-row relative flex h-7 w-full min-w-0 items-center gap-2 px-2 has-[button:focus-visible]:[&_[data-folder-row-icon]>svg]:opacity-0">
                           <Link
-                            to={`/saved/${project.id}`}
+                            to={ROUTES.SAVED_FOLDER(project.id)}
                             className="flex min-w-0 flex-1 items-center gap-2 rounded-sm outline-hidden ring-sidebar-ring focus-visible:ring-2"
                           >
                             <span
@@ -749,7 +640,7 @@ export function AppSidebar() {
 
             {/* Standalone dashboards (not inside any folder) */}
             {standaloneDashboards.map((dashboard) => {
-              const isActive = location.pathname === `/saved/dashboard/${dashboard.id}`;
+              const isActive = location.pathname === ROUTES.SAVED_DASHBOARD(dashboard.id);
               return (
                 <SidebarMenuSubItem key={dashboard.id}>
                   <div className={SUB_ITEM_ROW_WRAPPER_CLASS}>
@@ -758,7 +649,7 @@ export function AppSidebar() {
                       isActive={isActive}
                       className="group-hover/subitem:pr-8 group-focus-within/subitem:pr-8"
                     >
-                      <Link to={`/saved/dashboard/${dashboard.id}`}>
+                      <Link to={ROUTES.SAVED_DASHBOARD(dashboard.id)}>
                         <span className="truncate">{dashboard.name}</span>
                       </Link>
                     </SidebarMenuSubButton>
@@ -838,7 +729,7 @@ export function AppSidebar() {
                     <User className="mr-2 h-4 w-4" />
                     <span>Profile</span>
                   </UserDropdownMenuItem>
-                  <UserDropdownMenuItem onClick={() => navigate("/settings")}>
+                  <UserDropdownMenuItem onClick={() => navigate(ROUTES.SETTINGS)}>
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </UserDropdownMenuItem>

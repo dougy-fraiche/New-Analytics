@@ -129,10 +129,13 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const moveDashboardToProject = useCallback((fromProjectId: string, dashboardId: string, toProjectId: string) => {
+    if (fromProjectId === toProjectId) return;
     setProjects((prev) => {
       const sourceProject = prev.find((p) => p.id === fromProjectId);
+      const targetProject = prev.find((p) => p.id === toProjectId);
       const dashboard = sourceProject?.dashboards.find((d) => d.id === dashboardId);
-      if (!dashboard) return prev;
+      if (!dashboard || !targetProject) return prev;
+      if (targetProject.dashboards.some((d) => d.id === dashboardId)) return prev;
       return prev.map((p) => {
         if (p.id === fromProjectId) {
           return { ...p, dashboards: p.dashboards.filter((d) => d.id !== dashboardId) };
@@ -193,53 +196,38 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const moveStandaloneToFolder = useCallback((dashboardId: string, toProjectId: string) => {
-    // Read the dashboard from standaloneDashboards state inside the updater
-    // to avoid stale closure issues
-    setStandaloneDashboards((sPrev) => {
-      const dashboard = sPrev.find((d) => d.id === dashboardId);
-      if (!dashboard) return sPrev;
+    const dashboard = standaloneDashboards.find((d) => d.id === dashboardId);
+    if (!dashboard) return;
+    if (!projects.some((p) => p.id === toProjectId)) return;
 
-      // Schedule project update from within the standalone updater
-      const dashboardCopy = { ...dashboard };
-      queueMicrotask(() => {
-        setProjects((pPrev) =>
-          pPrev.map((p) => {
-            if (p.id === toProjectId) {
-              return { ...p, dashboards: [...p.dashboards, dashboardCopy] };
-            }
-            return p;
-          })
-        );
-      });
+    setProjects((prev) =>
+      prev.map((p) => {
+        if (p.id !== toProjectId) return p;
+        if (p.dashboards.some((d) => d.id === dashboardId)) return p;
+        return { ...p, dashboards: [...p.dashboards, { ...dashboard }] };
+      }),
+    );
 
-      return sPrev.filter((d) => d.id !== dashboardId);
-    });
-  }, []);
+    setStandaloneDashboards((prev) => prev.filter((d) => d.id !== dashboardId));
+  }, [projects, standaloneDashboards]);
 
   const moveDashboardToStandalone = useCallback((fromProjectId: string, dashboardId: string) => {
-    // Look up the dashboard from current state BEFORE calling setProjects
-    // to avoid relying on side-effects inside the state updater (which is
-    // fragile under React concurrent rendering).
-    setProjects((prev) => {
-      const sourceProject = prev.find((p) => p.id === fromProjectId);
-      const dashboard = sourceProject?.dashboards.find((d) => d.id === dashboardId);
-      if (!dashboard) return prev;
+    const sourceProject = projects.find((p) => p.id === fromProjectId);
+    const dashboard = sourceProject?.dashboards.find((d) => d.id === dashboardId);
+    if (!dashboard) return;
 
-      // Schedule the standalone addition as a separate state update
-      // (safe because we captured `dashboard` from the prev snapshot).
-      const dashboardCopy = { ...dashboard };
-      queueMicrotask(() => {
-        setStandaloneDashboards((sPrev) => [...sPrev, dashboardCopy]);
-      });
+    setProjects((prev) =>
+      prev.map((p) => {
+        if (p.id !== fromProjectId) return p;
+        return { ...p, dashboards: p.dashboards.filter((d) => d.id !== dashboardId) };
+      }),
+    );
 
-      return prev.map((p) => {
-        if (p.id === fromProjectId) {
-          return { ...p, dashboards: p.dashboards.filter((d) => d.id !== dashboardId) };
-        }
-        return p;
-      });
+    setStandaloneDashboards((prev) => {
+      if (prev.some((d) => d.id === dashboardId)) return prev;
+      return [...prev, { ...dashboard }];
     });
-  }, []);
+  }, [projects]);
 
   const value = useMemo(
     () => ({
