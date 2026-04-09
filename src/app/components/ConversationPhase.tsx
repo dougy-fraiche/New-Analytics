@@ -63,6 +63,7 @@ import {
 } from "../lib/ai-assistant-global";
 import { conversationMessageToGlobalChat } from "../lib/conversation-message-to-global-chat";
 import { exploreAssistantPartialToGlobalPatch } from "../lib/explore-to-global-ai-patch";
+import { buildAnomalyPrimaryFindingModel } from "../lib/anomaly-primary-finding";
 import { runPhasedExploreAssistantReply } from "../lib/run-phased-explore-assistant-reply";
 import {
   useAiAssistantExploreBridge,
@@ -161,6 +162,11 @@ export function ConversationPhase({
     }
     return null;
   }, [messages]);
+
+  const anomalyPrimaryFindingModel = useMemo(() => {
+    if (latestDashboard) return null;
+    return buildAnomalyPrimaryFindingModel(messages, { isThinking });
+  }, [isThinking, latestDashboard, messages]);
 
   // ── Keyboard shortcuts ────────────────────────────────────────────
   useKeyboardShortcut({
@@ -405,6 +411,8 @@ export function ConversationPhase({
         <ConversationDashboardArea
           isThinking={isThinking && !latestDashboard}
           dashboardData={latestDashboard}
+          anomalyPrimaryFinding={anomalyPrimaryFindingModel}
+          conversationTitle={conversationName}
           onWidgetPrompt={handleWidgetPrompt}
           onSave={handleSaveDashboardFromArea}
           isSaved={latestDashboard ? !!savedDashboards[latestDashboard.id] : false}

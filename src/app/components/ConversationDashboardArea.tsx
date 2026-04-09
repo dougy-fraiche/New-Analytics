@@ -15,7 +15,7 @@ import {
   TrendingUp,
   TrendingDown,
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader } from "./ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import {
@@ -84,10 +84,13 @@ const DEFAULT_CONVERSATION_BREAKDOWN: ChartRow[] = [
 import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
 import { KpiSparkline, KPI_SPARKLINE_SERIES } from "./KpiSparkline";
 import { KpiMetricValueTitle } from "./KpiMetricValueTitle";
+import type { PrimaryFindingViewModel } from "../lib/anomaly-primary-finding";
 
 interface ConversationDashboardAreaProps {
   isThinking: boolean;
   dashboardData: DashboardData | null;
+  anomalyPrimaryFinding?: PrimaryFindingViewModel | null;
+  conversationTitle?: string;
   /** When provided, widget AI prompts are sent to this handler instead of the dashboard chat panel */
   onWidgetPrompt?: (
     widgetTitle: string,
@@ -261,6 +264,141 @@ function EmptyDashboardState() {
               </p>
             </CardContent>
           </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LevelBadge({
+  level,
+}: {
+  level: "High" | "Medium" | "Low";
+}) {
+  const className =
+    level === "High"
+      ? "border-orange-200 bg-orange-100 text-orange-800 dark:border-orange-900 dark:bg-orange-950/40 dark:text-orange-300"
+      : level === "Low"
+        ? "border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300"
+        : undefined;
+
+  return (
+    <Badge variant={className ? "outline" : "secondary"} className={className}>
+      {level}
+    </Badge>
+  );
+}
+
+function AnomalyPrimaryFindingContent({
+  model,
+  conversationTitle,
+}: {
+  model: PrimaryFindingViewModel;
+  conversationTitle?: string;
+}) {
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      <PageHeader>
+        <section>
+          <h1 className="text-3xl tracking-tight">{conversationTitle || "Primary Finding"}</h1>
+          <p className="mt-1 text-muted-foreground">
+            Structured anomaly investigation summary
+          </p>
+        </section>
+      </PageHeader>
+
+      <div className="min-h-0 flex-1 overflow-auto">
+        <div className={cn(pageRootListScrollGutterClassName, "pb-8")}>
+          <div className={cn(pageMainColumnClassName, "space-y-4")}>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex-1">Primary Finding</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm leading-relaxed">{model.primaryFinding}</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-0">
+                <CardTitle className="text-base flex-1">Financial Impact</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 pt-3">
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                  {model.financialImpactStats.map((item) => (
+                    <div
+                      key={item.label}
+                      className="rounded-lg border bg-muted/30 p-3"
+                    >
+                      <p className="text-sm text-muted-foreground">
+                        {item.label}
+                      </p>
+                      <p className="mt-1 text-base font-semibold">{item.value}</p>
+                      <p className="text-xs text-muted-foreground">{item.detail}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">{model.financialImpactAssumption}</p>
+              </CardContent>
+            </Card>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex-1">Risk Level</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <LevelBadge level={model.riskLevel} />
+                  <p className="text-sm text-muted-foreground">{model.riskDetail}</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex-1">Confidence Level</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <LevelBadge level={model.confidenceLevel} />
+                  <p className="text-sm text-muted-foreground">{model.confidenceDetail}</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex-1">Protocol Step</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm">{model.protocolStepLabel}</p>
+                <Badge
+                  variant={model.protocolStepStatus === "Complete" ? "outline" : "secondary"}
+                  className={
+                    model.protocolStepStatus === "Complete"
+                      ? "border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300"
+                      : undefined
+                  }
+                >
+                  {model.protocolStepStatus}
+                </Badge>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex-1">Root Cause</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="list-disc space-y-2 pl-5 text-sm text-foreground/90">
+                  {model.rootCauses.map((cause) => (
+                    <li key={cause.heading}>
+                      <span className="font-medium">{cause.heading}:</span>{" "}
+                      <span>{cause.detail}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>
@@ -607,6 +745,8 @@ function DashboardContent({
 export function ConversationDashboardArea({
   isThinking,
   dashboardData,
+  anomalyPrimaryFinding,
+  conversationTitle,
   onWidgetPrompt,
   onSave,
   isSaved,
@@ -629,6 +769,15 @@ export function ConversationDashboardArea({
           onDelete={onDelete}
         />
       </WidgetAIProvider>
+    );
+  }
+
+  if (anomalyPrimaryFinding) {
+    return (
+      <AnomalyPrimaryFindingContent
+        model={anomalyPrimaryFinding}
+        conversationTitle={conversationTitle}
+      />
     );
   }
 

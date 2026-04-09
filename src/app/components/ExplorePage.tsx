@@ -11,7 +11,13 @@ import {
 import { conversationMessageToGlobalChat } from "../lib/conversation-message-to-global-chat";
 import { runPhasedExploreAssistantReply } from "../lib/run-phased-explore-assistant-reply";
 import { useVoiceInput } from "../hooks/useVoiceInput";
-import { generateConversationName, generateAIResponse } from "../data/explore-data";
+import {
+  generateConversationName,
+  generateAIResponse,
+  type TopInsightCard,
+} from "../data/explore-data";
+import type { AnomalyInvestigationMeta } from "../types/conversation-types";
+import { ROUTES } from "../routes";
 
 import { WidgetAIProvider } from "../contexts/WidgetAIContext";
 import { ExplorePhase } from "./ExplorePhase";
@@ -23,6 +29,23 @@ import { ConversationPhase } from "./ConversationPhase";
 type Phase = "explore" | "conversation";
 
 const DRAFT_KEY = "explore-draft-query";
+
+type ExploreFirstMessageOptions = {
+  anomalyInvestigation?: AnomalyInvestigationMeta;
+  conversationNameOverride?: string;
+};
+
+function buildTopInsightInvestigationPrompt(
+  insight: Extract<TopInsightCard, { segment: "anomaly" }>,
+): string {
+  return [
+    `Investigate this anomaly in depth: ${insight.title}.`,
+    `Severity: ${insight.severity}. Detected: ${insight.timestamp}.`,
+    `Summary: ${insight.description}.`,
+    `Observed signal: ${insight.detail}.`,
+    "Provide a structured investigation covering likely root causes, impact assessment, recommended remediation actions, and priority next steps.",
+  ].join(" ");
+}
 
 export function ExplorePage() {
   // ── Shared state ──────────────────────────────────────────────────
@@ -153,7 +176,7 @@ export function ExplorePage() {
 
   /** First user message — same path as sending from the hero {@link ChatInputBar} (new thread + navigate). */
   const sendExploreFirstMessage = useCallback(
-    (rawMessage: string) => {
+    (rawMessage: string, options?: ExploreFirstMessageOptions) => {
       const messageToSend = rawMessage.trim();
       if (!messageToSend) return;
 
@@ -163,7 +186,7 @@ export function ExplorePage() {
       voice.stop();
       window.dispatchEvent(new Event(EXPLORE_THREAD_USER_TURN_EVENT));
 
-      const name = generateConversationName(messageToSend);
+      const name = options?.conversationNameOverride?.trim() || generateConversationName(messageToSend);
       setConversationName(name);
       const newConversation = addConversation(name);
       setPhase("conversation");
@@ -175,6 +198,7 @@ export function ExplorePage() {
         role: "user",
         content: messageToSend,
         timestamp: new Date(),
+        anomalyInvestigation: options?.anomalyInvestigation,
       };
       addMessageToConversation(newConversation.id, userMessage);
       startNewGlobalAiDraft();
@@ -251,6 +275,35 @@ export function ExplorePage() {
     [sendExploreFirstMessage],
   );
 
+  const handleTopInsightInvestigate = useCallback(
+    (insight: TopInsightCard) => {
+      if (insight.segment === "anomaly") {
+        sendExploreFirstMessage(buildTopInsightInvestigationPrompt(insight), {
+          conversationNameOverride: `Investigation: ${insight.title}`,
+          anomalyInvestigation: {
+            source: "top-insight",
+            insight: {
+              id: insight.id,
+              title: insight.title,
+              description: insight.description,
+              detail: insight.detail,
+              severity: insight.severity,
+              timestamp: insight.timestamp,
+            },
+          },
+        });
+        return;
+      }
+
+      const params = new URLSearchParams({
+        scope: insight.automationTarget.scope,
+        target: insight.automationTarget.id,
+      });
+      navigate(`${ROUTES.AUTOMATION_OPPORTUNITIES}?${params.toString()}#top-opportunities`);
+    },
+    [navigate, sendExploreFirstMessage],
+  );
+
   // ── Render ────────────────────────────────────────────────────────
   return (
     <div ref={containerRef} className="h-full flex flex-col overflow-hidden relative">
@@ -274,6 +327,7 @@ export function ExplorePage() {
             onForcedSuggestionsChange={setForcedSuggestions}
             onActionClick={handleActionClick}
             onSend={handleSend}
+            onTopInsightInvestigate={handleTopInsightInvestigate}
             onTypeaheadSuggestionPicked={() => {
               exploreTypeaheadPickedRef.current = true;
             }}

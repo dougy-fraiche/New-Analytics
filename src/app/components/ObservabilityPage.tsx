@@ -27,26 +27,44 @@ import {
 } from "./ui/select";
 import { LabeledSelectValue } from "./HeaderFilters";
 import { PageTransition } from "./PageTransition";
-import { ootbCategories, totalOotbDashboardCount } from "../data/ootb-dashboards";
+import { ootbCategories } from "../data/ootb-dashboards";
 import { ROUTES } from "../routes";
 
 export function ObservabilityPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
 
-  // Build a flat list of displayable items: categories with their dashboards
-  const allItems = ootbCategories.flatMap((cat) => {
-    if (cat.dashboards.length === 0) {
-      // Standalone category — treat category itself as a dashboard
-      return [{ id: cat.id, name: cat.name, icon: cat.icon, categoryName: "Standalone", categoryId: cat.id, description: `${cat.name} comparison and analytics`, lastUpdated: "Recently", path: `/dashboard/${cat.id}` }];
-    }
-    return cat.dashboards.map((d) => ({
-      ...d,
-      categoryName: cat.name,
-      categoryId: cat.id,
-      path: d.id === "ai-agents-copilot" ? ROUTES.COPILOT : ROUTES.AI_AGENTS_DASHBOARD(d.id),
-    }));
-  });
+  const aiAgentsCategory = ootbCategories.find((cat) => cat.id === "ai-agents");
+  const copilotDashboard = aiAgentsCategory?.dashboards.find((d) => d.id === "ai-agents-copilot");
+
+  // Observability should list only top-level dashboards: AI Agents and Copilot.
+  const allItems = [
+    aiAgentsCategory
+      ? {
+          id: aiAgentsCategory.id,
+          name: aiAgentsCategory.name,
+          categoryName: aiAgentsCategory.name,
+          categoryId: aiAgentsCategory.id,
+          description:
+            aiAgentsCategory.pageDescription ??
+            "End-to-end visibility for your AI agents",
+          lastUpdated: "Recently",
+          path: ROUTES.AI_AGENTS,
+        }
+      : null,
+    copilotDashboard && aiAgentsCategory
+      ? {
+          ...copilotDashboard,
+          categoryName: aiAgentsCategory.name,
+          categoryId: aiAgentsCategory.id,
+          path: ROUTES.COPILOT,
+        }
+      : null,
+  ].filter((item): item is NonNullable<typeof item> => item !== null);
+
+  const categoryOptions = Array.from(
+    new Map(allItems.map((item) => [item.categoryId, item.categoryName])).entries()
+  ).map(([id, name]) => ({ id, name }));
 
   const filteredItems = allItems.filter((d) => {
     if (categoryFilter !== "all" && d.categoryId !== categoryFilter) return false;
@@ -67,7 +85,7 @@ export function ObservabilityPage() {
           <section className="flex items-center gap-3">
             <h1 className="text-3xl tracking-tight">Observability</h1>
             <Badge variant="secondary" className="text-xs px-2 py-0.5">
-              {totalOotbDashboardCount} total dashboards
+              {allItems.length} total dashboards
             </Badge>
           </section>
           <p className="text-muted-foreground mt-2">
@@ -89,7 +107,7 @@ export function ObservabilityPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All categories</SelectItem>
-                {ootbCategories.map((category) => (
+                {categoryOptions.map((category) => (
                   <SelectItem key={category.id} value={category.id}>
                     {category.name}
                   </SelectItem>

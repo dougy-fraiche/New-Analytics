@@ -1,16 +1,17 @@
 import type { LegacyRef, RefObject } from "react";
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { CircleAlert, Zap } from "lucide-react";
 import { Card, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "./ui/empty";
 import { ChatInputBar } from "./ChatInputBar";
 import { PageContent, pageMainColumnClassName, pageRootListScrollGutterClassName } from "./PageChrome";
-import { RecommendedActionSheet } from "./RecommendedActionSheet";
+import { ExploreInsightDialog } from "./ExploreInsightDialog";
 import { WidgetAIPromptButton } from "./WidgetAIPromptButton";
-import type { RecommendedAction } from "../data/recommended-actions";
-import { topInsightCardToRecommendedAction } from "../lib/top-insight-to-recommended-action";
 import {
+  type TopInsightCard,
   exploreHeadings,
   suggestedActions,
   topInsightsCards,
@@ -40,6 +41,7 @@ interface ExplorePhaseProps {
   onForcedSuggestionsChange: (s: string[]) => void;
   onActionClick: (label: string, prompts: string[]) => void;
   onSend: () => void;
+  onTopInsightInvestigate: (insight: TopInsightCard) => void;
   /** Hero typeahead row selected — used to seed a dashboard on first send. */
   onTypeaheadSuggestionPicked?: () => void;
 }
@@ -57,11 +59,15 @@ export function ExplorePhase({
   onForcedSuggestionsChange,
   onActionClick,
   onSend,
+  onTopInsightInvestigate,
   onTypeaheadSuggestionPicked,
 }: ExplorePhaseProps) {
   const [topInsightsFilter, setTopInsightsFilter] = useState<TopInsightsFilter>("all");
-  const [topInsightSheetAction, setTopInsightSheetAction] = useState<RecommendedAction | null>(
+  const [topInsightDialogCard, setTopInsightDialogCard] = useState<TopInsightCard | null>(
     null,
+  );
+  const [dismissedTopInsightIds, setDismissedTopInsightIds] = useState<Set<number>>(
+    () => new Set(),
   );
   const [heroSectionHeightPx, setHeroSectionHeightPx] = useState<number | null>(null);
   const exploreSurfaceRef = useRef<HTMLDivElement>(null);
@@ -139,28 +145,59 @@ export function ExplorePhase({
     };
   }, []);
 
+  const eligibleTopInsights = useMemo(
+    () =>
+      topInsightsCards.filter(
+        (card) => card.segment === "anomaly" || (card.segment === "opportunity" && Boolean(card.automationTarget.id)),
+      ),
+    [],
+  );
+
+  const allTopInsightsDismissed = useMemo(
+    () =>
+      eligibleTopInsights.length > 0 &&
+      eligibleTopInsights.every((card) => dismissedTopInsightIds.has(card.id)),
+    [dismissedTopInsightIds, eligibleTopInsights],
+  );
+
   const filteredTopInsights = useMemo(() => {
+    const visibleCards = eligibleTopInsights.filter((card) => !dismissedTopInsightIds.has(card.id));
     switch (topInsightsFilter) {
       case "anomalies":
-        return topInsightsCards.filter((c) => c.segment === "anomaly");
+        return visibleCards.filter((c) => c.segment === "anomaly");
       case "actions":
-        return topInsightsCards.filter(
+        return visibleCards.filter(
           (c) => c.segment === "opportunity" && c.showActionPill,
         );
       default:
-        return topInsightsCards;
+        return visibleCards;
     }
-  }, [topInsightsFilter]);
+  }, [dismissedTopInsightIds, eligibleTopInsights, topInsightsFilter]);
+
+  const handleDismissTopInsight = useCallback((insight: TopInsightCard) => {
+    setDismissedTopInsightIds((prev) => {
+      const next = new Set(prev);
+      next.add(insight.id);
+      return next;
+    });
+    setTopInsightDialogCard(null);
+  }, []);
+
+  const handleInvestigateTopInsight = useCallback((insight: TopInsightCard) => {
+    setTopInsightDialogCard(null);
+    onTopInsightInvestigate(insight);
+  }, [onTopInsightInvestigate]);
 
   return (
     <>
-      <RecommendedActionSheet
-        action={topInsightSheetAction}
-        open={!!topInsightSheetAction}
+      <ExploreInsightDialog
+        insight={topInsightDialogCard}
+        open={!!topInsightDialogCard}
         onOpenChange={(open) => {
-          if (!open) setTopInsightSheetAction(null);
+          if (!open) setTopInsightDialogCard(null);
         }}
-        onDismiss={() => setTopInsightSheetAction(null)}
+        onDismissInsight={handleDismissTopInsight}
+        onInvestigateInsight={handleInvestigateTopInsight}
       />
       <div
         ref={exploreSurfaceRef}
@@ -275,79 +312,106 @@ export function ExplorePhase({
               </ToggleGroup>
             </div>
             <div className="grid min-h-[calc(180px*2+1rem)] grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {filteredTopInsights.map((card) => {
-                return (
-                  <Card
-                    key={card.id}
-                    className="group/widget relative flex h-[180px] shrink-0 flex-col overflow-hidden transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30"
-                  >
-                    <div className="absolute right-2 top-2 z-10">
-                      <WidgetAIPromptButton
-                        widgetTitle={card.title}
-                        chartType="insight"
-                        widgetAnchorId={`explore-top-insight-${card.id}`}
-                        tooltipLabel="Ask AI about this insight"
-                        tooltipSide="bottom"
-                      />
-                    </div>
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      aria-label={`View details: ${card.title}`}
-                      className="flex min-h-0 w-full flex-1 cursor-pointer flex-col rounded-xl text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                      onClick={() =>
-                        setTopInsightSheetAction(topInsightCardToRecommendedAction(card))
-                      }
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          setTopInsightSheetAction(topInsightCardToRecommendedAction(card));
-                        }
-                      }}
+              {filteredTopInsights.length === 0 ? (
+                <Empty className="col-span-full min-h-[180px]">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <CircleAlert />
+                    </EmptyMedia>
+                    <EmptyTitle>
+                      {allTopInsightsDismissed ? "No insights right now" : "No Top Insights match this filter"}
+                    </EmptyTitle>
+                    <EmptyDescription>
+                      {allTopInsightsDismissed
+                        ? "Check back later to see more insights as new signals are generated."
+                        : "Try a different filter or check back later to see more insights."}
+                    </EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              ) : (
+                filteredTopInsights.map((card) => {
+                  return (
+                    <Card
+                      key={card.id}
+                      className="group/widget relative flex h-[180px] shrink-0 flex-col overflow-hidden transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30"
                     >
-                      <CardHeader className="shrink-0 gap-1 space-y-0 px-4 pb-1.5 pr-11 pt-3">
-                        <CardTitle className="line-clamp-2 text-base font-semibold leading-snug">
-                          {card.title}
-                        </CardTitle>
-                        <CardDescription className="line-clamp-2 text-xs leading-snug">
-                          {card.description}
-                        </CardDescription>
-                      </CardHeader>
-                      <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pr-11">
-                        <p className="min-h-0 flex-1 overflow-y-auto text-xs leading-snug text-muted-foreground">
-                          {card.detail}
-                        </p>
+                      <div className="absolute right-2 top-2 z-10">
+                        <WidgetAIPromptButton
+                          widgetTitle={card.title}
+                          chartType="insight"
+                          widgetAnchorId={`explore-top-insight-${card.id}`}
+                          tooltipLabel="Ask AI about this insight"
+                          tooltipSide="bottom"
+                        />
                       </div>
-                      <div className="mt-auto flex w-full min-w-0 shrink-0 flex-wrap items-center justify-between gap-2 px-4 pb-3 pt-2">
-                        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
-                          {card.segment === "anomaly" ? (
-                            <>
-                              <Badge variant="outline">Anomaly</Badge>
-                              <Badge
-                                variant={
-                                  card.severity === "Critical" ? "destructive" : "secondary"
-                                }
-                              >
-                                {card.severity}
-                              </Badge>
-                            </>
-                          ) : (
-                            <>
-                              {card.showActionPill ? (
-                                <Badge variant="default">Action</Badge>
-                              ) : null}
-                              <Badge variant="outline">Opportunity</Badge>
-                            </>
-                          )}
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`View details: ${card.title}`}
+                        className="flex min-h-0 w-full flex-1 cursor-pointer flex-col rounded-xl text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                        onClick={() => setTopInsightDialogCard(card)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setTopInsightDialogCard(card);
+                          }
+                        }}
+                      >
+                        <CardHeader className="shrink-0 gap-1 space-y-0 px-4 pb-1.5 pr-11 pt-3">
+                          <CardTitle className="line-clamp-2 text-base font-semibold leading-snug">
+                            {card.title}
+                          </CardTitle>
+                          <CardDescription className="line-clamp-2 text-xs leading-snug">
+                            {card.description}
+                          </CardDescription>
+                        </CardHeader>
+                        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pr-11">
+                          <p className="min-h-0 flex-1 overflow-y-auto text-xs leading-snug text-muted-foreground">
+                            {card.detail}
+                          </p>
                         </div>
-                        <span className="shrink-0 text-xs text-muted-foreground">
-                          {card.timestamp}
-                        </span>
+                        <div className="mt-auto flex w-full min-w-0 shrink-0 flex-wrap items-center justify-between gap-2 px-4 pb-3 pt-2">
+                          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+                            {card.segment === "anomaly" ? (
+                              <>
+                                <Badge variant="outline" className="gap-1">
+                                  <CircleAlert className="h-3 w-3" />
+                                  Anomaly
+                                </Badge>
+                                <Badge
+                                  variant={
+                                    card.severity === "Critical" ? "destructive" : "secondary"
+                                  }
+                                  className={
+                                    card.severity === "High"
+                                      ? "border-orange-200 bg-orange-100 text-orange-800 dark:border-orange-900 dark:bg-orange-950/40 dark:text-orange-300"
+                                      : undefined
+                                  }
+                                >
+                                  {card.severity}
+                                </Badge>
+                              </>
+                            ) : (
+                              <>
+                                {card.showActionPill ? (
+                                  <Badge variant="default" className="gap-1">
+                                    <Zap className="h-3 w-3" />
+                                    Action
+                                  </Badge>
+                                ) : null}
+                                <Badge variant="outline">Opportunity</Badge>
+                              </>
+                            )}
+                          </div>
+                          <span className="shrink-0 text-xs text-muted-foreground">
+                            {card.timestamp}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  </Card>
-                );
-              })}
+                    </Card>
+                  );
+                })
+              )}
             </div>
               </div>
             </section>

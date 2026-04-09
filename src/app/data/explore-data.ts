@@ -2,6 +2,7 @@ import { BarChart3, FileText, TrendingUp } from "lucide-react";
 import type { DashboardData, WidgetData } from "../contexts/ConversationContext";
 import { buildMockAssistantFields } from "../lib/mock-assistant-structure";
 import type { AssistantReplyPayload } from "../types/conversation-types";
+import type { AutomationScopeTab } from "./automation-opportunities-page";
 
 // ── Hero / Input constants ────────────────────────────────────────────
 
@@ -183,6 +184,11 @@ export type TopInsightCard =
       segment: "opportunity";
       /** Shows an Action pill alongside Opportunity (automations, recommended actions, etc.). */
       showActionPill: boolean;
+      /** Deterministic deep-link target in Automation Opportunities. */
+      automationTarget: {
+        scope: AutomationScopeTab;
+        id: string;
+      };
       title: string;
       description: string;
       detail: string;
@@ -212,15 +218,17 @@ export const topInsightsCards: TopInsightCard[] = [
     id: 3,
     segment: "opportunity",
     showActionPill: true,
-    title: "Call Volume Spike",
-    description: "Unexpected volume spike of 28%.",
-    detail: "3,847 calls (usually 3,000)",
-    timestamp: "1d ago",
+    automationTarget: { scope: "categories", id: "billing-payments" },
+    title: "Billing & Payment Inquiries",
+    description: "High-volume category with repeatable verification and lookup steps.",
+    detail: "40.5K monthly interactions · strong automation potential",
+    timestamp: "New",
   },
   {
     id: 4,
     segment: "opportunity",
     showActionPill: true,
+    automationTarget: { scope: "topics", id: "topics-bill-explanation" },
     title: "Bill Explanation",
     description: "1,620 automatable calls · 3.6% of total mix.",
     detail: "$13K annual savings · 4:00 avg duration",
@@ -230,37 +238,41 @@ export const topInsightsCards: TopInsightCard[] = [
     id: 5,
     segment: "opportunity",
     showActionPill: true,
-    title: "Card Activation",
-    description: "1,245 automatable calls · 3.3% of total mix.",
-    detail: "$11K annual savings · 3:30 avg duration",
+    automationTarget: { scope: "subtopics", id: "subtopics-charge-breakdown" },
+    title: "Charge Breakdown",
+    description: "Repeat line-item and clearance questions fit deterministic triage.",
+    detail: "9.4K sub-topic volume · 2.4% automation potential",
     timestamp: "New",
   },
   {
     id: 6,
     segment: "opportunity",
     showActionPill: true,
-    title: "Payment Arrangement",
-    description: "980 automatable calls · 3.1% of total mix.",
-    detail: "$9K annual savings · 5:15 avg duration",
+    automationTarget: { scope: "categories", id: "card-services" },
+    title: "Card Services & Management",
+    description: "Highly standardized activation, limit, and replacement flows.",
+    detail: "3,230 automatable volume · $27K annual savings",
     timestamp: "New",
   },
   {
     id: 7,
     segment: "opportunity",
     showActionPill: true,
-    title: "Enable WISMO Auto-Reply",
-    description: "Auto-send shipment status for repetitive order-tracking requests.",
-    detail: "Projected deflection: 18% of weekly chat volume",
-    timestamp: "3h ago",
+    automationTarget: { scope: "topics", id: "topics-card-activation" },
+    title: "Card Activation",
+    description: "Activation and verification requests are ideal for guided self-serve.",
+    detail: "20,833 automatable volume · 6.4% automation potential",
+    timestamp: "New",
   },
   {
     id: 8,
     segment: "opportunity",
     showActionPill: true,
-    title: "Refund Policy Auto-Check",
-    description: "Most return checks follow a fixed policy decision tree.",
-    detail: "Estimated reduction: 45 agent-hours per week",
-    timestamp: "6h ago",
+    automationTarget: { scope: "subtopics", id: "subtopics-add-payment-method" },
+    title: "Add Payment Method",
+    description: "Predictable verification flow with strong deterministic coverage.",
+    detail: "5,356 automatable volume · 1.6% automation potential",
+    timestamp: "New",
   },
 ];
 

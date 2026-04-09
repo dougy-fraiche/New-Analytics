@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
 import type {
+  AnomalyInvestigationMeta,
   AssistantStructuredFields,
   ChartRow,
   DashboardData,
@@ -27,6 +28,7 @@ export interface Message extends WidgetMessageMeta, AssistantStructuredFields {
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  anomalyInvestigation?: AnomalyInvestigationMeta;
   dashboardData?: DashboardData;
   widgetData?: WidgetData;
   isTypingContent?: boolean;

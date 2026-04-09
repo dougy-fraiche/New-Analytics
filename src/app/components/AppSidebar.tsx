@@ -1,6 +1,7 @@
 import {
   Folder,
   MoreHorizontal,
+  Loader2,
   Pencil,
   Trash2,
   Compass,
@@ -36,7 +37,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router";
-import { type ReactNode } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import {
   Sidebar,
@@ -63,6 +64,7 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { useConversations } from "../contexts/ConversationContext";
+import type { Conversation } from "../contexts/ConversationContext";
 import { useProjects, type Dashboard } from "../contexts/ProjectContext";
 import { toast } from "sonner";
 import { ootbCategories } from "../data/ootb-dashboards";
@@ -246,6 +248,14 @@ function SubItemOverflowDropdown({
   );
 }
 
+function isConversationAssistantInFlight(conversation: Conversation): boolean {
+  const last = conversation.messages[conversation.messages.length - 1];
+  if (!last || last.role !== "assistant") return false;
+  if (last.isTypingContent) return true;
+  if (!(last.content ?? "").trim()) return true;
+  return Boolean(last.toolSteps?.some((step) => step.status === "running"));
+}
+
 export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -283,6 +293,33 @@ export function AppSidebar() {
   const activeConversations = conversations.filter((c) => !c.archived);
   const visibleConversations = activeConversations.slice(0, 5);
   const hasMore = activeConversations.length > 5;
+  const previousConversationInFlightRef = useRef<Map<string, boolean>>(new Map());
+
+  const activeConversationId =
+    location.pathname.startsWith("/conversation/") ? location.pathname.replace("/conversation/", "") : null;
+
+  useEffect(() => {
+    const nextConversationInFlight = new Map<string, boolean>();
+
+    for (const conversation of activeConversations) {
+      const currentlyInFlight = isConversationAssistantInFlight(conversation);
+      const wasInFlight = previousConversationInFlightRef.current.get(conversation.id);
+
+      if (wasInFlight && !currentlyInFlight && activeConversationId !== conversation.id) {
+        toast.success("Conversation ready", {
+          description: `"${conversation.name}" finished processing.`,
+          action: {
+            label: "Open",
+            onClick: () => navigate(`/conversation/${conversation.id}`),
+          },
+        });
+      }
+
+      nextConversationInFlight.set(conversation.id, currentlyInFlight);
+    }
+
+    previousConversationInFlightRef.current = nextConversationInFlight;
+  }, [activeConversationId, activeConversations, navigate]);
 
   // ── Keyboard shortcuts ─────────────────────────────────────────────────
   useKeyboardShortcut([
@@ -387,14 +424,30 @@ export function AppSidebar() {
               <>
                 {visibleConversations.map((conversation) => {
                   const isActive = location.pathname === `/conversation/${conversation.id}`;
+                  const assistantInFlight = isConversationAssistantInFlight(conversation);
                   return (
                     <SidebarMenuSubItem key={conversation.id}>
                       <div className={SUB_ITEM_ROW_WRAPPER_CLASS}>
-                        <SidebarMenuSubButton asChild isActive={isActive} className="group-hover/subitem:pr-8 group-focus-within/subitem:pr-8">
+                        <SidebarMenuSubButton
+                          asChild
+                          isActive={isActive}
+                          className={cn(
+                            "group-hover/subitem:pr-8 group-focus-within/subitem:pr-8",
+                            assistantInFlight && "pr-8",
+                          )}
+                        >
                           <Link to={`/conversation/${conversation.id}`}>
                             <span className="truncate">{conversation.name}</span>
                           </Link>
                         </SidebarMenuSubButton>
+                        {assistantInFlight ? (
+                          <span
+                            className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground transition-opacity duration-150 group-hover/subitem:opacity-0 group-focus-within/subitem:opacity-0"
+                            aria-label="Assistant is thinking"
+                          >
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                          </span>
+                        ) : null}
                         <SubItemOverflowDropdown
                           tooltip="More options"
                           srLabel={`More options for ${conversation.name}`}
@@ -465,7 +518,7 @@ export function AppSidebar() {
           </div>
 
           {/* Dashboards heading */}
-          <div className="pt-2 group-data-[collapsible=icon]:pt-0">
+          <div className="pt-2 group-data-[collapsible=icon]:hidden">
             <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">Dashboards</SidebarGroupLabel>
           </div>
 

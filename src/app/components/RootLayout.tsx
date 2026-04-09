@@ -51,7 +51,7 @@ function RootLayoutInner() {
   /** Explore home (`/`) only — hero gradient sits on the page canvas; conversation + all other routes use white `main`. */
   const isExploreRoute = location.pathname === "/";
 
-  const [aiAssistantOpen, setAiAssistantOpenState] = useState(() => {
+  const [aiAssistantPreferredOpen, setAiAssistantPreferredOpen] = useState(() => {
     if (typeof window === "undefined") return false;
     try {
       return window.sessionStorage.getItem(AI_ASSISTANT_OPEN_STORAGE_KEY) === "1";
@@ -59,9 +59,13 @@ function RootLayoutInner() {
       return false;
     }
   });
+  const [aiAssistantOpen, setAiAssistantOpenState] = useState(
+    () => !isExploreHome && aiAssistantPreferredOpen,
+  );
 
   const setAiAssistantOpen = useCallback((open: boolean) => {
     setAiAssistantOpenState(open);
+    setAiAssistantPreferredOpen(open);
     try {
       window.sessionStorage.setItem(AI_ASSISTANT_OPEN_STORAGE_KEY, open ? "1" : "0");
     } catch {
@@ -74,16 +78,15 @@ function RootLayoutInner() {
     setAiAssistantOpen(true);
   }, [isExploreHome, setAiAssistantOpen]);
 
+  // Explore always hides the assistant, but we keep the preferred open state
+  // so navigating away can restore it.
   useEffect(() => {
     if (isExploreHome) {
       setAiAssistantOpenState(false);
-      try {
-        window.sessionStorage.setItem(AI_ASSISTANT_OPEN_STORAGE_KEY, "0");
-      } catch {
-        /* ignore */
-      }
+      return;
     }
-  }, [isExploreHome]);
+    setAiAssistantOpenState(aiAssistantPreferredOpen);
+  }, [isExploreHome, aiAssistantPreferredOpen]);
 
   // Open the assistant automatically when viewing an Explore conversation thread.
   useEffect(() => {
@@ -226,6 +229,16 @@ function RootLayoutInner() {
     if (params.conversationId) {
       const conversation = conversations.find(c => c.id === params.conversationId);
       if (conversation) {
+        const isTopInsightInvestigation = conversation.messages.some(
+          (message) => message.anomalyInvestigation?.source === "top-insight",
+        );
+        if (isTopInsightInvestigation) {
+          return [
+            { label: "Explore", href: "/" },
+            { label: conversation.name || "Investigation" },
+          ];
+        }
+
         // Find the latest dashboard title from messages — only show a title crumb once insights are loaded
         let latestDashboardTitle: string | null = null;
         for (let i = conversation.messages.length - 1; i >= 0; i--) {

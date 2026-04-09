@@ -28,6 +28,23 @@ export interface WidgetMessageMeta {
   widgetAnchorId?: string;
 }
 
+/** Optional context attached when a conversation is started from anomaly investigation actions. */
+export interface AnomalyInsightSnapshot {
+  id?: number;
+  title: string;
+  description: string;
+  detail: string;
+  severity?: "Critical" | "High" | "Medium";
+  timestamp?: string;
+}
+
+export interface AnomalyInvestigationMeta {
+  /** Source of the anomaly investigation trigger. */
+  source: "top-insight" | "manual";
+  /** Snapshot from the triggering insight card when available. */
+  insight?: AnomalyInsightSnapshot;
+}
+
 /** Citation or grounding reference shown below an assistant message. */
 export interface AssistantMessageSource {
   /** Short label shown in the UI (and used to match dashboard cards when `widgetRef` is unset). */

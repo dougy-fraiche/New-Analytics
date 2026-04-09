@@ -11,6 +11,7 @@ import {
   Trophy,
 } from "lucide-react";
 import type { DateRange } from "react-day-picker";
+import { useLocation } from "react-router";
 
 import { Button } from "./ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
@@ -87,6 +88,9 @@ const AUTOMATION_ASK_AI_TRIGGER_CLASS =
 
 /** 1rem vertical rhythm between header, body, and footer on Top Opportunities cards. */
 const TOP_OPPORTUNITY_CARD_GAP = "gap-4";
+const TOP_OPPORTUNITIES_HASH = "#top-opportunities";
+const TOP_OPPORTUNITIES_SECTION_ID = "top-opportunities";
+const TOP_OPPORTUNITY_HIGHLIGHT_MS = 2600;
 
 const DEFAULT_FILTERS = {
   dateRange: "last-7-days",
@@ -107,6 +111,14 @@ function formatShortDateRange(range: DateRange): string {
 
 function toMax(items: TopOpportunityBarItem[]): number {
   return items.reduce((max, it) => (it.value > max ? it.value : max), 0) || 1;
+}
+
+function isAutomationScopeTab(value: string | null): value is AutomationScopeTab {
+  return value === "categories" || value === "topics" || value === "subtopics";
+}
+
+function buildTopOpportunityHighlightKey(scope: AutomationScopeTab, id: string): string {
+  return `${scope}:${id}`;
 }
 
 function TopOpportunitiesSectionHeading() {
@@ -403,12 +415,16 @@ function SubTopicSection({
 
 function AutomationTopicsTabTopicCard({
   row,
+  targetScope,
+  isHighlighted,
   expanded,
   onToggleExpanded,
   onOpenSampleInteractions,
   agentTabKey,
 }: {
   row: TopicsTabTopicRow;
+  targetScope: "topics" | "subtopics";
+  isHighlighted: boolean;
   expanded: boolean;
   onToggleExpanded: () => void;
   onOpenSampleInteractions: (categoryTitle: string) => void;
@@ -417,7 +433,15 @@ function AutomationTopicsTabTopicCard({
 }) {
   const canExpand = !!row.bars;
   return (
-    <Card className={cn(AUTOMATION_CARD_HOVER, TOP_OPPORTUNITY_CARD_GAP)}>
+    <Card
+      data-top-opportunity-scope={targetScope}
+      data-top-opportunity-id={row.id}
+      className={cn(
+        AUTOMATION_CARD_HOVER,
+        TOP_OPPORTUNITY_CARD_GAP,
+        isHighlighted && "ring-2 ring-primary/60 bg-primary/5 shadow-lg",
+      )}
+    >
       <CardHeader>
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
@@ -480,6 +504,8 @@ function AutomationTopicsTabTopicCard({
 
 function TopOpportunityCard({
   category,
+  targetId,
+  isHighlighted,
   expanded,
   onToggleExpanded,
   expandedTopicIds,
@@ -489,6 +515,8 @@ function TopOpportunityCard({
   onOpenSampleInteractions,
 }: {
   category: TopOpportunityCategory;
+  targetId: string;
+  isHighlighted: boolean;
   expanded: boolean;
   onToggleExpanded: () => void;
   expandedTopicIds: Set<string>;
@@ -498,7 +526,15 @@ function TopOpportunityCard({
   onOpenSampleInteractions: (categoryTitle: string) => void;
 }) {
   return (
-    <Card className={cn(AUTOMATION_CARD_HOVER, TOP_OPPORTUNITY_CARD_GAP)}>
+    <Card
+      data-top-opportunity-scope="categories"
+      data-top-opportunity-id={targetId}
+      className={cn(
+        AUTOMATION_CARD_HOVER,
+        TOP_OPPORTUNITY_CARD_GAP,
+        isHighlighted && "ring-2 ring-primary/60 bg-primary/5 shadow-lg",
+      )}
+    >
       <CardHeader>
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
@@ -598,7 +634,16 @@ function TopOpportunityCard({
 }
 
 export function AutomationOpportunitiesPage() {
+  const location = useLocation();
+  const deepLinkedTarget = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    const target = params.get("target");
+    const scopeParam = params.get("scope");
+    if (!target || !isAutomationScopeTab(scopeParam)) return null;
+    return { scope: scopeParam, id: target };
+  }, [location.search]);
   const [scope, setScope] = useState<AutomationScopeTab>("categories");
+  const [highlightedCardKey, setHighlightedCardKey] = useState<string | null>(null);
   const [expandedCategoryIds, setExpandedCategoryIds] = useState<Set<string>>(() => new Set());
   const [expandedTopicIds, setExpandedTopicIds] = useState<Set<string>>(() => new Set());
   const [expandedSubTopicIds, setExpandedSubTopicIds] = useState<Set<string>>(() => new Set());
@@ -618,6 +663,7 @@ export function AutomationOpportunitiesPage() {
   const [sampleInteractionsCategory, setSampleInteractionsCategory] = useState("");
 
   const automationMainScrollRef = useRef<HTMLDivElement>(null);
+  const topOpportunitiesSectionRef = useRef<HTMLElement | null>(null);
   const [subtopicsLoadedCount, setSubtopicsLoadedCount] = useState(() =>
     Math.min(SUBTOPICS_OPPORTUNITIES_PAGE_SIZE, automationSubtopicsTabTopicRows.length),
   );
@@ -665,6 +711,93 @@ export function AutomationOpportunitiesPage() {
     requestAnimationFrame(() => tryLoadMore());
     return () => el.removeEventListener("scroll", tryLoadMore);
   }, [scope]);
+
+  useEffect(() => {
+    if (location.hash !== TOP_OPPORTUNITIES_HASH) return;
+    const requestedScope = deepLinkedTarget?.scope ?? "categories";
+    setScope((current) => (current === requestedScope ? current : requestedScope));
+  }, [deepLinkedTarget?.scope, location.hash]);
+
+  useEffect(() => {
+    if (location.hash !== TOP_OPPORTUNITIES_HASH) return;
+    if (!deepLinkedTarget || deepLinkedTarget.scope !== "subtopics") return;
+
+    const targetIndex = automationSubtopicsTabTopicRows.findIndex((row) => row.id === deepLinkedTarget.id);
+    if (targetIndex < 0) return;
+
+    setSubtopicsLoadedCount((count) =>
+      Math.max(count, Math.min(targetIndex + 1, automationSubtopicsTabTopicRows.length)),
+    );
+  }, [deepLinkedTarget, location.hash]);
+
+  useEffect(() => {
+    if (location.hash !== TOP_OPPORTUNITIES_HASH) return;
+    if (!deepLinkedTarget) return;
+    if (scope !== deepLinkedTarget.scope) return;
+
+    const scrollRoot = automationMainScrollRef.current;
+    if (!scrollRoot) return;
+
+    const highlightKey = buildTopOpportunityHighlightKey(deepLinkedTarget.scope, deepLinkedTarget.id);
+    const selector = `[data-top-opportunity-scope="${deepLinkedTarget.scope}"][data-top-opportunity-id="${deepLinkedTarget.id}"]`;
+    let rafId: number | null = null;
+    let retryTimer: number | null = null;
+    let clearTimer: number | null = null;
+    let attempts = 0;
+    let cancelled = false;
+
+    const tryHighlightTarget = () => {
+      if (cancelled) return;
+      const targetCard = scrollRoot.querySelector<HTMLElement>(selector);
+      if (!targetCard) {
+        if (attempts < 20) {
+          attempts += 1;
+          retryTimer = window.setTimeout(tryHighlightTarget, 80);
+        }
+        return;
+      }
+
+      rafId = window.requestAnimationFrame(() => {
+        const rootRect = scrollRoot.getBoundingClientRect();
+        const targetRect = targetCard.getBoundingClientRect();
+        const nextTop = scrollRoot.scrollTop + (targetRect.top - rootRect.top) - 12;
+        scrollRoot.scrollTo({ top: Math.max(0, nextTop), behavior: "auto" });
+        setHighlightedCardKey(highlightKey);
+      });
+
+      clearTimer = window.setTimeout(() => {
+        setHighlightedCardKey((current) => (current === highlightKey ? null : current));
+      }, TOP_OPPORTUNITY_HIGHLIGHT_MS);
+    };
+
+    tryHighlightTarget();
+
+    return () => {
+      cancelled = true;
+      if (rafId !== null) window.cancelAnimationFrame(rafId);
+      if (retryTimer !== null) window.clearTimeout(retryTimer);
+      if (clearTimer !== null) window.clearTimeout(clearTimer);
+    };
+  }, [deepLinkedTarget, location.hash, scope, subtopicsLoadedCount]);
+
+  useEffect(() => {
+    if (location.hash !== TOP_OPPORTUNITIES_HASH) return;
+    if (deepLinkedTarget) return;
+    if (scope !== "categories") return;
+
+    const scrollRoot = automationMainScrollRef.current;
+    const target = topOpportunitiesSectionRef.current;
+    if (!scrollRoot || !target) return;
+
+    const rafId = window.requestAnimationFrame(() => {
+      const rootRect = scrollRoot.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const nextTop = scrollRoot.scrollTop + (targetRect.top - rootRect.top) - 12;
+      scrollRoot.scrollTo({ top: Math.max(0, nextTop), behavior: "auto" });
+    });
+
+    return () => window.cancelAnimationFrame(rafId);
+  }, [deepLinkedTarget, location.hash, scope]);
 
   const hasFilterChanges = useMemo(() => {
     return (
@@ -862,13 +995,21 @@ export function AutomationOpportunitiesPage() {
                 />
                 <TabsContent value="categories" className="mt-0 space-y-8 outline-none">
                   <AnalyzedPeriodSection stats={automationAnalyzedPeriodStats} />
-                  <section className="space-y-4">
+                  <section
+                    id={TOP_OPPORTUNITIES_SECTION_ID}
+                    ref={topOpportunitiesSectionRef}
+                    className="space-y-4"
+                  >
                     <TopOpportunitiesSectionHeading />
                     <div className="flex flex-col gap-4">
                       {topOpportunitiesByScope.categories.map((cat) => (
                         <TopOpportunityCard
                           key={cat.id}
                           category={cat}
+                          targetId={cat.id}
+                          isHighlighted={
+                            highlightedCardKey === buildTopOpportunityHighlightKey("categories", cat.id)
+                          }
                           expanded={expandedCategoryIds.has(cat.id)}
                           onToggleExpanded={() => {
                             setExpandedCategoryIds((prev) => {
@@ -918,6 +1059,10 @@ export function AutomationOpportunitiesPage() {
                         <AutomationTopicsTabTopicCard
                           key={row.id}
                           row={row}
+                          targetScope="topics"
+                          isHighlighted={
+                            highlightedCardKey === buildTopOpportunityHighlightKey("topics", row.id)
+                          }
                           agentTabKey="topics-tab"
                           expanded={expandedTopicsTabRowIds.has(row.id)}
                           onToggleExpanded={() => {
@@ -950,6 +1095,10 @@ export function AutomationOpportunitiesPage() {
                         <AutomationTopicsTabTopicCard
                           key={row.id}
                           row={row}
+                          targetScope="subtopics"
+                          isHighlighted={
+                            highlightedCardKey === buildTopOpportunityHighlightKey("subtopics", row.id)
+                          }
                           agentTabKey="subtopics-tab"
                           expanded={expandedSubtopicsTabRowIds.has(row.id)}
                           onToggleExpanded={() => {
