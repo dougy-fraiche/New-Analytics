@@ -20,7 +20,24 @@ export interface RootCauseItem {
   detail: string;
 }
 
+export interface SummaryStat {
+  label: "Peak Time" | "Duration" | "Financial Impact" | "Anomalies";
+  value: string;
+  sublabel?: string;
+}
+
+export interface RelatedAnomalyItem {
+  label: string;
+  detail: string;
+  timestamp?: string;
+}
+
 export interface PrimaryFindingViewModel {
+  headingSubtitle: string;
+  summaryStats: SummaryStat[];
+  confidenceScorePct: number;
+  relatedAnomalies: RelatedAnomalyItem[];
+  recommendedActions: string[];
   primaryFinding: string;
   financialImpactStats: FinancialImpactStat[];
   financialImpactAssumption: string;
@@ -65,6 +82,13 @@ const DEFAULT_FINANCIAL_IMPACT = {
   assumption:
     "Assuming 4 similar crisis events per year (conservative quarterly estimate based on industry benchmarks for community service crisis events).",
 } as const;
+
+const DEFAULT_RECOMMENDED_ACTIONS = [
+  "Immediately restore known-good routing and queue distribution controls for impacted channels.",
+  "Add deployment validation checks to prevent invalid route mappings from being promoted.",
+  "Configure real-time anomaly alerts for volume spikes, queue pressure, and quality degradation.",
+  "Run a post-incident review to formalize escalation, triage, and rollback playbooks.",
+] as const;
 
 function normalizeWhitespace(value: string): string {
   return value.replace(/\s+/g, " ").trim();
@@ -112,6 +136,20 @@ function firstSentence(text: string): string {
   if (!cleaned) return "";
   const match = cleaned.match(/^(.+?[.!?])(?:\s|$)/);
   return match ? match[1]!.trim() : cleaned;
+}
+
+function findDuration(text: string): string | null {
+  const patterns = [
+    /\b\d+\s*h(?:ours?)?\s*\d+\s*m(?:in(?:utes?)?)?\b/i,
+    /\b\d+\s*h(?:ours?)?\b/i,
+    /\b\d+\s*m(?:in(?:utes?)?)\b/i,
+    /\b\d+\s*days?\b/i,
+  ];
+  for (const pattern of patterns) {
+    const match = text.match(pattern)?.[0];
+    if (match) return normalizeWhitespace(match);
+  }
+  return null;
 }
 
 function extractMonetarySignals(text: string): string[] {
@@ -210,6 +248,12 @@ function inferConfidenceLevel(messages: Message[]): FindingLevel {
   return "Medium";
 }
 
+function confidenceScoreForLevel(level: FindingLevel): number {
+  if (level === "High") return 87;
+  if (level === "Low") return 42;
+  return 68;
+}
+
 function extractQualitySignal(corpus: string): string | null {
   const match =
     corpus.match(
@@ -288,6 +332,177 @@ function buildRootCauseItems(
   ];
 }
 
+function buildHeadingSubtitle(messages: Message[], snapshot: AnomalyInsightSnapshot | null): string {
+  if (snapshot?.description?.trim()) return normalizeWhitespace(snapshot.description);
+
+  const assistantSentence = firstSentence(latestAssistantText(messages));
+  if (assistantSentence) return assistantSentence;
+
+  return "Anomaly conditions detected. Investigation summary is being assembled from the available conversation context.";
+}
+
+function buildSummaryStats(
+  corpus: string,
+  snapshot: AnomalyInsightSnapshot | null,
+  financialImpactStats: FinancialImpactStat[],
+  relatedAnomalies: RelatedAnomalyItem[],
+): SummaryStat[] {
+  const eventsValue =
+    financialImpactStats.find((stat) => stat.label === "Events")?.value ??
+    DEFAULT_FINANCIAL_IMPACT.perEvent;
+  const annualizedValue = financialImpactStats.find((stat) => stat.label === "Annualized")?.value;
+  const anomalyCountMatch = corpus.match(/\b(\d+)\s+(?:related|correlated)?\s*anomal(?:y|ies)\b/i);
+  const anomalyCount = anomalyCountMatch?.[1]
+    ? Number.parseInt(anomalyCountMatch[1], 10)
+    : Math.max(relatedAnomalies.length, 1);
+
+  return [
+    {
+      label: "Peak Time",
+      value: snapshot?.timestamp || "Pending",
+      sublabel: snapshot?.timestamp ? "Detected window" : "Awaiting source timestamp",
+    },
+    {
+      label: "Duration",
+      value: findDuration(corpus) || "Pending",
+      sublabel: "Estimated incident duration",
+    },
+    {
+      label: "Financial Impact",
+      value: eventsValue,
+      sublabel: annualizedValue ? `${annualizedValue} annualized projection` : "Annualized projection pending",
+    },
+    {
+      label: "Anomalies",
+      value: `${anomalyCount}`,
+      sublabel: "Correlated metrics",
+    },
+  ];
+}
+
+function extractSignalSnippet(
+  corpus: string,
+  pattern: RegExp,
+  fallback: string,
+): string {
+  const match = corpus.match(pattern)?.[0];
+  return match ? normalizeWhitespace(match) : fallback;
+}
+
+function buildRelatedAnomalies(
+  messages: Message[],
+  snapshot: AnomalyInsightSnapshot | null,
+): RelatedAnomalyItem[] {
+  const corpus = normalizeWhitespace(
+    [snapshot?.description, snapshot?.detail, latestAssistantText(messages), combinedConversationText(messages)]
+      .filter(Boolean)
+      .join(" "),
+  );
+  const related: RelatedAnomalyItem[] = [];
+
+  if (snapshot) {
+    related.push({
+      label: snapshot.title.replace(/\s+Anomaly Detected$/i, "").trim() || "Primary anomaly",
+      detail: snapshot.detail || snapshot.description,
+      timestamp: snapshot.timestamp,
+    });
+  }
+
+  const candidates: RelatedAnomalyItem[] = [
+    {
+      label: "Call Volume",
+      detail: extractSignalSnippet(
+        corpus,
+        /(?:call|volume)[^.]{0,80}(?:spike|increase|drop|variance)[^.]{0,80}/i,
+        "Inbound volume deviated from baseline during the anomaly window.",
+      ),
+    },
+    {
+      label: "CSAT",
+      detail: extractSignalSnippet(
+        corpus,
+        /(?:csat|sentiment|customer satisfaction)[^.]{0,80}(?:drop|decline|shift|change)[^.]{0,80}/i,
+        "Customer sentiment shifted in parallel with operational pressure.",
+      ),
+    },
+    {
+      label: "AHT",
+      detail: extractSignalSnippet(
+        corpus,
+        /(?:aht|handle time|average handle time)[^.]{0,80}(?:increase|drop|change|variance)[^.]{0,80}/i,
+        "Handle-time behavior changed materially during triage conditions.",
+      ),
+    },
+  ];
+
+  for (const candidate of candidates) {
+    if (related.some((item) => item.label.toLowerCase() === candidate.label.toLowerCase())) continue;
+    related.push(candidate);
+    if (related.length >= 2) break;
+  }
+
+  if (related.length === 0) {
+    return [
+      {
+        label: "Primary anomaly",
+        detail: "Anomaly signal remains under investigation; correlated metrics are being confirmed.",
+      },
+      {
+        label: "Service quality",
+        detail: "Quality and operational efficiency indicators moved outside expected baseline.",
+      },
+    ];
+  }
+
+  if (related.length === 1) {
+    related.push({
+      label: "Service quality",
+      detail: "Quality and operational efficiency indicators moved outside expected baseline.",
+    });
+  }
+
+  return related.slice(0, 2);
+}
+
+function buildRecommendedActions(rootCauses: RootCauseItem[]): string[] {
+  const actions: string[] = [];
+
+  const hasQueuePressure = rootCauses.some((item) =>
+    item.heading === "Queue Pressure & Capacity Constraints" || /queue|triage|capacity/i.test(item.detail),
+  );
+  if (hasQueuePressure) {
+    actions.push("Stabilize routing and queue policies immediately to return distribution to baseline behavior.");
+  }
+
+  const hasQualitySignal = rootCauses.some((item) =>
+    item.heading === "Quality Degradation" || /resolution|sentiment|quality|csat/i.test(item.detail),
+  );
+  if (hasQualitySignal) {
+    actions.push("Deploy focused QA guardrails and escalation criteria to protect resolution quality during surges.");
+  }
+
+  const hasStaffingSignal = rootCauses.some((item) =>
+    item.heading === "Staffing & Efficiency" || /escalation|handoff|staffing/i.test(item.detail),
+  );
+  if (hasStaffingSignal) {
+    actions.push("Rebalance staffing and escalation playbooks to reduce avoidable handoffs and backlog growth.");
+  }
+
+  const hasCostSignal = rootCauses.some((item) =>
+    item.heading === "Downstream Financial Impact" || /cost|callbacks|follow-up|case-management/i.test(item.detail),
+  );
+  if (hasCostSignal) {
+    actions.push("Track downstream cost drivers weekly and prioritize remediation for the top loss contributors.");
+  }
+
+  for (const fallback of DEFAULT_RECOMMENDED_ACTIONS) {
+    if (actions.length >= 4) break;
+    if (!actions.includes(fallback)) actions.push(fallback);
+  }
+
+  return actions.slice(0, 4);
+}
+
 function buildPrimaryFinding(messages: Message[], snapshot: AnomalyInsightSnapshot | null): string {
   if (snapshot) {
     const timestampClause = snapshot.timestamp
@@ -343,8 +558,14 @@ export function buildAnomalyPrimaryFindingModel(
 
   const riskLevel = inferRiskLevel(messages, snapshot);
   const confidenceLevel = inferConfidenceLevel(messages);
+  const confidenceScorePct = confidenceScoreForLevel(confidenceLevel);
   const { stats: financialImpactStats, assumption: financialImpactAssumption } =
     buildFinancialImpactStats(corpus);
+  const rootCauses = buildRootCauseItems(messages, snapshot);
+  const relatedAnomalies = buildRelatedAnomalies(messages, snapshot);
+  const summaryStats = buildSummaryStats(corpus, snapshot, financialImpactStats, relatedAnomalies);
+  const headingSubtitle = buildHeadingSubtitle(messages, snapshot);
+  const recommendedActions = buildRecommendedActions(rootCauses);
 
   const riskDetail =
     riskLevel === "High"
@@ -361,6 +582,11 @@ export function buildAnomalyPrimaryFindingModel(
         : "Preliminary signals are directionally consistent, with some assumptions still unverified.";
 
   return {
+    headingSubtitle,
+    summaryStats,
+    confidenceScorePct,
+    relatedAnomalies,
+    recommendedActions,
     primaryFinding: buildPrimaryFinding(messages, snapshot),
     financialImpactStats,
     financialImpactAssumption,
@@ -370,6 +596,6 @@ export function buildAnomalyPrimaryFindingModel(
     confidenceDetail,
     protocolStepLabel: "Step 7: Root Cause Identification",
     protocolStepStatus: options?.isThinking ? "In progress" : "Complete",
-    rootCauses: buildRootCauseItems(messages, snapshot),
+    rootCauses,
   };
 }

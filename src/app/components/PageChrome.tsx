@@ -38,16 +38,16 @@ export const pageMainShellClassName = "w-full min-w-0 px-8 pt-8";
 /**
  * Viewport gutters + top padding for scrollable **root list** and **dashboard** bodies. Add
  * `pb-*` on the same element. Put `pageMainColumnClassName` on `PageTransition` or an inner
- * wrapper instead of `PageContent`, so the 1440px column is full width inside the gutters (not
+ * wrapper instead of `PageContent`, so the 1366px column is full width inside the gutters (not
  * shrunk by `px-*` and `max-w-*` on one node).
  */
 export const pageRootListScrollGutterClassName = "w-full min-w-0 px-8 pt-8";
 
 /**
- * Max-width column token (1440px, centered). Composed with `pageMainShellClassName` on
+ * Max-width column token (1366px, centered). Composed with `pageMainShellClassName` on
  * `PageContent` as a single root node — use `space-y-*`, `gap-*`, or `pb-*` on `className` for rhythm.
  */
-export const pageMainColumnClassName = "mx-auto w-full min-w-0 max-w-[1440px]";
+export const pageMainColumnClassName = "mx-auto w-full min-w-0 max-w-[1366px]";
 
 /** Alias for the inner column (max-width shell). */
 export const pageContentMaxWidthClassName = pageMainColumnClassName;

@@ -1,4 +1,4 @@
-import { AlertTriangle, Bot, Lightbulb, CircleAlert, Zap } from "lucide-react";
+import { AlertTriangle, BellOff, Bot, Lightbulb, CircleAlert, Sparkles, Zap } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import {
@@ -64,7 +64,7 @@ export function ExploreInsightDialog({
                 <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
                   Insight Type
                 </p>
-                <Badge variant="outline" className="mt-1 gap-1">
+                <Badge variant="secondary" className="mt-1 gap-1">
                   <CircleAlert className="h-3 w-3" />
                   Anomaly
                 </Badge>
@@ -97,22 +97,35 @@ export function ExploreInsightDialog({
             </div>
           </div>
 
-          <DialogFooter className="mt-2 gap-2 sm:justify-end">
+          <DialogFooter className="mt-2 !flex-row items-center gap-2">
             <Button
-              onClick={() => {
-                onInvestigateInsight(insight);
-              }}
-            >
-              Investigate further
-            </Button>
-            <Button
-              variant="outline"
+              variant="ghost"
+              className="mr-auto"
               onClick={() => {
                 onDismissInsight(insight);
               }}
             >
+              <BellOff className="h-4 w-4" />
               Dismiss insight
             </Button>
+            <div className="ml-auto flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  onOpenChange(false);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  onInvestigateInsight(insight);
+                }}
+              >
+                <Sparkles className="h-4 w-4" />
+                Investigate further
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -156,7 +169,7 @@ export function ExploreInsightDialog({
               </p>
               <div className="mt-1 flex flex-wrap gap-1.5">
                 {isActionOpportunity ? (
-                  <Badge variant="default" className="gap-1">
+                  <Badge variant="secondary" className="gap-1">
                     <Zap className="h-3 w-3" />
                     Action
                   </Badge>
@@ -189,22 +202,35 @@ export function ExploreInsightDialog({
           </div>
         </div>
 
-        <DialogFooter className="mt-2 gap-2 sm:justify-end">
+        <DialogFooter className="mt-2 !flex-row items-center gap-2">
           <Button
-            onClick={() => {
-              onInvestigateInsight(insight);
-            }}
-          >
-            Investigate further
-          </Button>
-          <Button
-            variant="outline"
+            variant="ghost"
+            className="mr-auto"
             onClick={() => {
               onDismissInsight(insight);
             }}
           >
+            <BellOff className="h-4 w-4" />
             Dismiss insight
           </Button>
+          <div className="ml-auto flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                onOpenChange(false);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                onInvestigateInsight(insight);
+              }}
+            >
+              <Sparkles className="h-4 w-4" />
+              Investigate further
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

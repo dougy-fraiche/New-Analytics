@@ -86,6 +86,7 @@ import {
 } from "./ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { cn } from "./ui/utils";
+import { currentUserProfile, getInitials } from "../data/user-profile";
 
 interface AppItem {
   name: string;
@@ -864,12 +865,12 @@ export function AppSidebar() {
                         delayMs={0}
                         className="rounded-full bg-primary text-primary-foreground text-xs"
                       >
-                        JD
+                        {getInitials(currentUserProfile.displayName)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-medium">John Doe</span>
-                      <span className="truncate text-xs font-normal text-muted-foreground">john.doe@company.com</span>
+                      <span className="truncate font-medium">{currentUserProfile.displayName}</span>
+                      <span className="truncate text-xs font-normal text-muted-foreground">{currentUserProfile.email}</span>
                     </div>
                     <ChevronDown className="ml-auto size-4" />
                   </SidebarMenuButton>
@@ -882,8 +883,8 @@ export function AppSidebar() {
                 >
                   <UserDropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm" style={{ fontWeight: 500 }}>John Doe</p>
-                      <p className="text-xs text-muted-foreground">john.doe@company.com</p>
+                      <p className="text-sm" style={{ fontWeight: 500 }}>{currentUserProfile.displayName}</p>
+                      <p className="text-xs text-muted-foreground">{currentUserProfile.email}</p>
                     </div>
                   </UserDropdownMenuLabel>
                   <UserDropdownMenuSeparator />

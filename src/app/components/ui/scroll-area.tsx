@@ -5,15 +5,22 @@ import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
 
 import { cn } from "./utils";
 
+interface ScrollAreaProps
+  extends React.ComponentProps<typeof ScrollAreaPrimitive.Root> {
+  /** When true, scrollbar fades in on hover/focus within the scroll area. */
+  showScrollbarOnHover?: boolean;
+}
+
 function ScrollArea({
   className,
   children,
+  showScrollbarOnHover = false,
   ...props
-}: React.ComponentProps<typeof ScrollAreaPrimitive.Root>) {
+}: ScrollAreaProps) {
   return (
     <ScrollAreaPrimitive.Root
       data-slot="scroll-area"
-      className={cn("relative", className)}
+      className={cn("relative", showScrollbarOnHover && "group/scroll-area", className)}
       {...props}
     >
       <ScrollAreaPrimitive.Viewport
@@ -22,7 +29,12 @@ function ScrollArea({
       >
         {children}
       </ScrollAreaPrimitive.Viewport>
-      <ScrollBar />
+      <ScrollBar
+        className={cn(
+          showScrollbarOnHover &&
+            "opacity-0 transition-opacity duration-150 group-hover/scroll-area:opacity-100 group-focus-within/scroll-area:opacity-100",
+        )}
+      />
       <ScrollAreaPrimitive.Corner />
     </ScrollAreaPrimitive.Root>
   );

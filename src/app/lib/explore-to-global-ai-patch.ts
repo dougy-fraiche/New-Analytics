@@ -14,6 +14,7 @@ export function exploreAssistantPartialToGlobalPatch(
   if (partial.widgetKpiLabel !== undefined) out.widgetKpiLabel = partial.widgetKpiLabel;
   if (partial.widgetIconType !== undefined) out.widgetIconType = partial.widgetIconType;
   if (partial.widgetAnchorId !== undefined) out.widgetAnchorId = partial.widgetAnchorId;
+  if (partial.widgetSourcePath !== undefined) out.widgetSourcePath = partial.widgetSourcePath;
   if (partial.isTypingContent !== undefined) out.isTypingContent = partial.isTypingContent;
   return out;
 }

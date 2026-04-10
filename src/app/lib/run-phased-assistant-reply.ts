@@ -94,7 +94,7 @@ export async function runPhasedAssistantReply(options: {
     const toolSteps: AssistantToolStep[] = defs.slice(0, r + 1).map((d, j) =>
       j < r
         ? { label: d.label, detail: d.detail, status: "done" as const }
-        : { label: d.label, status: "running" as const },
+        : { label: d.label, detail: d.detail, status: "running" as const },
     );
     patch({
       toolSteps,

@@ -2,12 +2,18 @@ import * as React from "react";
 
 import { cn } from "./utils";
 
-function Empty({ className, ...props }: React.ComponentProps<"div">) {
+type EmptyProps = React.ComponentProps<"div"> & {
+  variant?: "dashed" | "solid";
+};
+
+function Empty({ className, variant = "dashed", ...props }: EmptyProps) {
   return (
     <div
       data-slot="empty"
       className={cn(
-        "flex min-h-60 flex-col items-center justify-center gap-4 rounded-xl border border-dashed p-6 text-center",
+        "flex min-h-60 flex-col items-center justify-center gap-4 rounded-xl p-6 text-center",
+        variant === "dashed" && "border border-dashed",
+        variant === "solid" && "border",
         className,
       )}
       {...props}

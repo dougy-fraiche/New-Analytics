@@ -33,52 +33,7 @@ import { KpiMetricValueTitle } from "./KpiMetricValueTitle";
 import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
 import { WidgetAIExplanation } from "./WidgetAIExplanation";
 import type { ChartType } from "./ChartVariants";
-
-type Kpi = {
-  label: string;
-  value: string;
-  trend: string;
-  sparkline: number[];
-};
-
-const kpis: Kpi[] = [
-  {
-    label: "Total Sessions",
-    value: "12,847",
-    trend: "+8.3%",
-    sparkline: [10200, 10800, 11200, 11650, 12000, 12400, 12847],
-  },
-  {
-    label: "Active Sessions",
-    value: "162",
-    trend: "+5.2%",
-    sparkline: [118, 126, 132, 138, 144, 152, 162],
-  },
-  {
-    label: "Avg. Session Length",
-    value: "3.2 min",
-    trend: "-2.1%",
-    sparkline: [3.8, 3.7, 3.6, 3.45, 3.35, 3.28, 3.2],
-  },
-  {
-    label: "Handovers (Escalations)",
-    value: "342",
-    trend: "-4.5%",
-    sparkline: [398, 384, 372, 362, 354, 348, 342],
-  },
-  {
-    label: "Positive Ratings",
-    value: "94.2%",
-    trend: "+1.8%",
-    sparkline: [90.1, 91.0, 91.8, 92.4, 93.0, 93.6, 94.2],
-  },
-  {
-    label: "Unique Contacts",
-    value: "10,456",
-    trend: "+6.7%",
-    sparkline: [8450, 8760, 9020, 9420, 9730, 10080, 10456],
-  },
-];
+import { aiAgentOverviewKpis } from "../data/ai-agent-kpis";
 
 function getTrendDirection(trend: string): "up" | "down" | "neutral" {
   const normalized = trend.trim();
@@ -619,7 +574,7 @@ export function AIAgentsOverviewTab({
             : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
         }`}
       >
-        {kpis.map((kpi) => (
+        {aiAgentOverviewKpis.map((kpi) => (
           (() => {
             const direction = getTrendDirection(kpi.trend);
             const TrendIcon = direction === "up" ? TrendingUp : TrendingDown;

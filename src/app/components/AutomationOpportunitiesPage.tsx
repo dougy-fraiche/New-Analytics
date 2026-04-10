@@ -50,8 +50,6 @@ import {
   automationSubtopicsTabTopicRows,
   automationTopicsTabPeriodStats,
   automationTopicsTabTopicRows,
-  AUTOMATION_SUBTOPICS_ANALYZED_PERIOD_SUBTITLE,
-  AUTOMATION_TOPICS_ANALYZED_PERIOD_SUBTITLE,
   type AutomationPeriodStat,
   type AutomationScopeTab,
   topOpportunitiesByScope,
@@ -155,7 +153,15 @@ function AnalyzedPeriodSection({
           {stats.map((stat) => (
             <Card key={stat.label} className={cn(AUTOMATION_CARD_HOVER)}>
               <CardContent className="space-y-1.5 p-4">
-                <p className="text-sm text-muted-foreground">{stat.label}</p>
+                <div className="flex items-start gap-2">
+                  <p className="min-w-0 flex-1 text-sm text-muted-foreground">{stat.label}</p>
+                  <WidgetAIPromptButton
+                    widgetTitle={`Analyzed Period • ${stat.label}`}
+                    chartType="metric"
+                    tooltipLabel="Ask AI about this metric"
+                    triggerClassName="size-8 rounded-md [&_svg:not([class*='size-'])]:size-3.5"
+                  />
+                </div>
                 <p className="text-xl font-semibold tracking-tight tabular-nums">{stat.value}</p>
               </CardContent>
             </Card>
@@ -316,20 +322,20 @@ function TopicRow({
             <div className="mt-0.5 text-xs text-muted-foreground">{topic.subtitle}</div>
           ) : null}
         </div>
-        <div className="col-start-3 row-start-1 flex justify-end">
-          <OverflowActionsMenu
-            categoryTitle={categoryTitle}
-            onOpenSampleInteractions={onOpenSampleInteractions}
-          />
+        <div className="col-start-3 row-start-1 flex justify-end self-start">
+          <div className="flex items-center gap-2">
+            <CreateAIAgentPopoverButton sourceKey={agentSourceKey} scopeTitle={agentScopeTitle} />
+            <div className="flex items-center gap-0">
+              {rightSlot}
+              <OverflowActionsMenu
+                categoryTitle={categoryTitle}
+                onOpenSampleInteractions={onOpenSampleInteractions}
+              />
+            </div>
+          </div>
         </div>
         <div className="col-start-2 row-start-2 min-w-0">
           <MetricStrip metrics={topic.metrics} />
-        </div>
-        <div className="col-start-3 row-start-2 flex justify-end self-center">
-          <div className="flex items-center gap-2">
-            {rightSlot}
-            <CreateAIAgentPopoverButton sourceKey={agentSourceKey} scopeTitle={agentScopeTitle} />
-          </div>
         </div>
       </div>
 
@@ -448,31 +454,29 @@ function AutomationTopicsTabTopicCard({
             <CardTitle className="text-lg font-medium tracking-tight">{row.title}</CardTitle>
             <CardDescription className="mt-1.5 text-sm leading-relaxed">{row.description}</CardDescription>
           </div>
-          <div className="flex shrink-0 items-center gap-0">
-            <WidgetAIPromptButton
-              widgetTitle={row.title}
-              chartType="bar"
-              tooltipLabel="Ask AI about this opportunity"
-              triggerClassName={AUTOMATION_ASK_AI_TRIGGER_CLASS}
+          <div className="flex shrink-0 items-center gap-2">
+            <CreateAIAgentPopoverButton
+              sourceKey={`${agentTabKey}:${row.id}`}
+              scopeTitle={row.title}
             />
-            <OverflowActionsMenu
-              categoryTitle={row.sampleInteractionsLabel}
-              onOpenSampleInteractions={onOpenSampleInteractions}
-            />
+            <div className="flex items-center gap-0">
+              <WidgetAIPromptButton
+                widgetTitle={row.title}
+                chartType="bar"
+                tooltipLabel="Ask AI about this opportunity"
+                triggerClassName={AUTOMATION_ASK_AI_TRIGGER_CLASS}
+              />
+              <OverflowActionsMenu
+                categoryTitle={row.sampleInteractionsLabel}
+                onOpenSampleInteractions={onOpenSampleInteractions}
+              />
+            </div>
           </div>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-4">
-        <MetricStrip
-          metrics={row.chipMetrics}
-          rightSlot={
-            <CreateAIAgentPopoverButton
-              sourceKey={`${agentTabKey}:${row.id}`}
-              scopeTitle={row.title}
-            />
-          }
-        />
+        <MetricStrip metrics={row.chipMetrics} />
         {expanded && row.bars ? (
           <div className="rounded-lg border overflow-hidden">
             <ActionBarList
@@ -541,31 +545,29 @@ function TopOpportunityCard({
             <CardTitle className="text-lg font-medium tracking-tight">{category.title}</CardTitle>
             <CardDescription>{category.subtitle}</CardDescription>
           </div>
-          <div className="flex shrink-0 items-center gap-0">
-            <WidgetAIPromptButton
-              widgetTitle={category.title}
-              chartType="bar"
-              tooltipLabel="Ask AI about this opportunity"
-              triggerClassName={AUTOMATION_ASK_AI_TRIGGER_CLASS}
+          <div className="flex shrink-0 items-center gap-2">
+            <CreateAIAgentPopoverButton
+              sourceKey={`category:${category.id}`}
+              scopeTitle={category.title}
             />
-            <OverflowActionsMenu
-              categoryTitle={category.title}
-              onOpenSampleInteractions={onOpenSampleInteractions}
-            />
+            <div className="flex items-center gap-0">
+              <WidgetAIPromptButton
+                widgetTitle={category.title}
+                chartType="bar"
+                tooltipLabel="Ask AI about this opportunity"
+                triggerClassName={AUTOMATION_ASK_AI_TRIGGER_CLASS}
+              />
+              <OverflowActionsMenu
+                categoryTitle={category.title}
+                onOpenSampleInteractions={onOpenSampleInteractions}
+              />
+            </div>
           </div>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-4">
-        <MetricStrip
-          metrics={category.metrics}
-          rightSlot={
-            <CreateAIAgentPopoverButton
-              sourceKey={`category:${category.id}`}
-              scopeTitle={category.title}
-            />
-          }
-        />
+        <MetricStrip metrics={category.metrics} />
 
         {expanded ? (
           <div className="rounded-lg border overflow-hidden">
@@ -717,6 +719,40 @@ export function AutomationOpportunitiesPage() {
     const requestedScope = deepLinkedTarget?.scope ?? "categories";
     setScope((current) => (current === requestedScope ? current : requestedScope));
   }, [deepLinkedTarget?.scope, location.hash]);
+
+  useEffect(() => {
+    if (location.hash !== TOP_OPPORTUNITIES_HASH) return;
+    if (!deepLinkedTarget) return;
+
+    if (deepLinkedTarget.scope === "categories") {
+      setExpandedCategoryIds((prev) => {
+        if (prev.has(deepLinkedTarget.id)) return prev;
+        const next = new Set(prev);
+        next.add(deepLinkedTarget.id);
+        return next;
+      });
+      return;
+    }
+
+    if (deepLinkedTarget.scope === "topics") {
+      setExpandedTopicsTabRowIds((prev) => {
+        if (prev.has(deepLinkedTarget.id)) return prev;
+        const next = new Set(prev);
+        next.add(deepLinkedTarget.id);
+        return next;
+      });
+      return;
+    }
+
+    if (deepLinkedTarget.scope === "subtopics") {
+      setExpandedSubtopicsTabRowIds((prev) => {
+        if (prev.has(deepLinkedTarget.id)) return prev;
+        const next = new Set(prev);
+        next.add(deepLinkedTarget.id);
+        return next;
+      });
+    }
+  }, [deepLinkedTarget, location.hash]);
 
   useEffect(() => {
     if (location.hash !== TOP_OPPORTUNITIES_HASH) return;
@@ -1048,10 +1084,7 @@ export function AutomationOpportunitiesPage() {
                 </TabsContent>
 
                 <TabsContent value="topics" className="mt-0 space-y-8 outline-none">
-                  <AnalyzedPeriodSection
-                    stats={automationTopicsTabPeriodStats}
-                    subtitle={AUTOMATION_TOPICS_ANALYZED_PERIOD_SUBTITLE}
-                  />
+                  <AnalyzedPeriodSection stats={automationTopicsTabPeriodStats} />
                   <section className="space-y-4">
                     <TopOpportunitiesSectionHeading />
                     <div className="flex flex-col gap-4">
@@ -1084,10 +1117,7 @@ export function AutomationOpportunitiesPage() {
                 </TabsContent>
 
                 <TabsContent value="subtopics" className="mt-0 space-y-8 outline-none">
-                  <AnalyzedPeriodSection
-                    stats={automationSubtopicsTabPeriodStats}
-                    subtitle={AUTOMATION_SUBTOPICS_ANALYZED_PERIOD_SUBTITLE}
-                  />
+                  <AnalyzedPeriodSection stats={automationSubtopicsTabPeriodStats} />
                   <section className="space-y-4">
                     <TopOpportunitiesSectionHeading />
                     <div className="flex flex-col gap-4">

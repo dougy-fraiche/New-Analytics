@@ -247,7 +247,7 @@ export function TypeaheadSuggestions({
   return (
     <div
       ref={listRef}
-      className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md"
+      className="absolute bottom-full left-0 right-0 z-50 mb-1 overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md"
     >
       <div className="p-1">
         {filtered.map((suggestion, index) => {

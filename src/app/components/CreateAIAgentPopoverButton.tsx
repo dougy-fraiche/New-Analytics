@@ -57,7 +57,7 @@ export function CreateAIAgentPopoverButton({
         <DropdownMenuTrigger asChild>
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             size="sm"
             className={className}
             aria-haspopup="menu"
@@ -99,7 +99,7 @@ export function CreateAIAgentPopoverButton({
   return (
     <Button
       type="button"
-      variant="secondary"
+      variant="outline"
       size="sm"
       className={cn("max-w-full", className)}
       aria-busy={loading}

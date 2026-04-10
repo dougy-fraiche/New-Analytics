@@ -168,6 +168,11 @@ export function ConversationPhase({
     return buildAnomalyPrimaryFindingModel(messages, { isThinking });
   }, [isThinking, latestDashboard, messages]);
 
+  const hasCompletedAssistantMessage = useMemo(
+    () => messages.some((message) => message.role === "assistant" && message.content.trim().length > 0),
+    [messages],
+  );
+
   // ── Keyboard shortcuts ────────────────────────────────────────────
   useKeyboardShortcut({
     id: "conversation:save-dashboard",
@@ -302,12 +307,16 @@ export function ConversationPhase({
       widgetTitle: string,
       message: string,
       chartType?: string,
+      widgetAnchorId?: string,
       selectedKpiLabel?: string | null,
+      widgetSourcePath?: string,
     ) => {
       const kpi = selectedKpiLabel?.trim();
       handleUserMessage(message, {
         widgetRef: widgetTitle,
         widgetIconType: chartType,
+        widgetAnchorId,
+        widgetSourcePath,
         ...(kpi ? { widgetKpiLabel: kpi } : {}),
       });
     },
@@ -413,6 +422,7 @@ export function ConversationPhase({
           dashboardData={latestDashboard}
           anomalyPrimaryFinding={anomalyPrimaryFindingModel}
           conversationTitle={conversationName}
+          hasCompletedAssistantMessage={hasCompletedAssistantMessage}
           onWidgetPrompt={handleWidgetPrompt}
           onSave={handleSaveDashboardFromArea}
           isSaved={latestDashboard ? !!savedDashboards[latestDashboard.id] : false}

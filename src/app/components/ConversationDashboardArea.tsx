@@ -31,6 +31,7 @@ import {
   SelectSeparator,
   SelectTrigger,
 } from "./ui/select";
+import { Progress } from "./ui/progress";
 import { DashboardData } from "../contexts/ConversationContext";
 import { DashboardChartGrid } from "./ChartVariants";
 import { WidgetAIProvider } from "../contexts/WidgetAIContext";
@@ -91,11 +92,13 @@ interface ConversationDashboardAreaProps {
   dashboardData: DashboardData | null;
   anomalyPrimaryFinding?: PrimaryFindingViewModel | null;
   conversationTitle?: string;
+  hasCompletedAssistantMessage?: boolean;
   /** When provided, widget AI prompts are sent to this handler instead of the dashboard chat panel */
   onWidgetPrompt?: (
     widgetTitle: string,
     message: string,
     chartType?: string,
+    widgetAnchorId?: string,
     selectedKpiLabel?: string | null,
   ) => void;
   onSave?: (dashboard: DashboardData) => void;
@@ -275,15 +278,11 @@ function LevelBadge({
 }: {
   level: "High" | "Medium" | "Low";
 }) {
-  const className =
-    level === "High"
-      ? "border-orange-200 bg-orange-100 text-orange-800 dark:border-orange-900 dark:bg-orange-950/40 dark:text-orange-300"
-      : level === "Low"
-        ? "border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300"
-        : undefined;
+  const variant =
+    level === "High" ? "destructive" : level === "Medium" ? "outline" : "secondary";
 
   return (
-    <Badge variant={className ? "outline" : "secondary"} className={className}>
+    <Badge variant={variant}>
       {level}
     </Badge>
   );
@@ -301,101 +300,184 @@ function AnomalyPrimaryFindingContent({
       <PageHeader>
         <section>
           <h1 className="text-3xl tracking-tight">{conversationTitle || "Primary Finding"}</h1>
-          <p className="mt-1 text-muted-foreground">
-            Structured anomaly investigation summary
-          </p>
+          <p className="mt-1 text-muted-foreground">{model.headingSubtitle}</p>
         </section>
       </PageHeader>
 
       <div className="min-h-0 flex-1 overflow-auto">
         <div className={cn(pageRootListScrollGutterClassName, "pb-8")}>
           <div className={cn(pageMainColumnClassName, "space-y-4")}>
-            <Card>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {model.summaryStats.map((stat, index) => (
+                <Card
+                  key={stat.label}
+                  className="group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30"
+                >
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center gap-2">
+                      <CardDescription className="flex-1">{stat.label}</CardDescription>
+                      <WidgetAskAIAndOverflow
+                        showOverflowMenu={false}
+                        widgetTitle={`Card Source: ${stat.label}`}
+                        chartType="metric"
+                        widgetAnchorId={`anomaly-summary-${index}`}
+                        tooltipLabel="Ask AI about this metric"
+                      />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-1">
+                    <p className="text-4xl tracking-tight">{stat.value}</p>
+                    {stat.sublabel ? (
+                      <p className="text-sm text-muted-foreground">{stat.sublabel}</p>
+                    ) : null}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            <Card className="group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
               <CardHeader className="pb-3">
-                <CardTitle className="text-base flex-1">Primary Finding</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-base flex-1">Primary Finding</CardTitle>
+                  <WidgetAskAIAndOverflow
+                    showOverflowMenu={false}
+                    widgetTitle="Card Source: Primary Finding"
+                    chartType="metric"
+                    widgetAnchorId="anomaly-primary-finding"
+                    tooltipLabel="Ask AI about this insight"
+                  />
+                </div>
               </CardHeader>
               <CardContent>
                 <p className="text-sm leading-relaxed">{model.primaryFinding}</p>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="pb-0">
-                <CardTitle className="text-base flex-1">Financial Impact</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 pt-3">
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                  {model.financialImpactStats.map((item) => (
-                    <div
-                      key={item.label}
-                      className="rounded-lg border bg-muted/30 p-3"
-                    >
-                      <p className="text-sm text-muted-foreground">
-                        {item.label}
-                      </p>
-                      <p className="mt-1 text-base font-semibold">{item.value}</p>
-                      <p className="text-xs text-muted-foreground">{item.detail}</p>
-                    </div>
-                  ))}
+            <Card className="group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-base flex-1">Analysis Confidence</CardTitle>
+                  <WidgetAskAIAndOverflow
+                    showOverflowMenu={false}
+                    widgetTitle="Card Source: Analysis Confidence"
+                    chartType="metric"
+                    widgetAnchorId="anomaly-analysis-confidence"
+                    tooltipLabel="Ask AI about this insight"
+                  />
                 </div>
-                <p className="text-xs text-muted-foreground">{model.financialImpactAssumption}</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <p className="text-muted-foreground">Confidence score</p>
+                    <p className="font-medium">{model.confidenceScorePct}%</p>
+                  </div>
+                  <Progress value={model.confidenceScorePct} />
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm text-muted-foreground">Risk level</p>
+                  <LevelBadge level={model.riskLevel} />
+                  <p className="text-sm text-muted-foreground">Confidence level</p>
+                  <LevelBadge level={model.confidenceLevel} />
+                  <p className="text-sm text-muted-foreground">Protocol step</p>
+                  <Badge variant="secondary">
+                    {`${model.protocolStepLabel} (${model.protocolStepStatus})`}
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">{model.confidenceDetail}</p>
+                <p className="text-sm text-muted-foreground">{model.riskDetail}</p>
               </CardContent>
             </Card>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <Card>
+            <div className="grid gap-4 xl:grid-cols-2">
+              <Card className="group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex-1">Risk Level</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-base flex-1">Root Cause Analysis</CardTitle>
+                    <WidgetAskAIAndOverflow
+                      showOverflowMenu={false}
+                      widgetTitle="Card Source: Root Cause Analysis"
+                      chartType="metric"
+                      widgetAnchorId="anomaly-root-cause-analysis"
+                      tooltipLabel="Ask AI about this insight"
+                    />
+                  </div>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  <LevelBadge level={model.riskLevel} />
-                  <p className="text-sm text-muted-foreground">{model.riskDetail}</p>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    {model.rootCauses[0]?.detail ?? "Root-cause evidence is still being assembled."}
+                  </p>
+                  <section className="space-y-2">
+                    <h3 className="text-sm">Contributing Factors</h3>
+                    <ul className="list-disc space-y-1.5 pl-5 text-sm">
+                      {model.rootCauses.map((cause) => (
+                        <li key={cause.heading}>
+                          <span className="font-medium">{cause.heading}:</span>{" "}
+                          <span>{cause.detail}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex-1">Confidence Level</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-base flex-1">
+                      {`Related Anomalies (${model.relatedAnomalies.length})`}
+                    </CardTitle>
+                    <WidgetAskAIAndOverflow
+                      showOverflowMenu={false}
+                      widgetTitle="Card Source: Related Anomalies"
+                      chartType="metric"
+                      widgetAnchorId="anomaly-related-anomalies"
+                      tooltipLabel="Ask AI about this insight"
+                    />
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <LevelBadge level={model.confidenceLevel} />
-                  <p className="text-sm text-muted-foreground">{model.confidenceDetail}</p>
+                  {model.relatedAnomalies.map((related) => (
+                    <div key={`${related.label}-${related.detail}`} className="rounded-md border p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <Badge variant="outline">{related.label}</Badge>
+                        {related.timestamp ? (
+                          <span className="text-xs text-muted-foreground">{related.timestamp}</span>
+                        ) : null}
+                      </div>
+                      <p className="mt-2 text-sm text-muted-foreground">{related.detail}</p>
+                    </div>
+                  ))}
                 </CardContent>
               </Card>
             </div>
 
-            <Card>
+            <Card className="group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base flex-1">Protocol Step</CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm">{model.protocolStepLabel}</p>
-                <Badge
-                  variant={model.protocolStepStatus === "Complete" ? "outline" : "secondary"}
-                  className={
-                    model.protocolStepStatus === "Complete"
-                      ? "border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300"
-                      : undefined
-                  }
-                >
-                  {model.protocolStepStatus}
-                </Badge>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex-1">Root Cause</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-base flex-1">Recommended Actions</CardTitle>
+                  <WidgetAskAIAndOverflow
+                    showOverflowMenu={false}
+                    widgetTitle="Card Source: Recommended Actions"
+                    chartType="metric"
+                    widgetAnchorId="anomaly-recommended-actions"
+                    tooltipLabel="Ask AI about this insight"
+                  />
+                </div>
+                <CardDescription>Suggested steps to mitigate this anomaly.</CardDescription>
               </CardHeader>
               <CardContent>
-                <ul className="list-disc space-y-2 pl-5 text-sm text-foreground/90">
-                  {model.rootCauses.map((cause) => (
-                    <li key={cause.heading}>
-                      <span className="font-medium">{cause.heading}:</span>{" "}
-                      <span>{cause.detail}</span>
+                <ol className="space-y-3">
+                  {model.recommendedActions.map((action, index) => (
+                    <li key={action} className="flex items-start gap-3">
+                      <Badge variant="secondary" className="mt-0.5 h-6 w-6 justify-center rounded-full px-0">
+                        {index + 1}
+                      </Badge>
+                      <span className="text-sm">{action}</span>
                     </li>
                   ))}
-                </ul>
+                </ol>
               </CardContent>
             </Card>
           </div>
@@ -747,6 +829,7 @@ export function ConversationDashboardArea({
   dashboardData,
   anomalyPrimaryFinding,
   conversationTitle,
+  hasCompletedAssistantMessage = false,
   onWidgetPrompt,
   onSave,
   isSaved,
@@ -754,7 +837,12 @@ export function ConversationDashboardArea({
   onDelete,
 }: ConversationDashboardAreaProps) {
   // Determine what to show
-  if (isThinking && !dashboardData) {
+  const shouldShowDashboardBuildingAnimation =
+    isThinking &&
+    !dashboardData &&
+    (!anomalyPrimaryFinding || !hasCompletedAssistantMessage);
+
+  if (shouldShowDashboardBuildingAnimation) {
     return <DashboardBuildingAnimation />;
   }
 
@@ -774,10 +862,15 @@ export function ConversationDashboardArea({
 
   if (anomalyPrimaryFinding) {
     return (
-      <AnomalyPrimaryFindingContent
-        model={anomalyPrimaryFinding}
-        conversationTitle={conversationTitle}
-      />
+      <WidgetAIProvider
+        persistKey={`conversation-anomaly-${conversationTitle || "primary-finding"}`}
+        onWidgetPrompt={onWidgetPrompt}
+      >
+        <AnomalyPrimaryFindingContent
+          model={anomalyPrimaryFinding}
+          conversationTitle={conversationTitle}
+        />
+      </WidgetAIProvider>
     );
   }
 

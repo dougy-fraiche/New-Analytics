@@ -14,6 +14,7 @@ interface WidgetAIContextType {
     chartType?: string,
     widgetAnchorId?: string,
     selectedKpiLabel?: string | null,
+    widgetSourcePath?: string,
   ) => void;
 }
 
@@ -32,7 +33,9 @@ interface WidgetAIProviderProps {
     widgetTitle: string,
     message: string,
     chartType?: string,
+    widgetAnchorId?: string,
     selectedKpiLabel?: string | null,
+    widgetSourcePath?: string,
   ) => void;
 }
 
@@ -49,6 +52,18 @@ function defaultWidgetResponse(
 
   if (lower.includes("trend") || lower.includes("pattern")) {
     return `Looking at ${widgetScope}, I can see a clear upward trend over the observed period. The data shows approximately 12% growth month-over-month with some cyclical variation. Would you like me to break down the contributing factors or forecast the next period?`;
+  }
+  if (
+    lower.includes("rewrite instruction") ||
+    lower.includes("rewrite job instruction")
+  ) {
+    return `Here is a cleaner version of the job instruction for ${widgetScope}: "Guide the user through the required flow step-by-step, confirm each required input, and escalate only when confidence is low or policy requires human review."`;
+  }
+  if (
+    lower.includes("rewrite description") ||
+    lower.includes("rewrite job description")
+  ) {
+    return `Here is a revised job description for ${widgetScope}: "Handle common customer requests end-to-end by validating intent, applying the correct policy logic, and delivering clear outcomes with concise follow-up guidance."`;
   }
   if (lower.includes("anomal") || lower.includes("outlier") || lower.includes("unusual")) {
     return `In ${widgetScope}, there are two notable anomalies: a spike on Feb 17 that's 2.1 standard deviations above the mean, and a dip in late January. The spike correlates with a product launch event. Want me to investigate the root cause of the January dip?`;
@@ -88,10 +103,21 @@ export function WidgetAIProvider({
       chartType?: string,
       widgetAnchorId?: string,
       selectedKpiLabel?: string | null,
+      widgetSourcePath?: string,
     ) => {
+      const resolvedSourcePath =
+        widgetSourcePath ??
+        `${window.location.pathname}${window.location.search}${window.location.hash}`;
       // If an external handler is provided, delegate entirely to it
       if (onWidgetPrompt) {
-        onWidgetPrompt(widgetTitle, message, chartType, selectedKpiLabel);
+        onWidgetPrompt(
+          widgetTitle,
+          message,
+          chartType,
+          widgetAnchorId,
+          selectedKpiLabel,
+          resolvedSourcePath,
+        );
         return;
       }
 
@@ -112,6 +138,7 @@ export function WidgetAIProvider({
           : {}),
         widgetIconType: chartType,
         widgetAnchorId,
+        widgetSourcePath: resolvedSourcePath,
       };
 
       dashboardChat.appendMessage(persistKey, userMessage);

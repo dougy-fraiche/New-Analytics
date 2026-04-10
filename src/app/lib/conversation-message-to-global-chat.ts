@@ -16,6 +16,7 @@ export function conversationMessageToGlobalChat(msg: Message): ChatMessage {
     widgetKpiLabel: msg.widgetKpiLabel,
     widgetIconType: msg.widgetIconType,
     widgetAnchorId: msg.widgetAnchorId,
+    widgetSourcePath: msg.widgetSourcePath,
     reasoning: msg.reasoning,
     sources: msg.sources,
     toolSteps: msg.toolSteps,

@@ -37,6 +37,7 @@ import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
 import { KpiMetricValueTitle } from "./KpiMetricValueTitle";
 import { WidgetAIExplanation } from "./WidgetAIExplanation";
 import type { ChartType } from "./ChartVariants";
+import { aiAgentEvaluationKpis } from "../data/ai-agent-kpis";
 
 const weekLabels = ["W1", "W2", "W3", "W4", "W5", "W6", "W7"];
 
@@ -160,22 +161,6 @@ const evaluationTopicRows: EvaluationTopicRow[] = [
   { topic: "Returns & Refunds", subtopic: "Returns › Process", convos: 228, successPct: 65, successTone: "warn", sharePct: 8 },
   { topic: "Onboarding", subtopic: "Setup › Configuration", convos: 171, successPct: 88, successTone: "good", sharePct: 6 },
   { topic: "Complaints", subtopic: "Service › General", convos: 114, successPct: 42, successTone: "risk", sharePct: 4 },
-];
-
-type EvaluationKpi = {
-  label: string;
-  value: string;
-  caption: string;
-  badge: string;
-};
-
-const evaluationKpis: EvaluationKpi[] = [
-  { label: "Evaluated", value: "2,847", caption: "conversations", badge: "+3.2%" },
-  { label: "Success Rate", value: "68%", caption: "goal achieved", badge: "+1.4%" },
-  { label: "Containment", value: "73%", caption: "AI resolved", badge: "+2.0%" },
-  { label: "Positive Sent", value: "58%", caption: "good sentiment", badge: "−0.8%" },
-  { label: "Compliance", value: "89%", caption: "114 violations", badge: "−1.1%" },
-  { label: "Brand Aligned", value: "71%", caption: "fully aligned", badge: "+0.6%" },
 ];
 
 function getTrendDirection(value: string): "up" | "down" | "neutral" {
@@ -945,7 +930,7 @@ export function AIAgentsEvaluationTab({
             : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
         }`}
       >
-        {evaluationKpis.map((kpi) => (
+        {aiAgentEvaluationKpis.map((kpi) => (
           (() => {
             const direction = getTrendDirection(kpi.badge);
             const TrendIcon = direction === "up" ? TrendingUp : TrendingDown;

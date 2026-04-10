@@ -55,20 +55,35 @@ function TabsList({
   );
 }
 
+const tabsTriggerVariants = cva("", {
+  variants: {
+    size: {
+      default: "px-2 py-1 text-sm",
+      sm: "px-2 py-1 text-xs leading-snug",
+    },
+  },
+  defaultVariants: {
+    size: "default",
+  },
+});
+
 function TabsTrigger({
   className,
+  size,
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.Trigger>) {
+}: React.ComponentProps<typeof TabsPrimitive.Trigger> &
+  VariantProps<typeof tabsTriggerVariants>) {
   return (
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
       className={cn(
-        "relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 px-2 py-1 text-sm font-normal whitespace-nowrap transition-[color,box-shadow] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 data-[state=active]:z-10 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 font-normal whitespace-nowrap transition-[color,box-shadow] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 data-[state=active]:z-10 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         "group-data-[orientation=vertical]/tabs:w-full group-data-[orientation=vertical]/tabs:justify-start",
         // default (segmented) list
         "rounded-md group-data-[variant=default]/tabs-list:text-foreground group-data-[variant=default]/tabs-list:data-[state=inactive]:text-muted-foreground group-data-[variant=default]/tabs-list:data-[state=inactive]:hover:bg-primary-0/80 group-data-[variant=default]/tabs-list:data-[state=active]:bg-sidebar-accent group-data-[variant=default]/tabs-list:data-[state=active]:text-sidebar-accent-foreground group-data-[variant=default]/tabs-list:data-[state=active]:shadow-xs",
         // line list — underline style; flex-none so row stays content-width
         "group-data-[variant=line]/tabs-list:h-9 group-data-[variant=line]/tabs-list:flex-none group-data-[variant=line]/tabs-list:shrink-0 group-data-[variant=line]/tabs-list:rounded-none group-data-[variant=line]/tabs-list:border-b-2 group-data-[variant=line]/tabs-list:border-transparent group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:px-3 group-data-[variant=line]/tabs-list:py-2 group-data-[variant=line]/tabs-list:shadow-none group-data-[variant=line]/tabs-list:data-[state=inactive]:text-muted-foreground group-data-[variant=line]/tabs-list:data-[state=inactive]:hover:text-foreground group-data-[variant=line]/tabs-list:data-[state=active]:border-primary group-data-[variant=line]/tabs-list:data-[state=active]:font-normal group-data-[variant=line]/tabs-list:data-[state=active]:text-foreground",
+        tabsTriggerVariants({ size }),
         className,
       )}
       {...props}

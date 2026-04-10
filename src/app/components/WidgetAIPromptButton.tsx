@@ -11,6 +11,7 @@ import { useOptionalAiAssistantPanelControl } from "../contexts/AiAssistantPanel
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { cn } from "./ui/utils";
+import { normalizeAskAiWidgetTitle } from "../lib/normalize-ask-ai-widget-title";
 
 /**
  * PopoverContent defaults include slide-in-from-* by side; these zero out translate so
@@ -75,11 +76,24 @@ interface WidgetAIPromptButtonProps {
   selectedKpiLabel?: string | null;
   /** If provided, anchors the popover at a click point instead of the icon. */
   anchorPoint?: { x: number; y: number } | null;
+  /** Optional prompt chips shown under the input; defaults to common analytics prompts. */
+  suggestedPrompts?: string[];
+  /** Optional callback fired when a suggested prompt chip is clicked. */
+  onSuggestedPromptSelect?: (prompt: string) => void;
+  /** Optional source metadata overrides keyed by suggested prompt text. */
+  suggestedPromptSourceOverrides?: Record<
+    string,
+    {
+      widgetTitle?: string;
+      chartType?: string;
+      widgetAnchorId?: string;
+      selectedKpiLabel?: string | null;
+    }
+  >;
 }
 
 export function WidgetAIPromptButton({
   widgetTitle,
-  chartType,
   widgetAnchorId,
   tooltipLabel = "Ask AI about this widget",
   tooltipSide = "bottom",
@@ -88,6 +102,9 @@ export function WidgetAIPromptButton({
   onOpenChange: controlledOnOpenChange,
   selectedKpiLabel,
   anchorPoint,
+  suggestedPrompts,
+  onSuggestedPromptSelect,
+  suggestedPromptSourceOverrides,
 }: WidgetAIPromptButtonProps) {
   const widgetAI = useWidgetAI();
   const portalContainer = usePortalContainer();
@@ -108,6 +125,7 @@ export function WidgetAIPromptButton({
     top: number;
     transform: string;
   } | null>(null);
+  const normalizedWidgetTitle = normalizeAskAiWidgetTitle(widgetTitle);
 
   /** KPI mode uses a fixed portal; keep Radix closed so it does not trap focus without content. */
   const radixPopoverOpen = open && !anchorPoint;
@@ -223,9 +241,9 @@ export function WidgetAIPromptButton({
   const handleSend = () => {
     if (!query.trim() || !widgetAI) return;
     widgetAI.sendWidgetPrompt(
-      widgetTitle,
+      normalizedWidgetTitle,
       query.trim(),
-      chartType,
+      undefined,
       widgetAnchorId,
       selectedKpiLabel,
     );
@@ -238,12 +256,22 @@ export function WidgetAIPromptButton({
 
   const mountTarget = typeof document !== "undefined" ? portalContainer ?? document.body : null;
 
+  const promptChips =
+    suggestedPrompts && suggestedPrompts.length > 0
+      ? suggestedPrompts
+      : [
+          "What's the trend?",
+          "Explain this data",
+          "Any anomalies?",
+          "Any recommendations?",
+        ];
+
   /** Shared form: same markup for shadcn Popover and KPI portal (visual parity). */
   const askForm = (
     <div className="space-y-2">
       <div className="flex flex-col gap-0.5 mb-2">
         <span className="text-xs text-muted-foreground truncate">
-          Ask about <span className="font-normal text-foreground">{widgetTitle}</span>
+          Ask about <span className="font-normal text-foreground">{normalizedWidgetTitle}</span>
         </span>
         {selectedKpiLabel && (
           <span className="text-xs text-muted-foreground truncate">
@@ -311,23 +339,25 @@ export function WidgetAIPromptButton({
       </div>
 
       <div className="flex flex-wrap gap-1.5 pt-1">
-        {[
-          "What's the trend?",
-          "Explain this data",
-          "Any anomalies?",
-          "Any recommendations?",
-        ].map((suggestion) => (
+        {promptChips.map((suggestion) => (
           <button
             key={suggestion}
             type="button"
             onClick={() => {
+              onSuggestedPromptSelect?.(suggestion);
               if (!widgetAI) return;
+              const override = suggestedPromptSourceOverrides?.[suggestion];
+              const normalizedSourceTitle = normalizeAskAiWidgetTitle(
+                override?.widgetTitle ?? widgetTitle,
+              );
               widgetAI.sendWidgetPrompt(
-                widgetTitle,
+                normalizedSourceTitle,
                 suggestion,
-                chartType,
-                widgetAnchorId,
-                selectedKpiLabel,
+                undefined,
+                override?.widgetAnchorId ?? widgetAnchorId,
+                override && "selectedKpiLabel" in override
+                  ? override.selectedKpiLabel
+                  : selectedKpiLabel,
               );
               setOpen(false);
               assistantPanel?.openPanel();

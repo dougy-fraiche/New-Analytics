@@ -1,47 +1,700 @@
 "use client";
 
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Clock3,
+} from "lucide-react";
 import { useParams } from "react-router";
+import { toast } from "sonner";
 
 import { useCreateAIAgentJobs } from "../contexts/CreateAIAgentJobsContext";
+import { WidgetAIProvider } from "../contexts/WidgetAIContext";
+import type { AgentJobDraft, AgentToolDraft } from "../data/automation-opportunities-agent-page";
+import {
+  deriveAgentConfigFromTitle,
+  type AgentConfigDraft,
+} from "../data/automation-opportunities-agent-page";
+import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
+import { formatAgentCreatedAt } from "../lib/create-ai-agent-jobs";
 import { Button } from "./ui/button";
-import { PageHeader, pageHeaderTitleRowClassName } from "./PageChrome";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
+import { Textarea } from "./ui/textarea";
+import { Badge } from "./ui/badge";
+import { Skeleton } from "./ui/skeleton";
+import { PageTransition } from "./PageTransition";
+import {
+  PageHeader,
+  pageHeaderTitleRowClassName,
+  pageMainColumnClassName,
+  pageRootListScrollGutterClassName,
+} from "./PageChrome";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
+import { cn } from "./ui/utils";
+import { WidgetAIPromptButton } from "./WidgetAIPromptButton";
+import { ScrollArea } from "./ui/scroll-area";
 
-/** Placeholder workspace for an AI agent created from Automation Opportunities. */
+const PROJECT_OPTIONS = ["Project Alpha", "Project Atlas", "Project Nova"] as const;
+const AGENT_PAGE_OOTB_ID = "automation-opportunities";
+const AGENT_PAGE_ASK_AI_TRIGGER_CLASS =
+  "size-9 rounded-md [&_svg:not([class*='size-'])]:size-4";
+const AGENT_PAGE_ASK_AI_PROMPTS = [
+  "Rewrite description",
+  "Rewrite instruction",
+] as const;
+const AGENT_PAGE_REWRITE_PROMPT_SOURCE_OVERRIDES = {
+  "Rewrite description": {
+    widgetTitle: "Job Description",
+    chartType: "bot",
+  },
+  "Rewrite instruction": {
+    widgetTitle: "Job Instructions",
+    chartType: "bot",
+  },
+} as const;
+
+const UUID_V4_OR_V7_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[147][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const REWRITE_LOADING_MS = 4500;
+type RewriteTarget = "description" | "instruction";
+
+function cloneDraft(config: AgentConfigDraft): AgentConfigDraft {
+  return {
+    ...config,
+    jobs: config.jobs.map((job) => ({
+      ...job,
+      tools: job.tools.map((tool) => ({ ...tool })),
+    })),
+  };
+}
+
+function safeDecode(input: string): string {
+  try {
+    return decodeURIComponent(input);
+  } catch {
+    return input;
+  }
+}
+
+function rewritePromptTarget(prompt: string): RewriteTarget | null {
+  const normalized = prompt.trim().toLowerCase();
+  if (
+    normalized.includes("rewrite description") ||
+    normalized.includes("rewrite job description")
+  ) {
+    return "description";
+  }
+  if (
+    normalized.includes("rewrite instruction") ||
+    normalized.includes("rewrite job instruction")
+  ) {
+    return "instruction";
+  }
+  return null;
+}
+
+function rewriteLoadingKey(jobId: string, target: RewriteTarget): string {
+  return `${jobId}:${target}`;
+}
+
+function buildLocalRewriteCopy(job: AgentJobDraft, target: RewriteTarget): string {
+  const jobName = job.name.trim() || "this job";
+  if (target === "description") {
+    return `Provide end-to-end support for ${jobName.toLowerCase()} requests by confirming user context, applying the right policy checks, and delivering a concise resolution summary with clear next steps.`;
+  }
+
+  return [
+    `1. Confirm user intent and collect required inputs for ${jobName.toLowerCase()}.`,
+    "2. Validate account context, policy constraints, and confidence before taking action.",
+    "3. Execute approved steps in sequence and confirm the final outcome.",
+    "4. Escalate to a human reviewer when confidence is low or policy requires manual approval.",
+  ].join("\n");
+}
+
 export function AutomationOpportunitiesAgentPage() {
   const { agentId } = useParams<{ agentId: string }>();
   const { getAgentById } = useCreateAIAgentJobs();
   const agent = agentId ? getAgentById(agentId) : undefined;
-  const decodedAgentLabel = agentId ? decodeURIComponent(agentId) : "";
-  const agentTitle = agent?.scopeTitle || decodedAgentLabel || "AI Agent";
+  const decodedAgentLabel = agentId ? safeDecode(agentId) : "";
+  const fallbackRouteTitle =
+    decodedAgentLabel && !UUID_V4_OR_V7_PATTERN.test(decodedAgentLabel)
+      ? decodedAgentLabel
+      : "";
+  const agentTitle = agent?.scopeTitle?.trim() || fallbackRouteTitle || "AI Agent";
+
+  const initialDraft = useMemo(() => {
+    const seeded = deriveAgentConfigFromTitle(agentTitle);
+    if (agent?.createdAt) {
+      seeded.creationDate = formatAgentCreatedAt(agent.createdAt);
+    }
+    seeded.intentTitle = agentTitle;
+    return seeded;
+  }, [agent?.createdAt, agentTitle]);
+
+  const [draft, setDraft] = useState<AgentConfigDraft>(() =>
+    cloneDraft(initialDraft),
+  );
+  const [savedDraft, setSavedDraft] = useState<AgentConfigDraft>(() =>
+    cloneDraft(initialDraft),
+  );
+  const [selectedJobId, setSelectedJobId] = useState<string>(
+    initialDraft.jobs[0]?.id ?? "",
+  );
+  const [viewMode, setViewMode] = useState<"textual" | "flow">("textual");
+  const [rewriteLoadingByField, setRewriteLoadingByField] = useState<
+    Record<string, boolean>
+  >({});
+  const rewriteTimersRef = useRef<Map<string, number>>(new Map());
+
+  const clearRewriteTimers = useCallback(() => {
+    for (const timerId of rewriteTimersRef.current.values()) {
+      window.clearTimeout(timerId);
+    }
+    rewriteTimersRef.current.clear();
+  }, []);
+
+  useEffect(() => {
+    clearRewriteTimers();
+    setRewriteLoadingByField({});
+    const seededDraft = cloneDraft(initialDraft);
+    setDraft(seededDraft);
+    setSavedDraft(cloneDraft(seededDraft));
+    setSelectedJobId(initialDraft.jobs[0]?.id ?? "");
+    setViewMode("textual");
+  }, [clearRewriteTimers, initialDraft]);
+
+  useEffect(
+    () => () => {
+      clearRewriteTimers();
+    },
+    [clearRewriteTimers],
+  );
+
+  useEffect(() => {
+    if (!draft.jobs.length) {
+      setSelectedJobId("");
+      return;
+    }
+    if (!selectedJobId || !draft.jobs.some((job) => job.id === selectedJobId)) {
+      setSelectedJobId(draft.jobs[0].id);
+    }
+  }, [draft.jobs, selectedJobId]);
+
+  const selectedJob = useMemo(
+    () => draft.jobs.find((job) => job.id === selectedJobId) ?? draft.jobs[0],
+    [draft.jobs, selectedJobId],
+  );
+  const hasUnsavedChanges = useMemo(
+    () => JSON.stringify(draft) !== JSON.stringify(savedDraft),
+    [draft, savedDraft],
+  );
+
+  const updateSelectedJob = useCallback(
+    (updater: (job: AgentJobDraft) => AgentJobDraft) => {
+      if (!selectedJobId) return;
+      setDraft((prev) => ({
+        ...prev,
+        jobs: prev.jobs.map((job) =>
+          job.id === selectedJobId ? updater(job) : job,
+        ),
+      }));
+    },
+    [selectedJobId],
+  );
+
+  const updateJobField = useCallback(
+    (field: "description" | "instruction", value: string) => {
+      updateSelectedJob((job) => ({ ...job, [field]: value }));
+    },
+    [updateSelectedJob],
+  );
+
+  const updateToolField = useCallback(
+    (
+      toolId: string,
+      field:
+        | "name"
+        | "description"
+        | "cognigyNodes"
+        | "placeholderValue"
+        | "parameters",
+      value: string,
+    ) => {
+      updateSelectedJob((job) => ({
+        ...job,
+        tools: job.tools.map((tool) =>
+          tool.id === toolId ? { ...tool, [field]: value } : tool,
+        ),
+      }));
+    },
+    [updateSelectedJob],
+  );
+
+  const isFieldRewriteLoading = useCallback(
+    (jobId: string, target: RewriteTarget) =>
+      Boolean(rewriteLoadingByField[rewriteLoadingKey(jobId, target)]),
+    [rewriteLoadingByField],
+  );
+
+  const handleSuggestedPromptSelect = useCallback(
+    (prompt: string) => {
+      const target = rewritePromptTarget(prompt);
+      if (!target || !selectedJobId) return;
+
+      const key = rewriteLoadingKey(selectedJobId, target);
+      const existingTimer = rewriteTimersRef.current.get(key);
+      if (existingTimer) {
+        window.clearTimeout(existingTimer);
+      }
+
+      setRewriteLoadingByField((prev) => ({ ...prev, [key]: true }));
+
+      const timerId = window.setTimeout(() => {
+        setDraft((prev) => ({
+          ...prev,
+          jobs: prev.jobs.map((job) =>
+            job.id === selectedJobId
+              ? { ...job, [target]: buildLocalRewriteCopy(job, target) }
+              : job,
+          ),
+        }));
+        setRewriteLoadingByField((prev) => {
+          const next = { ...prev };
+          delete next[key];
+          return next;
+        });
+        rewriteTimersRef.current.delete(key);
+      }, REWRITE_LOADING_MS);
+
+      rewriteTimersRef.current.set(key, timerId);
+    },
+    [selectedJobId],
+  );
+
+  const handleCancel = useCallback(() => {
+    if (!hasUnsavedChanges) return;
+    clearRewriteTimers();
+    setRewriteLoadingByField({});
+    setDraft(cloneDraft(savedDraft));
+    toast.message("Changes discarded", {
+      description: "Unsaved edits were reverted to the last saved draft.",
+    });
+  }, [clearRewriteTimers, hasUnsavedChanges, savedDraft]);
+
+  const handleSave = useCallback(() => {
+    if (!hasUnsavedChanges) return;
+    setSavedDraft(cloneDraft(draft));
+    toast.success("Draft saved locally", {
+      description: "Your edits were kept for this session only.",
+    });
+  }, [draft, hasUnsavedChanges]);
+
+  const handlePublish = useCallback(() => {
+    toast.success("Publish requested", {
+      description:
+        "This prototype keeps publish behavior local-only (no backend persistence).",
+    });
+  }, []);
 
   return (
-    <div className="flex flex-1 min-h-0 flex-col">
-      <PageHeader>
-        <section className={pageHeaderTitleRowClassName}>
-          <div className="flex flex-wrap items-start justify-between gap-4">
+    <WidgetAIProvider
+      persistKey={GLOBAL_AI_ASSISTANT_KEY}
+      ootbTypeId={AGENT_PAGE_OOTB_ID}
+    >
+      <div className="flex flex-1 min-h-0 flex-col">
+      <PageHeader className="pb-6">
+        <section className={cn(pageHeaderTitleRowClassName, "space-y-5")}>
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <h1 className="text-3xl tracking-tight">{agentTitle}</h1>
-              <p className="text-muted-foreground mt-2">
-                Configure this agent’s behavior, tools, and routing before publishing it for use in your workflows.
-              </p>
+              <h1 className="text-3xl tracking-tight text-primary-900">
+                Intent: {draft.intentTitle}
+              </h1>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <Button type="button" variant="outline" size="sm">
-                Edit
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleCancel}
+                disabled={!hasUnsavedChanges}
+              >
+                Cancel
               </Button>
-              <Button type="button" variant="default" size="sm">
-                Publish
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleSave}
+                disabled={!hasUnsavedChanges}
+              >
+                Save
+              </Button>
+              <Button type="button" variant="default" size="sm" onClick={handlePublish}>
+                Publish to Cognigy AI
               </Button>
             </div>
+          </div>
+
+          <div className="flex flex-wrap items-end gap-4">
+            <div className="w-[20rem] max-w-full space-y-2">
+              <Label htmlFor="agent-name">AI Agent Name:</Label>
+              <Input
+                id="agent-name"
+                value={draft.agentName}
+                onChange={(event) =>
+                  setDraft((prev) => ({ ...prev, agentName: event.target.value }))
+                }
+              />
+            </div>
+            <div className="w-[20rem] max-w-full space-y-2">
+              <Label htmlFor="project-name">Project Name:</Label>
+              <Select
+                value={draft.projectName}
+                onValueChange={(next) =>
+                  setDraft((prev) => ({ ...prev, projectName: next }))
+                }
+              >
+                <SelectTrigger id="project-name" className="font-normal">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PROJECT_OPTIONS.map((projectName) => (
+                    <SelectItem key={projectName} value={projectName}>
+                      {projectName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-4">
+            <div className="flex flex-wrap items-center gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-foreground">Created By:</span>
+                <span className="text-muted-foreground">{draft.createdBy}</span>
+              </div>
+              <span className="hidden h-4 w-px bg-border md:inline-block" />
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-foreground">Creation Date:</span>
+                <span className="text-muted-foreground">{draft.creationDate}</span>
+              </div>
+              <span className="hidden h-4 w-px bg-border md:inline-block" />
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-foreground">Status:</span>
+                <Badge
+                  variant="outline"
+                  className="border-primary-300 bg-white text-primary-900"
+                >
+                  {draft.status}
+                </Badge>
+              </div>
+            </div>
+            <ToggleGroup
+              type="single"
+              value={viewMode}
+              variant="outline"
+              onValueChange={(nextValue) => {
+                if (nextValue === "textual" || nextValue === "flow") {
+                  setViewMode(nextValue);
+                  if (nextValue === "flow") {
+                    toast.message("Flow view coming soon", {
+                      description:
+                        "Flow editing and visualization will be available in a future update.",
+                    });
+                  }
+                }
+              }}
+            >
+              <ToggleGroupItem
+                value="textual"
+                aria-label="Textual View"
+                className="flex-none shrink-0"
+              >
+                Textual View
+              </ToggleGroupItem>
+              <ToggleGroupItem
+                value="flow"
+                aria-label="Flow View"
+                className="flex-none shrink-0"
+              >
+                Flow View
+              </ToggleGroupItem>
+            </ToggleGroup>
           </div>
         </section>
       </PageHeader>
 
-      <div className="flex-1 min-h-0 overflow-auto">
-        <div className="w-full min-w-0 px-8 pt-8 pb-8">
-          <p className="text-sm text-muted-foreground">Agent workspace details coming soon.</p>
+      <div className="flex-1 min-h-0 overflow-auto bg-white lg:overflow-hidden">
+        <div className={cn(pageRootListScrollGutterClassName, "h-full pt-0 pb-0")}>
+          <PageTransition className={cn(pageMainColumnClassName, "h-full min-h-0")}>
+            <div className="grid h-full min-h-0 items-start gap-8 lg:grid-cols-[17rem_minmax(0,1fr)]">
+              <aside className="space-y-3 self-start pt-8 pb-8 lg:sticky lg:top-0">
+                <h3 className="tracking-tight">Jobs</h3>
+                <Tabs
+                  orientation="vertical"
+                  value={selectedJobId}
+                  onValueChange={setSelectedJobId}
+                  className="w-full"
+                >
+                  <TabsList
+                    className={cn(
+                      "w-full items-stretch gap-1 rounded-none bg-transparent p-0",
+                      "group-data-[orientation=vertical]/tabs:flex-col",
+                    )}
+                  >
+                    {draft.jobs.map((job) => (
+                      <TabsTrigger
+                        key={job.id}
+                        value={job.id}
+                        size="sm"
+                        className={cn(
+                          "w-full justify-start rounded-xl px-3 py-2 text-left text-foreground",
+                          "whitespace-normal leading-snug",
+                          "data-[state=inactive]:bg-transparent data-[state=inactive]:text-foreground data-[state=inactive]:hover:bg-primary-25",
+                          "data-[state=active]:bg-primary-50 data-[state=active]:text-primary-900 data-[state=active]:shadow-none",
+                        )}
+                      >
+                        {job.name}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </Tabs>
+              </aside>
+
+              <ScrollArea
+                className="min-w-0 h-full min-h-0"
+                showScrollbarOnHover
+              >
+                <div className="space-y-4 pt-8 pb-8 lg:pr-2">
+                  <h3 className="tracking-tight">{selectedJob?.name ?? "AI Agent"}</h3>
+
+                  {viewMode === "textual" && selectedJob ? (
+                    <div className="space-y-4">
+                      <Card className="border-border/80 bg-background">
+                        <CardHeader className="pb-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <CardTitle className="flex-1 text-base">
+                              Descriptions
+                            </CardTitle>
+                            <WidgetAIPromptButton
+                              widgetTitle={`${selectedJob.name} · Descriptions`}
+                              chartType="metric"
+                              tooltipLabel="Ask AI about this section"
+                              triggerClassName={AGENT_PAGE_ASK_AI_TRIGGER_CLASS}
+                              suggestedPrompts={[...AGENT_PAGE_ASK_AI_PROMPTS]}
+                              suggestedPromptSourceOverrides={
+                                AGENT_PAGE_REWRITE_PROMPT_SOURCE_OVERRIDES
+                              }
+                              onSuggestedPromptSelect={handleSuggestedPromptSelect}
+                            />
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="job-description">Job Description:</Label>
+                            {isFieldRewriteLoading(selectedJob.id, "description") ? (
+                              <LoadingTextareaSkeleton />
+                            ) : (
+                              <Textarea
+                                id="job-description"
+                                className="min-h-20"
+                                value={selectedJob.description}
+                                onChange={(event) =>
+                                  updateJobField("description", event.target.value)
+                                }
+                              />
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="job-instruction">Job Instruction:</Label>
+                            {isFieldRewriteLoading(selectedJob.id, "instruction") ? (
+                              <LoadingTextareaSkeleton />
+                            ) : (
+                              <Textarea
+                                id="job-instruction"
+                                className="min-h-20"
+                                value={selectedJob.instruction}
+                                onChange={(event) =>
+                                  updateJobField("instruction", event.target.value)
+                                }
+                              />
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {selectedJob.tools.map((tool, index) => (
+                        <ToolSection
+                          key={tool.id}
+                          tool={tool}
+                          index={index}
+                          selectedJobName={selectedJob.name}
+                          onToolFieldChange={updateToolField}
+                          onSuggestedPromptSelect={handleSuggestedPromptSelect}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <Card className="border-border/80 bg-background">
+                      <CardHeader>
+                        <CardTitle className="text-2xl font-medium text-neutral-700">
+                          Flow View
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="rounded-md border border-border/70 bg-neutral-25 p-6">
+                          <div className="flex items-center gap-2 text-foreground">
+                            <Clock3 className="size-4 text-primary" />
+                            <span className="font-medium">Flow View Coming Soon</span>
+                          </div>
+                          <p className="mt-2 text-sm text-muted-foreground">
+                            You can continue editing agent descriptions and tools in Textual
+                            View for now.
+                          </p>
+                        </div>
+                        {selectedJob ? (
+                          <div className="rounded-md border border-border/70 bg-background p-3 text-xs text-muted-foreground">
+                            <span className="font-medium text-foreground">
+                              Selected job:
+                            </span>{" "}
+                            {selectedJob.name} ·{" "}
+                            <span className="font-medium text-foreground">
+                              Configured tools:
+                            </span>{" "}
+                            {selectedJob.tools.length}
+                          </div>
+                        ) : null}
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+          </PageTransition>
         </div>
       </div>
     </div>
+    </WidgetAIProvider>
+  );
+}
+
+function LoadingTextareaSkeleton() {
+  return (
+    <div className="min-h-20 rounded-md border border-input bg-background px-3 py-2">
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-[95%]" />
+        <Skeleton className="h-4 w-[88%]" />
+        <Skeleton className="h-4 w-[72%]" />
+      </div>
+    </div>
+  );
+}
+
+function ToolSection({
+  tool,
+  index,
+  selectedJobName,
+  onToolFieldChange,
+  onSuggestedPromptSelect,
+}: {
+  tool: AgentToolDraft;
+  index: number;
+  selectedJobName: string;
+  onToolFieldChange: (
+    toolId: string,
+    field:
+      | "name"
+      | "description"
+      | "cognigyNodes"
+      | "placeholderValue"
+      | "parameters",
+    value: string,
+  ) => void;
+  onSuggestedPromptSelect?: (prompt: string) => void;
+}) {
+  return (
+    <Card className="border-border/80 bg-background">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="flex-1 text-base">
+            Tools {index + 1}
+          </CardTitle>
+          <WidgetAIPromptButton
+            widgetTitle={`${selectedJobName} · Tools ${index + 1} (${tool.name})`}
+            chartType="metric"
+            tooltipLabel="Ask AI about this tool"
+            triggerClassName={AGENT_PAGE_ASK_AI_TRIGGER_CLASS}
+            suggestedPrompts={[...AGENT_PAGE_ASK_AI_PROMPTS]}
+            suggestedPromptSourceOverrides={
+              AGENT_PAGE_REWRITE_PROMPT_SOURCE_OVERRIDES
+            }
+            onSuggestedPromptSelect={onSuggestedPromptSelect}
+          />
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor={`${tool.id}-name`}>Tool Name:</Label>
+          <Input
+            id={`${tool.id}-name`}
+            value={tool.name}
+            onChange={(event) => onToolFieldChange(tool.id, "name", event.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`${tool.id}-description`}>Tool Description:</Label>
+          <Textarea
+            id={`${tool.id}-description`}
+            className="min-h-20"
+            value={tool.description}
+            onChange={(event) =>
+              onToolFieldChange(tool.id, "description", event.target.value)
+            }
+          />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor={`${tool.id}-nodes`}>Cognigy Nodes:</Label>
+            <Input
+              id={`${tool.id}-nodes`}
+              value={tool.cognigyNodes}
+              onChange={(event) =>
+                onToolFieldChange(tool.id, "cognigyNodes", event.target.value)
+              }
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={`${tool.id}-placeholder`}>Place Holder Value:</Label>
+            <Input
+              id={`${tool.id}-placeholder`}
+              value={tool.placeholderValue}
+              onChange={(event) =>
+                onToolFieldChange(tool.id, "placeholderValue", event.target.value)
+              }
+            />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`${tool.id}-parameters`}>Parameters:</Label>
+          <Input
+            id={`${tool.id}-parameters`}
+            value={tool.parameters}
+            onChange={(event) =>
+              onToolFieldChange(tool.id, "parameters", event.target.value)
+            }
+          />
+        </div>
+      </CardContent>
+    </Card>
   );
 }

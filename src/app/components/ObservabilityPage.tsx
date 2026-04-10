@@ -146,16 +146,14 @@ export function ObservabilityPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Dashboard</TableHead>
+                <TableHead className="w-[220px]">Dashboard</TableHead>
                 <TableHead>Description</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Last Updated</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredItems.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-12 text-muted-foreground">
+                  <TableCell colSpan={2} className="text-center py-12 text-muted-foreground">
                     No dashboards match your search.
                   </TableCell>
                 </TableRow>
@@ -166,7 +164,7 @@ export function ObservabilityPage() {
                       key={item.id}
                       className="group h-[3rem]"
                     >
-                      <TableCell>
+                      <TableCell className="w-[220px]">
                         <Link
                           to={item.path}
                           className="font-medium hover:underline"
@@ -174,16 +172,8 @@ export function ObservabilityPage() {
                           {item.name}
                         </Link>
                       </TableCell>
-                      <TableCell className="max-w-md">
+                      <TableCell>
                         <p className="text-sm text-muted-foreground">{"description" in item ? item.description : ""}</p>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{item.categoryName}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm text-muted-foreground">
-                          {"lastUpdated" in item ? item.lastUpdated : "—"}
-                        </div>
                       </TableCell>
                     </TableRow>
                   );

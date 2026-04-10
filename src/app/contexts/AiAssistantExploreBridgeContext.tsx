@@ -8,8 +8,8 @@ import {
 } from "react";
 import type { WidgetMessageMeta } from "../types/conversation-types";
 
-/** Meta passed when sending from Explore (no in-page anchor). */
-export type ExploreWidgetPromptMeta = Omit<WidgetMessageMeta, "widgetAnchorId">;
+/** Optional widget/card source metadata passed through the Explore bridge. */
+export type ExploreWidgetPromptMeta = WidgetMessageMeta;
 
 export type ExploreAiSendHandler = (
   message: string,

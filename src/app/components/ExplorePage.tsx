@@ -18,6 +18,12 @@ import {
 } from "../data/explore-data";
 import type { AnomalyInvestigationMeta } from "../types/conversation-types";
 import { ROUTES } from "../routes";
+import { useOptionalAiAssistantPanelControl } from "../contexts/AiAssistantPanelControlContext";
+import {
+  START_OPPORTUNITY_INVESTIGATION_CHAT_EVENT,
+  type StartOpportunityInvestigationChatDetail,
+} from "../lib/start-opportunity-investigation-chat";
+import { normalizeAskAiWidgetTitle } from "../lib/normalize-ask-ai-widget-title";
 
 import { WidgetAIProvider } from "../contexts/WidgetAIContext";
 import { ExplorePhase } from "./ExplorePhase";
@@ -44,6 +50,19 @@ function buildTopInsightInvestigationPrompt(
     `Summary: ${insight.description}.`,
     `Observed signal: ${insight.detail}.`,
     "Provide a structured investigation covering likely root causes, impact assessment, recommended remediation actions, and priority next steps.",
+  ].join(" ");
+}
+
+function buildTopInsightOpportunityInvestigationPrompt(
+  insight: Extract<TopInsightCard, { segment: "opportunity" }>,
+): string {
+  return [
+    `Investigate this automation opportunity in depth: ${insight.title}.`,
+    `Detected: ${insight.timestamp}.`,
+    `Summary: ${insight.description}.`,
+    `Evidence: ${insight.detail}.`,
+    `Target location: ${insight.automationTarget.scope} > ${insight.automationTarget.id}.`,
+    "Provide readiness assessment, expected impact, implementation approach, key risks, and prioritized next steps.",
   ].join(" ");
 }
 
@@ -82,6 +101,7 @@ export function ExplorePage() {
     startNewGlobalAiDraft,
     setGlobalAiDraftDisplayName,
   } = useDashboardChat();
+  const aiAssistantPanelControl = useOptionalAiAssistantPanelControl();
   const navigate = useNavigate();
   const params = useParams();
 
@@ -165,14 +185,6 @@ export function ExplorePage() {
       setMessages([]);
     }
   }, [params.conversationId]);
-
-  // ── Explore phase handlers ────────────────────────────────────────
-  const handleActionClick = useCallback((label: string, prompts: string[]) => {
-    setQuery(label);
-    setForcedSuggestions(prompts);
-    setShowTypeahead(true);
-    setTimeout(() => inputRef.current?.focus(), 0);
-  }, []);
 
   /** First user message — same path as sending from the hero {@link ChatInputBar} (new thread + navigate). */
   const sendExploreFirstMessage = useCallback(
@@ -261,6 +273,11 @@ export function ExplorePage() {
     ],
   );
 
+  // ── Explore phase handlers ────────────────────────────────────────
+  const handleActionClick = useCallback((prompt: string) => {
+    sendExploreFirstMessage(prompt);
+  }, [sendExploreFirstMessage]);
+
   const handleSend = useCallback(() => {
     sendExploreFirstMessage(query);
   }, [query, sendExploreFirstMessage]);
@@ -270,7 +287,8 @@ export function ExplorePage() {
     (widgetTitle: string, message: string) => {
       const trimmed = message.trim();
       if (!trimmed) return;
-      sendExploreFirstMessage(`Regarding “${widgetTitle}”: ${trimmed}`);
+      const normalizedTitle = normalizeAskAiWidgetTitle(widgetTitle);
+      sendExploreFirstMessage(`Regarding “${normalizedTitle}”: ${trimmed}`);
     },
     [sendExploreFirstMessage],
   );
@@ -295,13 +313,31 @@ export function ExplorePage() {
         return;
       }
 
+      const destinationParams = new URLSearchParams({
+        scope: insight.automationTarget.scope,
+        target: insight.automationTarget.id,
+      });
+      const destinationPath = `${ROUTES.AUTOMATION_OPPORTUNITIES}?${destinationParams.toString()}#top-opportunities`;
+      const detail: StartOpportunityInvestigationChatDetail = {
+        prompt: buildTopInsightOpportunityInvestigationPrompt(insight),
+        conversationTitle: `Investigation: ${insight.title}`,
+        ootbTypeId: "automation-opportunities",
+        pageLabel: "Automation Opportunities",
+        pagePath: destinationPath,
+      };
+
+      aiAssistantPanelControl?.openPanel();
+      window.dispatchEvent(
+        new CustomEvent(START_OPPORTUNITY_INVESTIGATION_CHAT_EVENT, { detail }),
+      );
+
       const params = new URLSearchParams({
         scope: insight.automationTarget.scope,
         target: insight.automationTarget.id,
       });
       navigate(`${ROUTES.AUTOMATION_OPPORTUNITIES}?${params.toString()}#top-opportunities`);
     },
-    [navigate, sendExploreFirstMessage],
+    [aiAssistantPanelControl, navigate, sendExploreFirstMessage],
   );
 
   // ── Render ────────────────────────────────────────────────────────

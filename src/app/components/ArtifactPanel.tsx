@@ -24,6 +24,7 @@ interface ArtifactPanelProps {
     widgetTitle: string,
     message: string,
     chartType?: string,
+    widgetAnchorId?: string,
     selectedKpiLabel?: string | null,
   ) => void;
 }

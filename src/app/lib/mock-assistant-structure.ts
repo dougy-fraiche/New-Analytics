@@ -58,6 +58,7 @@ export function buildMockAssistantFields(
   },
 ): AssistantStructuredFields {
   const trimmed = userMessage.trim();
+  const lowerTrimmed = trimmed.toLowerCase();
   const preview = trimmed.slice(0, 72);
   const ell = trimmed.length > 72 ? "…" : "";
 
@@ -73,6 +74,17 @@ export function buildMockAssistantFields(
       : "the current page, time range, and what’s on screen";
 
   const reasoning = `From your wording we identified what you’re asking about, scoped it to ${scopePhrase}, and grounded the answer in those signals plus documentation-style references. That keeps the reply aligned with what you can see here and traceable back to sources.`;
+
+  const isAgentRewritePrompt = options?.ootbTypeId === "automation-opportunities";
+  const rewriteTarget = isAgentRewritePrompt
+    ? lowerTrimmed.includes("rewrite instruction") ||
+      lowerTrimmed.includes("rewrite job instruction")
+      ? "job instruction"
+      : lowerTrimmed.includes("rewrite description") ||
+          lowerTrimmed.includes("rewrite job description")
+        ? "job description"
+        : null
+    : null;
 
   const pageSource = {
     label: pageLabel,
@@ -98,6 +110,25 @@ export function buildMockAssistantFields(
       snippet: "How common KPIs are calculated and interpreted",
     },
   ];
+
+  if (rewriteTarget) {
+    return {
+      reasoning: `You asked to rewrite the ${rewriteTarget}, so I focused on clarity, tone, and actionability while preserving the original intent.`,
+      sources,
+      toolSteps: [
+        {
+          label: "Rewriting content",
+          status: "done",
+          detail: "Optimizing content based on your request...",
+        },
+        {
+          label: `Updating ${rewriteTarget}`,
+          status: "done",
+          detail: `Applying the updated content to your ${rewriteTarget}...`,
+        },
+      ],
+    };
+  }
 
   const toolSteps: AssistantStructuredFields["toolSteps"] = [
     {

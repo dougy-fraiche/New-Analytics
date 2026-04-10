@@ -45,7 +45,7 @@ function RootLayoutInner() {
   const { conversations } = useConversations();
   const { projects, standaloneDashboards } = useProjects();
 
-  /** Explore hero only — AI panel is collapsed/disabled here; conversation URLs use the global panel. */
+  /** Explore hero route (`/`). */
   const isExploreHome = location.pathname === "/";
 
   /** Explore home (`/`) only — hero gradient sits on the page canvas; conversation + all other routes use white `main`. */
@@ -60,7 +60,7 @@ function RootLayoutInner() {
     }
   });
   const [aiAssistantOpen, setAiAssistantOpenState] = useState(
-    () => !isExploreHome && aiAssistantPreferredOpen,
+    () => aiAssistantPreferredOpen,
   );
 
   const setAiAssistantOpen = useCallback((open: boolean) => {
@@ -74,19 +74,12 @@ function RootLayoutInner() {
   }, []);
 
   const openPanel = useCallback(() => {
-    if (isExploreHome) return;
     setAiAssistantOpen(true);
-  }, [isExploreHome, setAiAssistantOpen]);
+  }, [setAiAssistantOpen]);
 
-  // Explore always hides the assistant, but we keep the preferred open state
-  // so navigating away can restore it.
-  useEffect(() => {
-    if (isExploreHome) {
-      setAiAssistantOpenState(false);
-      return;
-    }
-    setAiAssistantOpenState(aiAssistantPreferredOpen);
-  }, [isExploreHome, aiAssistantPreferredOpen]);
+  const handleTopNavAskAiToggle = useCallback((open: boolean) => {
+    setAiAssistantOpen(open);
+  }, [setAiAssistantOpen]);
 
   // Open the assistant automatically when viewing an Explore conversation thread.
   useEffect(() => {
@@ -98,7 +91,6 @@ function RootLayoutInner() {
   // When a widget sends a prompt, ensure the global assistant panel is open.
   useEffect(() => {
     const handler = (e: Event) => {
-      if (isExploreHome) return;
       const detail = (e as CustomEvent<{ persistKey?: string }>).detail;
       if (detail?.persistKey && detail.persistKey !== GLOBAL_AI_ASSISTANT_KEY) return;
       setAiAssistantOpen(true);
@@ -106,7 +98,7 @@ function RootLayoutInner() {
 
     window.addEventListener(WIDGET_AI_MESSAGE_SENT_EVENT, handler as EventListener);
     return () => window.removeEventListener(WIDGET_AI_MESSAGE_SENT_EVENT, handler as EventListener);
-  }, [isExploreHome, setAiAssistantOpen]);
+  }, [setAiAssistantOpen]);
 
   useEffect(() => {
     if (!chatPanelSlot) {
@@ -375,9 +367,9 @@ function RootLayoutInner() {
     location.pathname === ROUTES.AI_AGENTS ||
     location.pathname.startsWith(`${ROUTES.AI_AGENTS}/`);
 
-  const assistantLayoutInset = aiAssistantOpen && !isExploreHome;
+  const assistantLayoutInset = aiAssistantOpen;
   const assistantChromeWidthPx =
-    isExploreHome || !aiAssistantOpen
+    !aiAssistantOpen
       ? 0
       : Math.max(chatPanelWidthPx || CHAT_PANEL_FALLBACK_WIDTH_PX, 120);
 
@@ -389,24 +381,22 @@ function RootLayoutInner() {
         <SidebarProvider className="h-screen w-full">
           <div className="relative flex h-full w-full min-h-0 min-w-0 flex-row">
             {/* AI assistant — fixed width, absolutely positioned; revealed when the shell above slides away (no panel entry animation). */}
-            {!isExploreHome ? (
-              <div
-                ref={setChatPanelSlot}
-                className={cn(
-                  "absolute inset-y-0 right-0 z-0 flex h-full min-h-0 shrink-0 transition-opacity duration-200 ease-linear",
-                  aiAssistantOpen ? "opacity-100" : "pointer-events-none opacity-0",
-                )}
-                aria-hidden={!aiAssistantOpen}
-              >
-                <DashboardChatPanel
-                  dashboardId={aiRouteContext.dashboardId}
-                  sourceOotbId={aiRouteContext.sourceOotbId}
-                  pageContextLabel={aiPageContextLabel}
-                  onAssistantPanelResizeStart={() => setAssistantPanelResizing(true)}
-                  onAssistantPanelResizeEnd={() => setAssistantPanelResizing(false)}
-                />
-              </div>
-            ) : null}
+            <div
+              ref={setChatPanelSlot}
+              className={cn(
+                "absolute inset-y-0 right-0 z-0 flex h-full min-h-0 shrink-0 transition-opacity duration-200 ease-linear",
+                aiAssistantOpen ? "opacity-100" : "pointer-events-none opacity-0",
+              )}
+              aria-hidden={!aiAssistantOpen}
+            >
+              <DashboardChatPanel
+                dashboardId={aiRouteContext.dashboardId}
+                sourceOotbId={aiRouteContext.sourceOotbId}
+                pageContextLabel={aiPageContextLabel}
+                onAssistantPanelResizeStart={() => setAssistantPanelResizing(true)}
+                onAssistantPanelResizeEnd={() => setAssistantPanelResizing(false)}
+              />
+            </div>
             {/* App shell — sits above the assistant; width + padding animate to expose the panel behind */}
             <div
               className={cn(
@@ -415,11 +405,8 @@ function RootLayoutInner() {
                   "transition-[padding,width] duration-200 ease-linear",
                 assistantLayoutInset && "bg-page pt-4 pl-4 pb-4",
               )}
-              style={{
-                width:
-                  isExploreHome || !aiAssistantOpen
-                    ? "100%"
-                    : `calc(100% - ${assistantChromeWidthPx}px)`,
+                style={{
+                width: !aiAssistantOpen ? "100%" : `calc(100% - ${assistantChromeWidthPx}px)`,
               }}
             >
               <div
@@ -439,8 +426,8 @@ function RootLayoutInner() {
                     breadcrumbs={breadcrumbs}
                     onActionsSlotRef={setHeaderActionsSlot}
                     aiAssistantOpen={aiAssistantOpen}
-                    onAiAssistantOpenChange={setAiAssistantOpen}
-                    aiAssistantDisabled={isExploreHome}
+                    onAiAssistantOpenChange={handleTopNavAskAiToggle}
+                    aiAssistantDisabled={false}
                   />
                   <main
                     className={cn(

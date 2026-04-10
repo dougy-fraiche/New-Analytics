@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useParams, Link } from "react-router";
-import { FileText, Plus, MoreHorizontal, Trash2, Search, FolderInput, LayoutDashboard, ChevronRight, Pencil, GripVertical, FolderOutput, Copy, RotateCcw } from "lucide-react";
+import { FileText, Plus, MoreHorizontal, MoreVertical, Trash2, Search, FolderInput, Folder, LayoutDashboard, ChevronRight, Pencil, GripVertical, FolderOutput, Copy, RotateCcw } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import {
@@ -379,10 +379,35 @@ export function SavedFoldersPage() {
     return (
       <div className="flex flex-col flex-1 min-h-0">
         <PageHeader>
-          <h1 className="text-3xl tracking-tight">{selectedFolder.name}</h1>
-          <p className="text-muted-foreground mt-1">
-            {selectedFolder.dashboards.length} {selectedFolder.dashboards.length === 1 ? 'dashboard' : 'dashboards'}
-          </p>
+          <section className="flex items-center gap-2">
+            <h1 className="text-3xl tracking-tight">{selectedFolder.name}</h1>
+            <Badge variant="secondary" className="text-xs px-2 py-0.5">
+              {selectedFolder.dashboards.length} {selectedFolder.dashboards.length === 1 ? "dashboard" : "dashboards"}
+            </Badge>
+            <DropdownMenu>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon" className="ml-auto h-8 w-8 shrink-0">
+                      <MoreVertical className="h-4 w-4" />
+                      <span className="sr-only">More options</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">More options</TooltipContent>
+              </Tooltip>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setRenameDialog({ projectId: selectedFolder.id, name: selectedFolder.name })}>
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Rename
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleDeleteFolder(selectedFolder.id)} className="text-destructive">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </section>
           {selectedFolder.dashboards.length > 0 && (
             <div className="mt-4 flex w-full flex-wrap items-center gap-3">
               <div className="relative flex-1 min-w-[200px] max-w-sm">
@@ -842,55 +867,65 @@ export function SavedFoldersPage() {
         />
         {/* Folder Cards Overview — each is a drop target */}
         {projects.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {projects.map((project) => (
-              <DroppableFolderCard
-                key={project.id}
-                projectId={project.id}
-                onDrop={(item) => handleDropOnFolder(project.id, item)}
-              >
-                <Card className="group hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1 min-w-0">
-                        <CardTitle className="text-base">
-                          <Link to={`/saved/${project.id}`} className="hover:underline">
-                            {project.name}
-                          </Link>
-                        </CardTitle>
-                        <CardDescription className="flex items-center gap-2">
-                          <Badge variant="secondary" className="text-xs">{project.dashboards.length} {project.dashboards.length === 1 ? "dashboard" : "dashboards"}</Badge>
-                        </CardDescription>
+          <section className="space-y-4">
+            <h3 className="flex items-center gap-2 text-lg font-medium tracking-tight">
+              <Folder className="size-4 shrink-0 text-primary" aria-hidden />
+              Folders
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {projects.map((project) => (
+                <DroppableFolderCard
+                  key={project.id}
+                  projectId={project.id}
+                  onDrop={(item) => handleDropOnFolder(project.id, item)}
+                >
+                  <Card className="group hover:shadow-md transition-shadow">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-1 min-w-0 space-y-4">
+                          <CardTitle className="text-base">
+                            <Link to={`/saved/${project.id}`} className="hover:underline">
+                              {project.name}
+                            </Link>
+                          </CardTitle>
+                          <CardDescription className="flex items-center gap-2">
+                            <Badge asChild variant="secondary" className="text-xs">
+                              <Link to={`/saved/${project.id}`}>
+                                {project.dashboards.length} {project.dashboards.length === 1 ? "dashboard" : "dashboards"}
+                              </Link>
+                            </Badge>
+                          </CardDescription>
+                        </div>
+                        <DropdownMenu>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">More options</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom">More options</TooltipContent>
+                          </Tooltip>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setRenameDialog({ projectId: project.id, name: project.name })}>
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Rename
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDeleteFolder(project.id)} className="text-destructive">
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
-                      <DropdownMenu>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">More options</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                          </TooltipTrigger>
-                          <TooltipContent side="bottom">More options</TooltipContent>
-                        </Tooltip>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setRenameDialog({ projectId: project.id, name: project.name })}>
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Rename
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDeleteFolder(project.id)} className="text-destructive">
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </CardHeader>
-                </Card>
-              </DroppableFolderCard>
-            ))}
-          </div>
+                    </CardHeader>
+                  </Card>
+                </DroppableFolderCard>
+              ))}
+            </div>
+          </section>
         )}
 
         {/* All Custom Dashboards Table */}
@@ -957,7 +992,9 @@ export function SavedFoldersPage() {
                       </TableCell>
                       <TableCell>
                         {item.folderName ? (
-                          <Badge variant="secondary">{item.folderName}</Badge>
+                          <Badge asChild variant="secondary">
+                            <Link to={`/saved/${item.projectId!}`}>{item.folderName}</Link>
+                          </Badge>
                         ) : (
                           <span className="text-muted-foreground text-sm">--</span>
                         )}

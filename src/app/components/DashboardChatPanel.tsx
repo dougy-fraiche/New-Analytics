@@ -23,6 +23,7 @@ import {
   X,
   Check,
   Sparkles,
+  Bot,
 } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
@@ -61,14 +62,17 @@ import {
   EXPLORE_THREAD_USER_TURN_EVENT,
   GLOBAL_AI_ASSISTANT_KEY,
 } from "../lib/ai-assistant-global";
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { ROUTES } from "../routes";
 import { getChartIconForWidgetType } from "./ChartVariants";
 import { Sheet, SheetContent, SheetTitle } from "./ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { cn } from "./ui/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
-import { buildMockAssistantFields } from "../lib/mock-assistant-structure";
+import {
+  buildMockAssistantFields,
+  defaultPhasedToolSteps,
+} from "../lib/mock-assistant-structure";
 import {
   buildCreateAIAgentReplyPayload,
   CREATE_AI_AGENT_IN_CHAT_EVENT,
@@ -76,12 +80,18 @@ import {
   CREATE_AI_AGENT_IN_CHAT_FINISHED_EVENT,
   type CreateAIAgentInChatDetail,
 } from "../lib/create-ai-agent-chat";
+import {
+  buildOpportunityInvestigationAssistantPayload,
+  START_OPPORTUNITY_INVESTIGATION_CHAT_EVENT,
+  type StartOpportunityInvestigationChatDetail,
+} from "../lib/start-opportunity-investigation-chat";
 import { AI_AGENT_JOB_STEP_MS } from "../lib/create-ai-agent-jobs";
 import { syntheticAssistantReasoningText } from "../lib/assistant-synthetic-reasoning";
 import { runPhasedAssistantReply } from "../lib/run-phased-assistant-reply";
 import type { AssistantReplyPayload } from "../types/conversation-types";
 import { useTypingPlaceholder } from "../hooks/useTypingPlaceholder";
 import { placeholderSuffixes } from "../data/explore-data";
+import { normalizeAskAiWidgetTitle } from "../lib/normalize-ask-ai-widget-title";
 
 interface DashboardChatPanelProps {
   /** Route / page context id (saved id, OOTB id, etc.) — not used for message persistence in global mode */
@@ -503,13 +513,25 @@ function AssistantMessageBlocks({ msg }: { msg: ChatMessage }) {
   const showBody = msg.content.trim().length > 0 || Boolean(msg.isTypingContent);
   /** Reasoning link above the assistant answer (incl. stored history without structured reasoning). */
   const showReasoningCollapsible = showBody || Boolean(msg.reasoning?.trim());
+  const awaitingToolSteps =
+    awaiting && msg.toolSteps && msg.toolSteps.length > 0
+      ? msg.toolSteps
+      : awaiting
+        ? [
+            {
+              label: defaultPhasedToolSteps[0]?.label ?? "Parsing request",
+              status: "running" as const,
+              detail: "Gathering context for your request.",
+            },
+          ]
+        : null;
 
   return (
     <div className="w-full space-y-3">
       {awaiting ? (
-        msg.toolSteps && msg.toolSteps.length > 0 ? (
+        awaitingToolSteps && awaitingToolSteps.length > 0 ? (
           <div className="space-y-2.5 rounded-md border border-border/60 bg-muted/20 px-2.5 py-2">
-            {msg.toolSteps.map((step, i) => (
+            {awaitingToolSteps.map((step, i) => (
               <div key={i} className="flex items-start gap-2 text-xs">
                 {step.status === "done" ? (
                   <Check className="h-3.5 w-3.5 shrink-0 text-primary mt-0.5" aria-hidden />
@@ -529,11 +551,6 @@ function AssistantMessageBlocks({ msg }: { msg: ChatMessage }) {
                 </div>
               </div>
             ))}
-          </div>
-        ) : !msg.reasoning?.trim() && !msg.isTypingContent ? (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" aria-hidden />
-            <span>Starting…</span>
           </div>
         ) : null
       ) : null}
@@ -645,46 +662,144 @@ function ThreadView({
   messages: ChatMessage[];
   isThinking: boolean;
 }) {
+  type PendingSourceJump = {
+    widgetRef?: string;
+    anchorId?: string;
+    sourcePath?: string;
+    queuedAt?: number;
+  };
+
+  const navigate = useNavigate();
+  const location = useLocation();
   const displayMessages = messages.filter((msg) => !msg.dashboardData);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const jumpToSourceCard = useCallback((widgetRef: string, anchorId?: string) => {
-    const resolveTargetElement = (): HTMLElement | null => {
-      if (anchorId) {
-        const byId = document.getElementById(anchorId);
-        if (byId) return byId;
-      }
+  const SOURCE_JUMP_PENDING_KEY = "ai-source-jump-pending";
+  const currentRoutePath = `${location.pathname}${location.search}${location.hash}`;
 
-      const normalizedRef = widgetRef.replace(/^Action:\s*/i, "").trim().toLowerCase();
-      const titleNodes = Array.from(
-        document.querySelectorAll<HTMLElement>(
-          "[data-slot='card'] h1, [data-slot='card'] h2, [data-slot='card'] h3, [data-slot='card'] [data-slot='card-title']",
-        ),
-      );
-
-      for (const node of titleNodes) {
-        // Skip matches inside the chat panel itself.
-        if (node.closest("[data-chat-panel-root='true']")) continue;
-        const text = node.textContent?.trim().toLowerCase();
-        if (!text) continue;
-        if (text === normalizedRef || text.includes(normalizedRef) || normalizedRef.includes(text)) {
-          return node.closest("[data-slot='card']") as HTMLElement | null;
-        }
-      }
-
-      return null;
-    };
-
-    const el = resolveTargetElement();
-    if (!el) {
-      toast.info("Source card is not available in this view yet.");
-      return;
+  const resolveSourceElement = useCallback((widgetRef: string, anchorId?: string): HTMLElement | null => {
+    if (anchorId) {
+      const byId = document.getElementById(anchorId);
+      if (byId) return byId;
     }
+
+    const normalizedRef = normalizeAskAiWidgetTitle(widgetRef).toLowerCase();
+    if (!normalizedRef) return null;
+    const titleNodes = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        "[data-slot='card'] h1, [data-slot='card'] h2, [data-slot='card'] h3, [data-slot='card'] [data-slot='card-title']",
+      ),
+    );
+
+    for (const node of titleNodes) {
+      // Skip matches inside the chat panel itself.
+      if (node.closest("[data-chat-panel-root='true']")) continue;
+      const text = normalizeAskAiWidgetTitle(node.textContent ?? "").toLowerCase();
+      if (!text) continue;
+      if (text === normalizedRef || text.includes(normalizedRef) || normalizedRef.includes(text)) {
+        return node.closest("[data-slot='card']") as HTMLElement | null;
+      }
+    }
+
+    return null;
+  }, []);
+
+  const scrollAndHighlightSource = useCallback((el: HTMLElement) => {
     el.scrollIntoView({ behavior: "smooth", block: "center" });
     el.classList.add("ring-2", "ring-primary/50");
     window.setTimeout(() => {
       el.classList.remove("ring-2", "ring-primary/50");
     }, 1200);
   }, []);
+
+  const queueCrossPageSourceJump = useCallback(
+    (widgetRef: string, anchorId?: string, sourcePath?: string) => {
+      try {
+        sessionStorage.setItem(
+          SOURCE_JUMP_PENDING_KEY,
+          JSON.stringify({
+            widgetRef,
+            anchorId,
+            sourcePath,
+            queuedAt: Date.now(),
+          }),
+        );
+      } catch {
+        /* ignore */
+      }
+      if (sourcePath) navigate(sourcePath);
+    },
+    [navigate],
+  );
+
+  const jumpToSourceCard = useCallback(
+    (widgetRef: string, anchorId?: string, sourcePath?: string) => {
+      const targetPath = sourcePath?.trim();
+      if (targetPath && targetPath !== currentRoutePath) {
+        queueCrossPageSourceJump(widgetRef, anchorId, targetPath);
+        return;
+      }
+
+      const el = resolveSourceElement(widgetRef, anchorId);
+      if (!el) {
+        toast.info("Source card is not available in this view yet.");
+        return;
+      }
+      scrollAndHighlightSource(el);
+    },
+    [
+      currentRoutePath,
+      queueCrossPageSourceJump,
+      resolveSourceElement,
+      scrollAndHighlightSource,
+    ],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    let timeoutId: number | undefined;
+
+    const runPendingJump = (attempt = 0) => {
+      let payload: PendingSourceJump | null = null;
+      try {
+        const raw = sessionStorage.getItem(SOURCE_JUMP_PENDING_KEY);
+        if (!raw) return;
+        payload = JSON.parse(raw) as PendingSourceJump;
+      } catch {
+        return;
+      }
+
+      if (!payload?.widgetRef) return;
+      if (payload.sourcePath && payload.sourcePath !== currentRoutePath) return;
+      if (
+        typeof payload.queuedAt === "number" &&
+        Date.now() - payload.queuedAt > 15_000
+      ) {
+        sessionStorage.removeItem(SOURCE_JUMP_PENDING_KEY);
+        return;
+      }
+
+      const el = resolveSourceElement(payload.widgetRef, payload.anchorId);
+      if (el) {
+        sessionStorage.removeItem(SOURCE_JUMP_PENDING_KEY);
+        scrollAndHighlightSource(el);
+        return;
+      }
+
+      if (attempt >= 20 || cancelled) {
+        sessionStorage.removeItem(SOURCE_JUMP_PENDING_KEY);
+        toast.info("Source card is not available in this view yet.");
+        return;
+      }
+
+      timeoutId = window.setTimeout(() => runPendingJump(attempt + 1), 120);
+    };
+
+    runPendingJump();
+    return () => {
+      cancelled = true;
+      if (timeoutId) window.clearTimeout(timeoutId);
+    };
+  }, [currentRoutePath, resolveSourceElement, scrollAndHighlightSource]);
 
   const scrollStreamKey = useMemo(
     () =>
@@ -739,15 +854,24 @@ function ThreadView({
                 >
                   <button
                     type="button"
-                    onClick={() => jumpToSourceCard(msg.widgetRef!, msg.widgetAnchorId)}
+                    onClick={() =>
+                      jumpToSourceCard(
+                        msg.widgetRef!,
+                        msg.widgetAnchorId,
+                        msg.widgetSourcePath,
+                      )
+                    }
                     aria-label={`Go to ${msg.widgetRef}`}
                     className="inline-flex w-full min-w-0 cursor-pointer flex-col items-stretch gap-1 text-left outline-none"
                   >
                     <span className="inline-flex min-w-0 w-full items-center gap-1">
                       {(() => {
-                        const IconComp = msg.widgetIconType
-                          ? getChartIconForWidgetType(msg.widgetIconType)
-                          : null;
+                        const IconComp =
+                          msg.widgetIconType === "bot"
+                            ? Bot
+                            : msg.widgetIconType
+                              ? getChartIconForWidgetType(msg.widgetIconType)
+                              : null;
                         return IconComp ? (
                           <IconComp
                             className="h-3 w-3 shrink-0 opacity-80"
@@ -1103,6 +1227,76 @@ export function DashboardChatPanel({
     location.pathname,
     location.search,
   ]);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const raw = (e as CustomEvent<StartOpportunityInvestigationChatDetail>).detail;
+      const prompt = raw?.prompt?.trim();
+      if (!prompt) return;
+
+      const detail: StartOpportunityInvestigationChatDetail = {
+        prompt,
+        conversationTitle:
+          raw?.conversationTitle?.trim() || conversationNameFromPrompt(prompt),
+        ootbTypeId: raw?.ootbTypeId || "automation-opportunities",
+        pageLabel: raw?.pageLabel || "Automation Opportunities",
+        pagePath: raw?.pagePath || `${ROUTES.AUTOMATION_OPPORTUNITIES}#top-opportunities`,
+      };
+
+      phaseGenerationRef.current += 1;
+      const gen = phaseGenerationRef.current;
+      setInternalIsThinking(true);
+
+      dashboardChat.startNewGlobalAiDraft();
+      dashboardChat.setGlobalAiDraftDisplayName(detail.conversationTitle, {
+        userSet: true,
+      });
+
+      const userMessage: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: "user",
+        content: detail.prompt,
+        timestamp: new Date(),
+      };
+      dashboardChat.appendMessage(GLOBAL_AI_ASSISTANT_KEY, userMessage);
+
+      const assistantId = crypto.randomUUID();
+      const finalPayload = buildOpportunityInvestigationAssistantPayload(
+        detail,
+        generateAIResponse,
+      );
+      const stub: ChatMessage = {
+        id: assistantId,
+        role: "assistant",
+        content: "",
+        timestamp: new Date(),
+      };
+      dashboardChat.appendMessage(GLOBAL_AI_ASSISTANT_KEY, stub);
+
+      void runPhasedAssistantReply({
+        final: finalPayload,
+        isCancelled: () => gen !== phaseGenerationRef.current,
+        patch: (partial) => {
+          if (gen !== phaseGenerationRef.current) return;
+          dashboardChat.patchMessage(GLOBAL_AI_ASSISTANT_KEY, assistantId, partial);
+        },
+      }).finally(() => {
+        if (gen === phaseGenerationRef.current) {
+          setInternalIsThinking(false);
+        }
+      });
+    };
+
+    window.addEventListener(
+      START_OPPORTUNITY_INVESTIGATION_CHAT_EVENT,
+      handler as EventListener,
+    );
+    return () =>
+      window.removeEventListener(
+        START_OPPORTUNITY_INVESTIGATION_CHAT_EVENT,
+        handler as EventListener,
+      );
+  }, [dashboardChat]);
 
   const chatVoice = useVoiceInput({
     onTranscript: (text) => {

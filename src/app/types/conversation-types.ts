@@ -26,6 +26,8 @@ export interface WidgetMessageMeta {
   /** Serialized chart kind; validate with `isChartType` from ChartVariants when rendering icons. */
   widgetIconType?: string;
   widgetAnchorId?: string;
+  /** Route path where this source widget lives (used for cross-page source badge navigation). */
+  widgetSourcePath?: string;
 }
 
 /** Optional context attached when a conversation is started from anomaly investigation actions. */
