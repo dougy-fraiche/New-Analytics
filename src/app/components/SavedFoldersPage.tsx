@@ -35,6 +35,7 @@ import { BulkActionBar } from "./BulkActionBar";
 import { DeleteDashboardDialog } from "./DeleteDashboardDialog";
 import { DeleteFolderDialog } from "./DeleteFolderDialog";
 import { DuplicateDashboardDialog } from "./DuplicateDashboardDialog";
+import { EditDashboardDialog } from "./EditDashboardDialog";
 import { useDrag, useDrop } from "react-dnd";
 
 import {
@@ -121,7 +122,7 @@ export function SavedFoldersPage() {
     projects, addProject, renameProject, deleteProject,
     deleteDashboardFromProject, restoreProject, restoreDashboardToProject,
     standaloneDashboards, deleteStandaloneDashboard, restoreStandaloneDashboard,
-    renameDashboardInProject, renameStandaloneDashboard,
+    updateDashboardInProject, updateStandaloneDashboard,
     moveDashboardToProject, moveStandaloneToFolder, moveDashboardToStandalone,
   } = useProjects();
 
@@ -136,10 +137,20 @@ export function SavedFoldersPage() {
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [deleteFolderConfirm, setDeleteFolderConfirm] = useState<{ projectId: string; projectName: string; dashboardCount: number } | null>(null);
   const [showBulkDeleteFolderConfirm, setShowBulkDeleteFolderConfirm] = useState(false);
-  const [renameDashboardDialog, setRenameDashboardDialog] = useState<{ dashboardId: string; dashboardName: string; projectId: string | null } | null>(null);
+  const [editDashboardDialog, setEditDashboardDialog] = useState<{
+    dashboardId: string;
+    dashboardName: string;
+    dashboardDescription: string;
+    projectId: string | null;
+  } | null>(null);
   const [moveDashboardDialog, setMoveDashboardDialog] = useState<{ dashboardId: string; dashboardName: string; fromProjectId: string | null } | null>(null);
   const [moveTargetFolderId, setMoveTargetFolderId] = useState<string>("");
-  const [duplicateDashboardDialog, setDuplicateDashboardDialog] = useState<{ dashboardName: string; sourceOotbId?: string } | null>(null);
+  const [duplicateDashboardDialog, setDuplicateDashboardDialog] = useState<{
+    dashboardName: string;
+    dashboardDescription: string;
+    projectId: string | null;
+    sourceOotbId?: string;
+  } | null>(null);
 
   // If folderId is provided, show dashboards in that folder
   const selectedFolder = folderId ? projects.find(p => p.id === folderId) : null;
@@ -352,6 +363,50 @@ export function SavedFoldersPage() {
     setMoveTargetFolderId("");
   };
 
+  const handleConfirmEditDashboard = (values: {
+    name: string;
+    description: string;
+    locationProjectId: string | null;
+  }) => {
+    if (!editDashboardDialog) return;
+
+    const sourceProjectId = editDashboardDialog.projectId;
+    const nextDescription = values.description || undefined;
+
+    if (sourceProjectId) {
+      updateDashboardInProject(sourceProjectId, editDashboardDialog.dashboardId, {
+        name: values.name,
+        description: nextDescription,
+      });
+    } else {
+      updateStandaloneDashboard(editDashboardDialog.dashboardId, {
+        name: values.name,
+        description: nextDescription,
+      });
+    }
+
+    if (sourceProjectId && values.locationProjectId === null) {
+      moveDashboardToStandalone(sourceProjectId, editDashboardDialog.dashboardId);
+    } else if (
+      sourceProjectId &&
+      values.locationProjectId &&
+      values.locationProjectId !== sourceProjectId
+    ) {
+      moveDashboardToProject(
+        sourceProjectId,
+        editDashboardDialog.dashboardId,
+        values.locationProjectId,
+      );
+    } else if (!sourceProjectId && values.locationProjectId) {
+      moveStandaloneToFolder(editDashboardDialog.dashboardId, values.locationProjectId);
+    }
+
+    toast.success("Dashboard updated", {
+      description: `"${values.name}" has been updated.`,
+    });
+    setEditDashboardDialog(null);
+  };
+
   // Show folder contents if drilling down
   if (selectedFolder) {
     const filteredDashboards = selectedFolder.dashboards.filter((d) => {
@@ -526,11 +581,16 @@ export function SavedFoldersPage() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
                                 onClick={() => {
-                                  setRenameDashboardDialog({ dashboardId: dashboard.id, dashboardName: dashboard.name, projectId: selectedFolder.id });
+                                  setEditDashboardDialog({
+                                    dashboardId: dashboard.id,
+                                    dashboardName: dashboard.name,
+                                    dashboardDescription: dashboard.description || "",
+                                    projectId: selectedFolder.id,
+                                  });
                                 }}
                               >
                                 <Pencil className="h-4 w-4 mr-2" />
-                                Rename
+                                Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => {
@@ -542,7 +602,12 @@ export function SavedFoldersPage() {
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => {
-                                  setDuplicateDashboardDialog({ dashboardName: dashboard.name, sourceOotbId: dashboard.sourceOotbId });
+                                  setDuplicateDashboardDialog({
+                                    dashboardName: dashboard.name,
+                                    dashboardDescription: dashboard.description || "",
+                                    projectId: selectedFolder.id,
+                                    sourceOotbId: dashboard.sourceOotbId,
+                                  });
                                 }}
                               >
                                 <Copy className="h-4 w-4 mr-2" />
@@ -612,51 +677,23 @@ export function SavedFoldersPage() {
           count={selectedDashboardIds.size}
         />
 
-        {/* Rename Dashboard Dialog (folder detail view) */}
-        <Dialog open={!!renameDashboardDialog} onOpenChange={() => setRenameDashboardDialog(null)}>
-          <DialogContent className="sm:max-w-[25rem]">
-            <DialogHeader>
-              <DialogTitle>Rename Dashboard</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-2 py-4">
-              <Label className="sr-only" htmlFor="rename-dashboard-folder">Dashboard Name</Label>
-              <Input
-                id="rename-dashboard-folder"
-                value={renameDashboardDialog?.dashboardName || ""}
-                onChange={(e) =>
-                  setRenameDashboardDialog(
-                    renameDashboardDialog ? { ...renameDashboardDialog, dashboardName: e.target.value } : null
-                  )
-                }
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && renameDashboardDialog) {
-                    if (renameDashboardDialog.projectId) {
-                      renameDashboardInProject(renameDashboardDialog.projectId, renameDashboardDialog.dashboardId, renameDashboardDialog.dashboardName);
-                    } else {
-                      renameStandaloneDashboard(renameDashboardDialog.dashboardId, renameDashboardDialog.dashboardName);
-                    }
-                    setRenameDashboardDialog(null);
-                  }
-                }}
-              />
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setRenameDashboardDialog(null)}>
-                Cancel
-              </Button>
-              <Button onClick={() => {
-                if (renameDashboardDialog) {
-                  if (renameDashboardDialog.projectId) {
-                    renameDashboardInProject(renameDashboardDialog.projectId, renameDashboardDialog.dashboardId, renameDashboardDialog.dashboardName);
-                  } else {
-                    renameStandaloneDashboard(renameDashboardDialog.dashboardId, renameDashboardDialog.dashboardName);
-                  }
-                }
-                setRenameDashboardDialog(null);
-              }}>Rename</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {/* Edit Dashboard Dialog (folder detail view) */}
+        <EditDashboardDialog
+          open={!!editDashboardDialog}
+          onOpenChange={(open) => {
+            if (!open) setEditDashboardDialog(null);
+          }}
+          initialName={editDashboardDialog?.dashboardName || ""}
+          initialDescription={editDashboardDialog?.dashboardDescription || ""}
+          initialLocationProjectId={editDashboardDialog?.projectId ?? null}
+          projects={projects.map((project) => ({ id: project.id, name: project.name }))}
+          onCreateFolder={(folderName) => {
+            const trimmed = folderName.trim();
+            if (!trimmed) return null;
+            return addProject(trimmed);
+          }}
+          onSubmit={handleConfirmEditDashboard}
+        />
 
         {/* Move Dashboard Dialog (folder detail view) */}
         <Dialog open={!!moveDashboardDialog} onOpenChange={() => { setMoveDashboardDialog(null); setMoveTargetFolderId(""); }}>
@@ -695,6 +732,8 @@ export function SavedFoldersPage() {
           open={!!duplicateDashboardDialog}
           onOpenChange={(open) => { if (!open) setDuplicateDashboardDialog(null); }}
           dashboardName={duplicateDashboardDialog?.dashboardName || ""}
+          dashboardDescription={duplicateDashboardDialog?.dashboardDescription || ""}
+          initialLocationProjectId={duplicateDashboardDialog?.projectId ?? null}
           sourceOotbId={duplicateDashboardDialog?.sourceOotbId}
         />
 
@@ -1043,11 +1082,16 @@ export function SavedFoldersPage() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
                               onClick={() => {
-                                setRenameDashboardDialog({ dashboardId: item.dashboard.id, dashboardName: item.dashboard.name, projectId: item.projectId });
+                                setEditDashboardDialog({
+                                  dashboardId: item.dashboard.id,
+                                  dashboardName: item.dashboard.name,
+                                  dashboardDescription: item.dashboard.description || "",
+                                  projectId: item.projectId,
+                                });
                               }}
                             >
                               <Pencil className="h-4 w-4 mr-2" />
-                              Rename
+                              Edit
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => {
@@ -1075,7 +1119,12 @@ export function SavedFoldersPage() {
                             )}
                             <DropdownMenuItem
                               onClick={() => {
-                                setDuplicateDashboardDialog({ dashboardName: item.dashboard.name, sourceOotbId: item.dashboard.sourceOotbId });
+                                setDuplicateDashboardDialog({
+                                  dashboardName: item.dashboard.name,
+                                  dashboardDescription: item.dashboard.description || "",
+                                  projectId: item.projectId,
+                                  sourceOotbId: item.dashboard.sourceOotbId,
+                                });
                               }}
                             >
                               <Copy className="h-4 w-4 mr-2" />
@@ -1283,57 +1332,31 @@ export function SavedFoldersPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Rename Dashboard Dialog (main view) */}
-      <Dialog open={!!renameDashboardDialog} onOpenChange={() => setRenameDashboardDialog(null)}>
-        <DialogContent className="sm:max-w-[25rem]">
-          <DialogHeader>
-            <DialogTitle>Rename Dashboard</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-2 py-4">
-            <Label className="sr-only" htmlFor="rename-dashboard">Dashboard Name</Label>
-            <Input
-              id="rename-dashboard"
-              value={renameDashboardDialog?.dashboardName || ""}
-              onChange={(e) =>
-                setRenameDashboardDialog(
-                  renameDashboardDialog ? { ...renameDashboardDialog, dashboardName: e.target.value } : null
-                )
-              }
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && renameDashboardDialog) {
-                  if (renameDashboardDialog.projectId) {
-                    renameDashboardInProject(renameDashboardDialog.projectId, renameDashboardDialog.dashboardId, renameDashboardDialog.dashboardName);
-                  } else {
-                    renameStandaloneDashboard(renameDashboardDialog.dashboardId, renameDashboardDialog.dashboardName);
-                  }
-                  setRenameDashboardDialog(null);
-                }
-              }}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRenameDashboardDialog(null)}>
-              Cancel
-            </Button>
-            <Button onClick={() => {
-              if (renameDashboardDialog) {
-                if (renameDashboardDialog.projectId) {
-                  renameDashboardInProject(renameDashboardDialog.projectId, renameDashboardDialog.dashboardId, renameDashboardDialog.dashboardName);
-                } else {
-                  renameStandaloneDashboard(renameDashboardDialog.dashboardId, renameDashboardDialog.dashboardName);
-                }
-              }
-              setRenameDashboardDialog(null);
-            }}>Rename</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Edit Dashboard Dialog (main view) */}
+      <EditDashboardDialog
+        open={!!editDashboardDialog}
+        onOpenChange={(open) => {
+          if (!open) setEditDashboardDialog(null);
+        }}
+        initialName={editDashboardDialog?.dashboardName || ""}
+        initialDescription={editDashboardDialog?.dashboardDescription || ""}
+        initialLocationProjectId={editDashboardDialog?.projectId ?? null}
+        projects={projects.map((project) => ({ id: project.id, name: project.name }))}
+        onCreateFolder={(folderName) => {
+          const trimmed = folderName.trim();
+          if (!trimmed) return null;
+          return addProject(trimmed);
+        }}
+        onSubmit={handleConfirmEditDashboard}
+      />
 
       {/* Duplicate Dashboard Dialog (main view) */}
       <DuplicateDashboardDialog
         open={!!duplicateDashboardDialog}
         onOpenChange={(open) => { if (!open) setDuplicateDashboardDialog(null); }}
         dashboardName={duplicateDashboardDialog?.dashboardName || ""}
+        dashboardDescription={duplicateDashboardDialog?.dashboardDescription || ""}
+        initialLocationProjectId={duplicateDashboardDialog?.projectId ?? null}
         sourceOotbId={duplicateDashboardDialog?.sourceOotbId}
       />
     </>

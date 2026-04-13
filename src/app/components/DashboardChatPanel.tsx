@@ -10,13 +10,9 @@ import {
 } from "react";
 import {
   Plus,
-  ArrowRight,
-  Mic,
+  ArrowUp,
   Square,
   Loader2,
-  Upload,
-  Image,
-  Paperclip,
   History,
   ChevronDown,
   Trash2,
@@ -32,12 +28,6 @@ import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { ResizeHandle } from "./ResizeHandle";
 import { useVoiceInput } from "../hooks/useVoiceInput";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
 import {
   Empty,
   EmptyContent,
@@ -92,8 +82,6 @@ import { AI_AGENT_JOB_STEP_MS } from "../lib/create-ai-agent-jobs";
 import { syntheticAssistantReasoningText } from "../lib/assistant-synthetic-reasoning";
 import { runPhasedAssistantReply } from "../lib/run-phased-assistant-reply";
 import type { AssistantReplyPayload } from "../types/conversation-types";
-import { useTypingPlaceholder } from "../hooks/useTypingPlaceholder";
-import { placeholderSuffixes } from "../data/explore-data";
 import { normalizeAskAiWidgetTitle } from "../lib/normalize-ask-ai-widget-title";
 
 interface DashboardChatPanelProps {
@@ -646,15 +634,10 @@ function messageStreamScrollSignature(msg: ChatMessage): string {
   return `a:${msg.id}:${msg.content.length}:${msg.reasoning?.length ?? 0}:${stepSig}:${msg.sources?.length ?? 0}:ty${msg.isTypingContent ? 1 : 0}:ag:${agentKey}`;
 }
 
-/**
- * Isolated so the typewriter tick (~45ms) only re-renders this line, not the whole chat panel
- * (same pattern as Explore `ChatInputBar` + `useTypingPlaceholder`).
- */
 function AssistantEmptyTypingHint() {
-  const animatedSuffix = useTypingPlaceholder(placeholderSuffixes);
   return (
     <p className="mt-2 max-w-[28rem] text-sm text-muted-foreground">
-      Ask anything about your {animatedSuffix}
+      Ask about agent performance, trends, anomalies, automation opportunities, or how to get started.
     </p>
   );
 }
@@ -1102,6 +1085,7 @@ export function DashboardChatPanel({
   // reflects idle via `assistantReplyInFlight` once typing finishes — don’t hold the stop icon.
   const showComposerStop =
     assistantReplyInFlight || (!exploreOnSend && isThinking);
+  const canSend = query.trim().length > 0;
 
   useEffect(() => {
     if (!titleEditing) return;
@@ -1673,16 +1657,13 @@ export function DashboardChatPanel({
                 ))}
               </div>
             ) : null}
-            <section className="rounded-3xl border bg-background text-foreground transition-shadow focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/20">
-                <div className="space-y-2 p-4">
+            <section className="rounded-2xl border bg-background text-foreground transition-shadow focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/20">
+              <div className="p-2">
+                <div className="flex items-start gap-2">
                   <Textarea
                     placeholder={placeholder || "Ask a question\u2026"}
-                    value={query + (chatVoice.isListening && chatVoice.interimText ? chatVoice.interimText : "")}
+                    value={query}
                     onChange={(e) => {
-                      // If the user starts typing while voice is active, stop recording
-                      if (chatVoice.isListening) {
-                        chatVoice.stop();
-                      }
                       setQuery(e.target.value);
                     }}
                     onKeyDown={(e) => {
@@ -1692,88 +1673,46 @@ export function DashboardChatPanel({
                       }
                     }}
                     rows={1}
-                    className="min-h-9 max-h-40 overflow-y-auto border-0 focus-visible:ring-0 shadow-none text-sm px-1 py-2"
+                    className="min-h-9 max-h-40 flex-1 overflow-y-auto border-0 focus-visible:ring-0 shadow-none text-sm px-1 py-2"
                   />
-
-                  <div className="flex items-center justify-between">
-                    <DropdownMenu>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                        </TooltipTrigger>
-                        <TooltipContent side="top">Attach</TooltipContent>
-                      </Tooltip>
-                      <DropdownMenuContent align="start" side="top">
-                        <DropdownMenuItem onClick={() => toast.info("File upload coming soon")}>
-                          <Upload className="h-4 w-4 mr-2" />
-                          Upload file
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => toast.info("Image upload coming soon")}>
-                          <Image className="h-4 w-4 mr-2" />
-                          Add image
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => toast.info("CSV import coming soon")}>
-                          <Paperclip className="h-4 w-4 mr-2" />
-                          Attach data source
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-
-                    <div className="flex items-center gap-1">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="icon"
-                            variant={
-                              chatVoice.isListening || showComposerStop
-                                ? "destructive"
-                                : query.trim()
-                                  ? "default"
-                                  : "outline"
-                            }
-                            className={`h-8 w-8 rounded-lg ${chatVoice.isListening ? "animate-pulse" : ""}`}
-                            onClick={() => {
-                              if (chatVoice.isListening) {
-                                chatVoice.stop();
-                              } else if (showComposerStop) {
-                                handleStopAssistant();
-                              } else if (query.trim()) {
-                                handleSend();
-                              } else if (chatVoice.isSupported) {
-                                chatVoice.toggle();
-                              } else {
-                                toast.error("Voice input not supported", { description: "Your browser doesn't support speech recognition. Try Chrome or Edge." });
-                              }
-                            }}
-                          >
-                            {chatVoice.isListening ? (
-                              <Square className="h-4 w-4" />
-                            ) : showComposerStop ? (
-                              <Square className="h-4 w-4" />
-                            ) : query.trim() ? (
-                              <ArrowRight className="h-4 w-4" />
-                            ) : (
-                              <Mic className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top">
-                          {chatVoice.isListening
-                            ? "Stop recording"
-                            : showComposerStop
-                              ? "Stop generating"
-                              : query.trim()
-                                ? "Send"
-                                : "Voice input"}
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-                  </div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant={
+                          showComposerStop
+                            ? "destructive"
+                            : canSend
+                              ? "default"
+                              : "outline"
+                        }
+                        disabled={!showComposerStop && !canSend}
+                        className="rounded-lg shrink-0"
+                        onClick={() => {
+                          if (showComposerStop) {
+                            handleStopAssistant();
+                          } else if (canSend) {
+                            handleSend();
+                          }
+                        }}
+                      >
+                        {showComposerStop ? (
+                          <Square className="h-4 w-4" />
+                        ) : (
+                          <ArrowUp className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      {showComposerStop
+                        ? "Stop generating"
+                        : canSend
+                          ? "Send"
+                          : "Enter a message to send"}
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
+              </div>
             </section>
           </div>
         </div>

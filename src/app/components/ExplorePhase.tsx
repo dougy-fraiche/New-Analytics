@@ -1,11 +1,10 @@
 import type { LegacyRef, RefObject } from "react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { BellOff, CircleAlert, MoreVertical, Sparkles, Zap } from "lucide-react";
+import { BellOff, Bot, CircleAlert, MoreVertical, Sparkles, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
-import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,8 +14,9 @@ import {
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "./ui/empty";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { ChatInputBar } from "./ChatInputBar";
+import { KpiMetricValueTitle } from "./KpiMetricValueTitle";
+import { KpiSparkline } from "./KpiSparkline";
 import { pageRootListScrollGutterClassName } from "./PageChrome";
-import { ExploreInsightDialog } from "./ExploreInsightDialog";
 import {
   type TopInsightCard,
   exploreHeadings,
@@ -25,7 +25,6 @@ import {
 import { aiAgentEvaluationKpis, aiAgentOverviewKpis, aiAgentProductivityRows } from "../data/ai-agent-kpis";
 import { currentUserProfile, getFirstName } from "../data/user-profile";
 
-type TopInsightsFilter = "all" | "anomalies" | "actions";
 const exploreMainContentClassName = "mx-auto w-full min-w-0 max-w-[1366px]";
 const exploreFooterChatContainerClassName = "mx-auto w-full min-w-0 max-w-[1440px]";
 const footerPromptChips = [
@@ -34,6 +33,84 @@ const footerPromptChips = [
   "How can I improve my CSAT?",
   "What tasks are my human agents spending extra time on?",
 ];
+const KPI_SPARKLINE_POINTS = 14;
+
+function hashSeed(input: string): number {
+  let hash = 2166136261;
+  for (let i = 0; i < input.length; i += 1) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function createSeededRandom(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(state ^ (state >>> 15), 1 | state);
+    t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function parseMetricTarget(value: string): { target: number; isPercent: boolean } | null {
+  const match = value.replaceAll(",", "").match(/-?\d+(?:\.\d+)?/);
+  if (!match) return null;
+  const parsed = Number.parseFloat(match[0]);
+  if (!Number.isFinite(parsed)) return null;
+  return { target: parsed, isPercent: value.includes("%") };
+}
+
+function clampMetricValue(value: number, isPercent: boolean): number {
+  if (isPercent) return Math.max(0, Math.min(100, value));
+  return Math.max(0, value);
+}
+
+function normalizeMetricValue(value: number, isPercent: boolean): number {
+  if (isPercent) return Number(value.toFixed(1));
+  return Math.round(value);
+}
+
+function buildDeterministicSparkline(
+  target: number,
+  isPercent: boolean,
+  seedKey: string,
+  profileIndex: number,
+): number[] {
+  const random = createSeededRandom(hashSeed(seedKey));
+  const normalizedTarget = normalizeMetricValue(clampMetricValue(target, isPercent), isPercent);
+  const values: number[] = [];
+  const profile = profileIndex % 3;
+  const phase = random() * Math.PI * 2;
+  const volatilityBase = isPercent
+    ? 1.25 + random() * 0.75
+    : Math.max(normalizedTarget * 0.02, 6) * (0.8 + random() * 0.6);
+  const anchorSpan = isPercent
+    ? 8 + random() * 10
+    : Math.max(normalizedTarget * 0.3, 40) * (0.65 + random() * 0.5);
+  let current = clampMetricValue(
+    normalizedTarget - anchorSpan * (0.55 + random() * 0.45),
+    isPercent,
+  );
+
+  for (let point = 0; point < KPI_SPARKLINE_POINTS - 1; point += 1) {
+    const t = point / (KPI_SPARKLINE_POINTS - 1);
+    const towardTarget = (normalizedTarget - current) * (0.16 + random() * 0.14);
+    const jitter = (random() - 0.5) * volatilityBase * 0.7;
+    const wave =
+      profile === 0
+        ? Math.sin((t * 2.25 + phase) * Math.PI) * volatilityBase * 0.45 + t * volatilityBase * 0.18
+        : profile === 1
+          ? Math.cos((t * 2.9 + phase) * Math.PI) * volatilityBase * 0.55 - t * volatilityBase * 0.12
+          : Math.sin((t * 1.45 + phase) * Math.PI) * volatilityBase * 0.62 + (t < 0.6 ? -volatilityBase * 0.16 : volatilityBase * 0.22);
+    current = clampMetricValue(current + towardTarget + jitter + wave, isPercent);
+    values.push(normalizeMetricValue(current, isPercent));
+  }
+
+  values.push(normalizedTarget);
+  return values;
+}
 
 interface ExplorePhaseProps {
   query: string;
@@ -75,10 +152,6 @@ export function ExplorePhase({
   onTopInsightInvestigate,
   onTypeaheadSuggestionPicked,
 }: ExplorePhaseProps) {
-  const [topInsightsFilter, setTopInsightsFilter] = useState<TopInsightsFilter>("all");
-  const [topInsightDialogCard, setTopInsightDialogCard] = useState<TopInsightCard | null>(
-    null,
-  );
   const [dismissedTopInsightIds, setDismissedTopInsightIds] = useState<Set<number>>(
     () => new Set(),
   );
@@ -95,20 +168,38 @@ export function ExplorePhase({
     [],
   );
   const aiAgentProductivityMetrics = useMemo(
-    () => [
-      {
-        label: "Total Sessions",
-        value: aiAgentOverviewKpis.find((kpi) => kpi.label === "Total Sessions")?.value ?? "—",
-      },
-      {
-        label: "Sentiment",
-        value: aiAgentEvaluationKpis.find((kpi) => kpi.label === "Positive Sent")?.value ?? "—",
-      },
-      {
-        label: "Brand Alignment",
-        value: aiAgentEvaluationKpis.find((kpi) => kpi.label === "Brand Aligned")?.value ?? "—",
-      },
-    ],
+    () => {
+      const baseMetrics = [
+        {
+          label: "Total Sessions",
+          value: aiAgentOverviewKpis.find((kpi) => kpi.label === "Total Sessions")?.value ?? "—",
+        },
+        {
+          label: "Sentiment",
+          value: aiAgentEvaluationKpis.find((kpi) => kpi.label === "Positive Sent")?.value ?? "—",
+        },
+        {
+          label: "Brand Alignment",
+          value: aiAgentEvaluationKpis.find((kpi) => kpi.label === "Brand Aligned")?.value ?? "—",
+        },
+      ];
+
+      return baseMetrics.map((metric, index) => {
+        const parsed = parseMetricTarget(metric.value);
+        const isPercent = parsed?.isPercent ?? false;
+        const sparkline = parsed
+          ? buildDeterministicSparkline(parsed.target, isPercent, `${metric.label}-${index}`, index)
+          : buildDeterministicSparkline(index * 20 + 60, false, `${metric.label}-${index}-fallback`, index);
+
+        return {
+          ...metric,
+          sparkline,
+          formatValue: isPercent
+            ? (value: number) => `${value.toFixed(1)}%`
+            : (value: number) => Math.round(value).toLocaleString("en-US"),
+        };
+      });
+    },
     [],
   );
   const aiAgentProductivityComparisonRows = useMemo(
@@ -163,26 +254,43 @@ export function ExplorePhase({
     [],
   );
 
-  const allTopInsightsDismissed = useMemo(
-    () =>
-      eligibleTopInsights.length > 0 &&
-      eligibleTopInsights.every((card) => dismissedTopInsightIds.has(card.id)),
+  const visibleTopInsights = useMemo(
+    () => eligibleTopInsights.filter((card) => !dismissedTopInsightIds.has(card.id)),
     [dismissedTopInsightIds, eligibleTopInsights],
   );
 
-  const filteredTopInsights = useMemo(() => {
-    const visibleCards = eligibleTopInsights.filter((card) => !dismissedTopInsightIds.has(card.id));
-    switch (topInsightsFilter) {
-      case "anomalies":
-        return visibleCards.filter((c) => c.segment === "anomaly");
-      case "actions":
-        return visibleCards.filter(
-          (c) => c.segment === "opportunity" && c.showActionPill,
-        );
-      default:
-        return visibleCards;
-    }
-  }, [dismissedTopInsightIds, eligibleTopInsights, topInsightsFilter]);
+  const anomalyInsights = useMemo(
+    () => visibleTopInsights.filter((card) => card.segment === "anomaly"),
+    [visibleTopInsights],
+  );
+
+  const recommendedActionInsights = useMemo(
+    () =>
+      visibleTopInsights.filter(
+        (card) => card.segment === "opportunity" && card.showActionPill,
+      ),
+    [visibleTopInsights],
+  );
+
+  const allAnomalyInsightsDismissed = useMemo(
+    () =>
+      eligibleTopInsights.some((card) => card.segment === "anomaly") &&
+      eligibleTopInsights
+        .filter((card) => card.segment === "anomaly")
+        .every((card) => dismissedTopInsightIds.has(card.id)),
+    [dismissedTopInsightIds, eligibleTopInsights],
+  );
+
+  const allRecommendedActionInsightsDismissed = useMemo(
+    () =>
+      eligibleTopInsights.some(
+        (card) => card.segment === "opportunity" && card.showActionPill,
+      ) &&
+      eligibleTopInsights
+        .filter((card) => card.segment === "opportunity" && card.showActionPill)
+        .every((card) => dismissedTopInsightIds.has(card.id)),
+    [dismissedTopInsightIds, eligibleTopInsights],
+  );
 
   const handleDismissTopInsight = useCallback((insight: TopInsightCard) => {
     setDismissedTopInsightIds((prev) => {
@@ -190,7 +298,6 @@ export function ExplorePhase({
       next.add(insight.id);
       return next;
     });
-    setTopInsightDialogCard(null);
     toast.success("Insight dismissed", {
       description: `"${insight.title}" was hidden for this session.`,
       action: {
@@ -206,11 +313,6 @@ export function ExplorePhase({
       },
     });
   }, []);
-
-  const handleInvestigateTopInsight = useCallback((insight: TopInsightCard) => {
-    setTopInsightDialogCard(null);
-    onTopInsightInvestigate(insight);
-  }, [onTopInsightInvestigate]);
 
   const updateFooterFadeVisibility = useCallback(() => {
     const scrollEl = contentScrollRef.current;
@@ -245,17 +347,93 @@ export function ExplorePhase({
     };
   }, [updateFooterFadeVisibility]);
 
+  const renderTopInsightCard = (card: TopInsightCard) => (
+    <Card
+      key={card.id}
+      className="group/widget relative flex h-[8rem] shrink-0 flex-col overflow-hidden transition-[box-shadow,border-color] hover:border-primary/30 hover:shadow-md"
+    >
+      {card.segment === "anomaly" ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              aria-label={`Open actions for ${card.title}`}
+              className="absolute right-2 top-2 z-20"
+            >
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onSelect={(event) => {
+                event.preventDefault();
+                handleDismissTopInsight(card);
+              }}
+            >
+              <BellOff className="h-4 w-4" />
+              Dismiss
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : null}
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label={`View details: ${card.title}`}
+        className="flex min-h-0 w-full flex-1 cursor-pointer flex-col rounded-xl text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        onClick={() => onTopInsightInvestigate(card)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onTopInsightInvestigate(card);
+          }
+        }}
+      >
+        <CardHeader
+          className={`shrink-0 gap-1 space-y-0 px-4 pb-1.5 pt-3 ${
+            card.segment === "anomaly" ? "pr-12" : "pr-4"
+          }`}
+        >
+          <CardTitle className="line-clamp-2 text-base font-semibold leading-snug">
+            {card.title}
+          </CardTitle>
+          <CardDescription className="line-clamp-2 text-xs leading-snug">
+            {card.description}
+          </CardDescription>
+        </CardHeader>
+        <div className="mt-auto flex w-full min-w-0 shrink-0 flex-wrap items-center gap-2 px-4 pb-3 pt-2">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+            {card.segment === "anomaly" ? (
+              <>
+                <Badge
+                  variant={card.severity === "Critical" ? "destructive" : "secondary"}
+                  className={
+                    card.severity === "High"
+                      ? "border-orange-200 bg-orange-100 text-orange-800 dark:border-orange-900 dark:bg-orange-950/40 dark:text-orange-300"
+                      : undefined
+                  }
+                >
+                  {card.severity}
+                </Badge>
+              </>
+            ) : (
+              <>
+                <Badge variant="outline" className="gap-1">
+                  <Bot className="h-3 w-3" />
+                  Automation Opportunity
+                </Badge>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+
   return (
     <>
-      <ExploreInsightDialog
-        insight={topInsightDialogCard}
-        open={!!topInsightDialogCard}
-        onOpenChange={(open) => {
-          if (!open) setTopInsightDialogCard(null);
-        }}
-        onDismissInsight={handleDismissTopInsight}
-        onInvestigateInsight={handleInvestigateTopInsight}
-      />
       <div
         ref={exploreSurfaceRef}
         key="explore"
@@ -282,158 +460,73 @@ export function ExplorePhase({
               <div className={exploreMainContentClassName}>
                 <section className="mb-8 flex flex-col items-center">
                   <div className="mx-auto w-full">
-                    <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <section className="min-w-0">
-                        <h2 className="text-xl">Top Insights</h2>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          Anomalies and opportunities surfaced from your operations data
-                        </p>
-                      </section>
-                      <ToggleGroup
-                        type="single"
-                        value={topInsightsFilter}
-                        onValueChange={(v) => {
-                          if (v === "all" || v === "anomalies" || v === "actions") {
-                            setTopInsightsFilter(v);
-                          }
-                        }}
-                        variant="outline"
-                        size="sm"
-                        className="w-fit shrink-0 justify-end sm:justify-start"
-                        aria-label="Filter insights"
-                      >
-                        <ToggleGroupItem
-                          value="all"
-                          aria-label="Show all insights"
-                          className="flex-none px-3"
-                        >
-                          All
-                        </ToggleGroupItem>
-                        <ToggleGroupItem
-                          value="anomalies"
-                          aria-label="Show anomalies only"
-                          className="flex-none px-3"
-                        >
-                          Anomalies
-                        </ToggleGroupItem>
-                        <ToggleGroupItem
-                          value="actions"
-                          aria-label="Show actions only"
-                          className="flex-none px-3"
-                        >
-                          Actions
-                        </ToggleGroupItem>
-                      </ToggleGroup>
+                    <div className="mb-4">
+                      <h2 className="flex items-center gap-2 text-xl">
+                        <CircleAlert className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+                        Anomalies
+                      </h2>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Active anomalies surfaced from your operations data, updated every 24 hours
+                      </p>
                     </div>
-                    <div className="grid auto-rows-max grid-cols-[repeat(auto-fit,minmax(18rem,1fr))] gap-4">
-                      {filteredTopInsights.length === 0 ? (
+                    <div className="grid auto-rows-max grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      {anomalyInsights.length === 0 ? (
                         <Empty variant="solid" className="col-span-full min-h-[180px] bg-white">
                           <EmptyHeader>
                             <EmptyMedia variant="icon">
                               <CircleAlert />
                             </EmptyMedia>
                             <EmptyTitle>
-                              {allTopInsightsDismissed
-                                ? "No insights right now"
-                                : "No Top Insights match this filter"}
+                              {allAnomalyInsightsDismissed
+                                ? "No anomalies right now"
+                                : "No anomalies available"}
                             </EmptyTitle>
                             <EmptyDescription>
-                              {allTopInsightsDismissed
-                                ? "Check back later to see more insights as new signals are generated."
-                                : "Try a different filter or check back later to see more insights."}
+                              {allAnomalyInsightsDismissed
+                                ? "Check back later to see more anomaly signals as new insights are generated."
+                                : "Anomaly signals will appear here when detected."}
                             </EmptyDescription>
                           </EmptyHeader>
                         </Empty>
                       ) : (
-                        filteredTopInsights.map((card) => {
-                          return (
-                            <Card
-                              key={card.id}
-                              className="group/widget relative flex h-[8rem] shrink-0 flex-col overflow-hidden transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30"
-                            >
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon-xs"
-                                    aria-label={`Open actions for ${card.title}`}
-                                    className="absolute right-2 top-2 z-20"
-                                  >
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    onSelect={(event) => {
-                                      event.preventDefault();
-                                      handleDismissTopInsight(card);
-                                    }}
-                                  >
-                                    <BellOff className="h-4 w-4" />
-                                    Dismiss
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                              <div
-                                role="button"
-                                tabIndex={0}
-                                aria-label={`View details: ${card.title}`}
-                                className="flex min-h-0 w-full flex-1 cursor-pointer flex-col rounded-xl text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                                onClick={() => setTopInsightDialogCard(card)}
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter" || e.key === " ") {
-                                    e.preventDefault();
-                                    setTopInsightDialogCard(card);
-                                  }
-                                }}
-                              >
-                                <CardHeader className="shrink-0 gap-1 space-y-0 px-4 pb-1.5 pt-3 pr-12">
-                                  <CardTitle className="line-clamp-2 text-base font-semibold leading-snug">
-                                    {card.title}
-                                  </CardTitle>
-                                  <CardDescription className="line-clamp-2 text-xs leading-snug">
-                                    {card.description}
-                                  </CardDescription>
-                                </CardHeader>
-                                <div className="mt-auto flex w-full min-w-0 shrink-0 flex-wrap items-center gap-2 px-4 pb-3 pt-2">
-                                  <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
-                                    {card.segment === "anomaly" ? (
-                                      <>
-                                        <Badge variant="secondary" className="gap-1">
-                                          <CircleAlert className="h-3 w-3" />
-                                          Anomaly
-                                        </Badge>
-                                        <Badge
-                                          variant={
-                                            card.severity === "Critical" ? "destructive" : "secondary"
-                                          }
-                                          className={
-                                            card.severity === "High"
-                                              ? "border-orange-200 bg-orange-100 text-orange-800 dark:border-orange-900 dark:bg-orange-950/40 dark:text-orange-300"
-                                              : undefined
-                                          }
-                                        >
-                                          {card.severity}
-                                        </Badge>
-                                      </>
-                                    ) : (
-                                      <>
-                                        {card.showActionPill ? (
-                                          <Badge variant="secondary" className="gap-1">
-                                            <Zap className="h-3 w-3" />
-                                            Action
-                                          </Badge>
-                                        ) : null}
-                                        <Badge variant="outline">Opportunity</Badge>
-                                      </>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </Card>
-                          );
-                        })
+                        anomalyInsights.map(renderTopInsightCard)
+                      )}
+                    </div>
+                  </div>
+                </section>
+
+                <section className="mb-8 flex flex-col items-center">
+                  <div className="mx-auto w-full">
+                    <div className="mb-4">
+                      <h2 className="flex items-center gap-2 text-xl">
+                        <Zap className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+                        Top Recommended Actions
+                      </h2>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Priority opportunities with action-ready recommendations
+                      </p>
+                    </div>
+                    <div className="grid auto-rows-max grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      {recommendedActionInsights.length === 0 ? (
+                        <Empty variant="solid" className="col-span-full min-h-[180px] bg-white">
+                          <EmptyHeader>
+                            <EmptyMedia variant="icon">
+                              <Zap />
+                            </EmptyMedia>
+                            <EmptyTitle>
+                              {allRecommendedActionInsightsDismissed
+                                ? "No recommended actions right now"
+                                : "No recommended actions available"}
+                            </EmptyTitle>
+                            <EmptyDescription>
+                              {allRecommendedActionInsightsDismissed
+                                ? "Check back later to see more recommended actions as new opportunities are generated."
+                                : "Recommended actions will appear here when opportunities are identified."}
+                            </EmptyDescription>
+                          </EmptyHeader>
+                        </Empty>
+                      ) : (
+                        recommendedActionInsights.map(renderTopInsightCard)
                       )}
                     </div>
                   </div>
@@ -441,7 +534,10 @@ export function ExplorePhase({
 
                 <section>
                   <div className="mb-4">
-                    <h2 className="text-xl">AI Agent Productivity</h2>
+                    <h2 className="flex items-center gap-2 text-xl">
+                      <Bot className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+                      AI Agent Productivity
+                    </h2>
                   </div>
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     {aiAgentProductivityMetrics.map((metric) => (
@@ -449,10 +545,19 @@ export function ExplorePhase({
                         key={metric.label}
                         className="transition-[box-shadow,border-color] hover:border-primary/30 hover:shadow-md"
                       >
-                        <CardHeader className="space-y-1 py-5">
+                        <CardHeader className="pb-0">
                           <CardDescription className="text-sm">{metric.label}</CardDescription>
-                          <CardTitle className="text-2xl">{metric.value}</CardTitle>
+                          <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
+                            <KpiMetricValueTitle value={metric.value} />
+                          </div>
                         </CardHeader>
+                        <CardContent className="pt-0">
+                          <KpiSparkline
+                            values={metric.sparkline}
+                            seriesName={metric.label}
+                            formatValue={metric.formatValue}
+                          />
+                        </CardContent>
                       </Card>
                     ))}
                   </div>
@@ -511,7 +616,7 @@ export function ExplorePhase({
               showFooterFade ? "opacity-100" : "opacity-0"
             }`}
           />
-          <div className="w-full min-w-0 px-8 py-8">
+          <div className="w-full min-w-0 px-8 pt-0 pb-8">
             <div className={`${exploreFooterChatContainerClassName} flex w-full flex-col gap-3 rounded-[1rem] border border-border/60 bg-neutral-0 p-8 shadow-md`}>
               <div className="flex flex-wrap items-center justify-start gap-2">
                 {footerPromptChips.map((prompt) => {

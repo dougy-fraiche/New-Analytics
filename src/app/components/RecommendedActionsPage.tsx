@@ -53,7 +53,6 @@ import { useNavigate } from "react-router";
 import { useProjects } from "../contexts/ProjectContext";
 import { PageTransition } from "./PageTransition";
 import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
-import { WidgetAIPromptButton } from "./WidgetAIPromptButton";
 import { WidgetAIProvider } from "../contexts/WidgetAIContext";
 import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 
@@ -285,17 +284,9 @@ export function RecommendedActionsPage() {
           <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
             <div
               id="recommended-actions-highlight-reach"
-              className="relative flex min-w-0 flex-col gap-2 rounded-xl border border-primary/40 bg-primary/[0.03] p-4 transition-[box-shadow,border-color,background-color] hover:border-primary/55 hover:bg-primary/[0.05] hover:shadow-md"
+              className="flex min-w-0 flex-col gap-2 rounded-xl border border-primary/40 bg-primary/[0.03] p-4 transition-[box-shadow,border-color,background-color] hover:border-primary/55 hover:bg-primary/[0.05] hover:shadow-md"
             >
-              <div className="absolute right-3 top-3 z-10">
-                <WidgetAIPromptButton
-                  widgetTitle="Impact highlight: Potential customer reach (142K estimated weekly)"
-                  chartType="metric"
-                  widgetAnchorId="recommended-actions-highlight-reach"
-                  tooltipLabel="Ask AI about this highlight"
-                />
-              </div>
-              <div className="flex min-w-0 flex-col gap-2.5 pr-10">
+              <div className="flex min-w-0 flex-col gap-2.5">
                 <p className="text-xs text-muted-foreground">Potential Customer Impact</p>
                 <p className="text-xl font-normal leading-6 tracking-tight text-foreground">142K</p>
                 <p className="text-sm leading-snug text-foreground/80">
@@ -305,17 +296,9 @@ export function RecommendedActionsPage() {
             </div>
             <div
               id="recommended-actions-highlight-roi"
-              className="relative flex min-w-0 flex-col gap-2 rounded-xl border border-primary/40 bg-primary/[0.03] p-4 transition-[box-shadow,border-color,background-color] hover:border-primary/55 hover:bg-primary/[0.05] hover:shadow-md"
+              className="flex min-w-0 flex-col gap-2 rounded-xl border border-primary/40 bg-primary/[0.03] p-4 transition-[box-shadow,border-color,background-color] hover:border-primary/55 hover:bg-primary/[0.05] hover:shadow-md"
             >
-              <div className="absolute right-3 top-3 z-10">
-                <WidgetAIPromptButton
-                  widgetTitle={`Impact highlight: Projected ROI ($${(totalROI / 1000).toFixed(0)}K/wk from pending recommendations)`}
-                  chartType="metric"
-                  widgetAnchorId="recommended-actions-highlight-roi"
-                  tooltipLabel="Ask AI about this highlight"
-                />
-              </div>
-              <div className="flex min-w-0 flex-col gap-2.5 pr-10">
+              <div className="flex min-w-0 flex-col gap-2.5">
                 <p className="text-xs text-muted-foreground">Projected ROI</p>
                 <p className="text-xl font-normal leading-6 tracking-tight text-foreground">
                   ${(totalROI / 1000).toFixed(0)}K/wk

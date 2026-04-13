@@ -1,9 +1,8 @@
 import { type LegacyRef, type RefObject } from "react";
-import { ArrowRight, Mic, Square } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { TypeaheadSuggestions } from "./TypeaheadSuggestions";
-import { toast } from "sonner";
 import { useTypingPlaceholder } from "../hooks/useTypingPlaceholder";
 import { placeholderSuffixes } from "../data/explore-data";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
@@ -50,6 +49,7 @@ export function ChatInputBar({
   const placeholder = isHero
     ? `Ask anything about your ${animatedSuffix}`
     : "Ask a follow-up question\u2026";
+  const canSend = query.trim().length > 0;
 
   const handleSend = () => {
     if (voice.isListening) voice.stop();
@@ -59,18 +59,18 @@ export function ChatInputBar({
 
   return (
     <div
-      className={`relative w-full rounded-md border bg-card text-card-foreground transition-shadow focus-within:border-ring ${
+      className={`relative w-full rounded-xl border bg-card text-card-foreground transition-shadow focus-within:border-ring ${
         isHero
           ? "shadow-none focus-within:ring-[3px] focus-within:ring-ring/20"
           : "shadow-sm focus-within:ring-[3px] focus-within:ring-ring/20"
       }`}
     >
-      <div className="w-full p-4">
+      <div className="w-full p-2">
         <div className="flex items-end gap-3">
           <div className="min-w-0 flex-1">
             <Textarea
               placeholder={placeholder}
-              value={query + (voice.isListening && voice.interimText ? voice.interimText : "")}
+              value={query}
               onChange={(e) => {
                 if (voice.isListening) voice.stop();
                 onQueryChange(e.target.value);
@@ -99,33 +99,19 @@ export function ChatInputBar({
               <TooltipTrigger asChild>
                 <Button
                   size="icon"
-                  variant={voice.isListening ? "destructive" : query.trim() ? "default" : "outline"}
-                  className={`${isHero ? "h-9 w-9" : "h-8 w-8"} rounded-lg ${voice.isListening ? "animate-pulse" : ""}`}
+                  variant={canSend ? "default" : "outline"}
+                  disabled={!canSend}
+                  className={`${isHero ? "h-9 w-9" : "h-8 w-8"} rounded-lg`}
                   onClick={() => {
-                    if (voice.isListening) {
-                      voice.stop();
-                    } else if (query.trim()) {
-                      handleSend();
-                    } else if (voice.isSupported) {
-                      voice.toggle();
-                    } else {
-                      toast.error("Voice input not supported", {
-                        description: "Your browser doesn't support speech recognition. Try Chrome or Edge.",
-                      });
-                    }
+                    if (!canSend) return;
+                    handleSend();
                   }}
                 >
-                  {voice.isListening ? (
-                    <Square className="h-4 w-4" />
-                  ) : query.trim() ? (
-                    <ArrowRight className="h-4 w-4" />
-                  ) : (
-                    <Mic className="h-4 w-4" />
-                  )}
+                  <ArrowRight className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side={isHero ? "bottom" : "top"}>
-                {voice.isListening ? "Stop recording" : query.trim() ? "Send" : "Voice input"}
+                {canSend ? "Send" : "Enter a message to send"}
               </TooltipContent>
             </Tooltip>
           </div>

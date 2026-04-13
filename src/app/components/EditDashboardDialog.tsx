@@ -1,148 +1,89 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Bookmark, Check, ChevronsUpDown, Folder, FolderPlus } from "lucide-react";
 import { Button } from "./ui/button";
-import { Textarea } from "./ui/textarea";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "./ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Separator } from "./ui/separator";
-import { useProjects } from "../contexts/ProjectContext";
-import { toast } from "sonner";
+import { Textarea } from "./ui/textarea";
 
-interface DuplicateDashboardDialogProps {
+export interface EditDashboardDialogProjectOption {
+  id: string;
+  name: string;
+}
+
+interface EditDashboardDialogValues {
+  name: string;
+  description: string;
+  locationProjectId: string | null;
+}
+
+interface EditDashboardDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Original dashboard name to duplicate */
-  dashboardName: string;
-  /** Optional description to seed the duplicate */
-  dashboardDescription?: string;
-  /** Optional source location (folder id or null for Saved root) */
-  initialLocationProjectId?: string | null;
-  /** Optional sourceOotbId to carry over to the duplicate */
-  sourceOotbId?: string;
+  initialName: string;
+  initialDescription?: string;
+  initialLocationProjectId: string | null;
+  projects: EditDashboardDialogProjectOption[];
+  onCreateFolder: (folderName: string) => EditDashboardDialogProjectOption | null;
+  onSubmit: (values: EditDashboardDialogValues) => void;
 }
 
 const ROOT_LOCATION_ID = "__root__";
 
-/**
- * Generates a unique duplicate name by appending (2), (3), etc.
- * Searches all folders + standalone dashboards for existing names.
- */
-function generateDuplicateName(
-  baseName: string,
-  allNames: string[]
-): string {
-  // Strip any existing trailing " (N)" to get the true base
-  const baseMatch = baseName.match(/^(.+?)\s*\((\d+)\)$/);
-  const trueName = baseMatch ? baseMatch[1].trimEnd() : baseName;
-
-  // Build a set of lowercase names for fast comparison
-  const namesLower = new Set(allNames.map((n) => n.toLowerCase()));
-
-  // Start from (2) and increment
-  let counter = 2;
-  let candidate = `${trueName} (${counter})`;
-  while (namesLower.has(candidate.toLowerCase())) {
-    counter++;
-    candidate = `${trueName} (${counter})`;
-  }
-  return candidate;
-}
-
-export function DuplicateDashboardDialog({
+export function EditDashboardDialog({
   open,
   onOpenChange,
-  dashboardName,
-  dashboardDescription,
-  initialLocationProjectId = null,
-  sourceOotbId,
-}: DuplicateDashboardDialogProps) {
-  const {
-    projects,
-    standaloneDashboards,
-    addProject,
-    addDashboardToProject,
-    addStandaloneDashboard,
-  } = useProjects();
-
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [selectedProjectId, setSelectedProjectId] = useState(ROOT_LOCATION_ID);
+  initialName,
+  initialDescription,
+  initialLocationProjectId,
+  projects,
+  onCreateFolder,
+  onSubmit,
+}: EditDashboardDialogProps) {
+  const [name, setName] = useState(initialName);
+  const [description, setDescription] = useState(initialDescription || "");
+  const [selectedProjectId, setSelectedProjectId] = useState(
+    initialLocationProjectId ?? ROOT_LOCATION_ID,
+  );
   const [locationPopoverOpen, setLocationPopoverOpen] = useState(false);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [justCreatedFolderId, setJustCreatedFolderId] = useState<string | null>(null);
 
-  // Gather all existing dashboard names across folders + standalone
-  const allDashboardNames = [
-    ...projects.flatMap((p) => p.dashboards.map((d) => d.name)),
-    ...standaloneDashboards.map((d) => d.name),
-  ];
-
-  // Reset state when the dialog opens with a new dashboard
   useEffect(() => {
-    if (open) {
-      setName(generateDuplicateName(dashboardName, allDashboardNames));
-      setDescription(dashboardDescription || "");
-      setSelectedProjectId(initialLocationProjectId ?? ROOT_LOCATION_ID);
-      setLocationPopoverOpen(false);
-      setIsCreatingFolder(false);
-      setNewFolderName("");
-      setJustCreatedFolderId(null);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, dashboardName, dashboardDescription, initialLocationProjectId]);
+    if (!open) return;
+    setName(initialName);
+    setDescription(initialDescription || "");
+    setSelectedProjectId(initialLocationProjectId ?? ROOT_LOCATION_ID);
+    setLocationPopoverOpen(false);
+    setIsCreatingFolder(false);
+    setNewFolderName("");
+    setJustCreatedFolderId(null);
+  }, [open, initialName, initialDescription, initialLocationProjectId]);
 
   const handleCreateFolderAndSelect = () => {
     const trimmed = newFolderName.trim();
     if (!trimmed) return;
-    const created = addProject(trimmed);
+    const created = onCreateFolder(trimmed);
+    if (!created) return;
     setSelectedProjectId(created.id);
     setIsCreatingFolder(false);
     setNewFolderName("");
     setJustCreatedFolderId(created.id);
     setTimeout(() => setJustCreatedFolderId(null), 1500);
-    toast.success(`Folder "${created.name}" created`);
   };
 
-  const handleDuplicate = () => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    const trimmedDescription = description.trim();
-    const destinationProjectId =
-      selectedProjectId === ROOT_LOCATION_ID ? null : selectedProjectId;
-
-    const destinationName =
-      destinationProjectId === null
-        ? "Saved"
-        : projects.find((p) => p.id === destinationProjectId)?.name || "folder";
-
-    if (destinationProjectId === null) {
-      addStandaloneDashboard(trimmed, sourceOotbId, trimmedDescription || undefined);
-    } else {
-      addDashboardToProject(
-        destinationProjectId,
-        trimmed,
-        sourceOotbId,
-        trimmedDescription || undefined,
-      );
-    }
-
-    toast.success("Dashboard duplicated", {
-      description: `"${trimmed}" has been created in ${destinationName}.`,
+  const handleConfirm = () => {
+    const trimmedName = name.trim();
+    if (!trimmedName) return;
+    onSubmit({
+      name: trimmedName,
+      description: description.trim(),
+      locationProjectId: selectedProjectId === ROOT_LOCATION_ID ? null : selectedProjectId,
     });
-
-    onOpenChange(false);
   };
-
-  const isValid = name.trim().length > 0;
 
   return (
     <Dialog
@@ -158,27 +99,28 @@ export function DuplicateDashboardDialog({
     >
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Duplicate Dashboard</DialogTitle>
+          <DialogTitle>Edit Dashboard</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="duplicate-name">Name</Label>
+            <Label htmlFor="dashboard-edit-name">Name</Label>
             <Input
-              id="duplicate-name"
+              id="dashboard-edit-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Dashboard name"
               onKeyDown={(e) => {
-                if (e.key === "Enter" && isValid) {
-                  handleDuplicate();
+                if (e.key === "Enter" && name.trim()) {
+                  handleConfirm();
                 }
               }}
             />
           </div>
+
           <div className="space-y-2">
-            <Label htmlFor="duplicate-description">Description</Label>
+            <Label htmlFor="dashboard-edit-description">Description</Label>
             <Textarea
-              id="duplicate-description"
+              id="dashboard-edit-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Add a description for this dashboard..."
@@ -186,6 +128,7 @@ export function DuplicateDashboardDialog({
               rows={3}
             />
           </div>
+
           <div className="space-y-2">
             <Label>Location</Label>
             <Popover
@@ -214,8 +157,7 @@ export function DuplicateDashboardDialog({
                     ) : (
                       <>
                         <Folder className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        {projects.find((p) => p.id === selectedProjectId)?.name ??
-                          "Select a location"}
+                        {projects.find((p) => p.id === selectedProjectId)?.name ?? "Select a location"}
                       </>
                     )}
                   </span>
@@ -238,25 +180,25 @@ export function DuplicateDashboardDialog({
                     <Bookmark className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <span>Saved</span>
                   </button>
-                {projects.map((project) => (
-                  <button
-                    key={project.id}
-                    type="button"
-                    className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none cursor-pointer hover:bg-accent hover:text-accent-foreground"
-                    onClick={() => {
-                      setSelectedProjectId(project.id);
-                      setLocationPopoverOpen(false);
-                    }}
-                  >
-                    <Check
-                      className={`h-3.5 w-3.5 shrink-0 ${selectedProjectId === project.id ? "opacity-100" : "opacity-0"}`}
-                    />
-                    <Folder
-                      className={`h-3.5 w-3.5 shrink-0 ${justCreatedFolderId === project.id ? "text-primary" : "text-muted-foreground"}`}
-                    />
-                    <span className="truncate">{project.name}</span>
-                  </button>
-                ))}
+                  {projects.map((project) => (
+                    <button
+                      key={project.id}
+                      type="button"
+                      className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                      onClick={() => {
+                        setSelectedProjectId(project.id);
+                        setLocationPopoverOpen(false);
+                      }}
+                    >
+                      <Check
+                        className={`h-3.5 w-3.5 shrink-0 ${selectedProjectId === project.id ? "opacity-100" : "opacity-0"}`}
+                      />
+                      <Folder
+                        className={`h-3.5 w-3.5 shrink-0 ${justCreatedFolderId === project.id ? "text-primary" : "text-muted-foreground"}`}
+                      />
+                      <span className="truncate">{project.name}</span>
+                    </button>
+                  ))}
                 </div>
                 <Separator />
                 <div className="p-1">
@@ -306,18 +248,15 @@ export function DuplicateDashboardDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button type="button" onClick={handleDuplicate} disabled={!isValid}>
-            Duplicate
+          <Button type="button" onClick={handleConfirm} disabled={!name.trim()}>
+            Save
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
+

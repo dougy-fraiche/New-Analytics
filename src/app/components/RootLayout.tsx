@@ -23,6 +23,7 @@ import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 import { AiAssistantPanelControlProvider } from "../contexts/AiAssistantPanelControlContext";
 import { ROUTES } from "../routes";
 import { cn } from "./ui/utils";
+import { topInsightsCards } from "../data/explore-data";
 
 const AI_ASSISTANT_OPEN_STORAGE_KEY = "ai-assistant-panel-open";
 const WIDGET_AI_MESSAGE_SENT_EVENT = "widget-ai-message-sent";
@@ -228,6 +229,19 @@ function RootLayoutInner() {
       }
     }
 
+    if (location.pathname.startsWith("/anomaly-investigation/")) {
+      const anomalyInsightId = Number.parseInt(params.insightId ?? "", 10);
+      const anomalyInsightTitle = Number.isFinite(anomalyInsightId)
+        ? topInsightsCards.find(
+            (card) => card.segment === "anomaly" && card.id === anomalyInsightId,
+          )?.title
+        : undefined;
+      return [
+        { label: "Explore", href: "/" },
+        { label: anomalyInsightTitle || "Anomaly Investigation" },
+      ];
+    }
+
     // Standalone OOTB dashboard URLs
     if (location.pathname.startsWith("/dashboard/")) {
       const dashboardId = params.dashboardId;
@@ -337,6 +351,7 @@ function RootLayoutInner() {
   const isFullHeightPage =
     location.pathname.includes('/dashboard') ||
     location.pathname.startsWith('/conversation/') ||
+    location.pathname.startsWith('/anomaly-investigation/') ||
     location.pathname === '/' ||
     location.pathname === '/insights' ||
     location.pathname === '/automation-opportunities' ||

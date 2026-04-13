@@ -103,8 +103,10 @@ export function CreateAIAgentPopoverButton({
       size="sm"
       className={cn("max-w-full", className)}
       aria-busy={loading}
+      aria-disabled={loading}
       aria-live="polite"
       onClick={handlePrimaryCreate}
+      disabled={loading}
     >
       {loading ? (
         <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />

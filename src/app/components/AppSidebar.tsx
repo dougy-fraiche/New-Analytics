@@ -1,5 +1,6 @@
 import {
-  Folder,
+  FolderClosed,
+  FolderOpen,
   MoreHorizontal,
   Loader2,
   Pencil,
@@ -76,7 +77,6 @@ import { useKeyboardShortcut } from "../hooks/useKeyboardShortcuts";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { useSidebar } from "./ui/sidebar";
 import { ROUTES } from "../routes";
-import { showDeletedObjectToast } from "../lib/object-deletion-toast";
 import {
   DropdownMenu as UserDropdownMenu,
   DropdownMenuContent as UserDropdownMenuContent,
@@ -151,7 +151,7 @@ const DASHBOARD_DND_TYPE = "SIDEBAR_DASHBOARD";
 
 interface DashboardDragItem {
   dashboardId: string;
-  fromProjectId: string;
+  fromProjectId: string | null;
   dashboardName: string;
 }
 
@@ -162,7 +162,7 @@ function DraggableDashboardItem({
   children,
 }: {
   dashboard: Dashboard;
-  projectId: string;
+  projectId: string | null;
   children: ReactNode;
 }) {
   const [{ isDragging }, drag] = useDrag<DashboardDragItem, unknown, { isDragging: boolean }>({
@@ -194,6 +194,38 @@ function DroppableFolderWrapper({
     drop: (item) => onDrop(item),
     collect: (monitor) => ({
       isOver: monitor.isOver(),
+      canDrop: monitor.canDrop(),
+    }),
+  });
+
+  return (
+    <div
+      ref={drop}
+      className={`w-full rounded-md transition-colors ${isOver && canDrop ? "bg-primary/10 ring-1 ring-primary/30" : ""}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+// Droppable wrapper for the Saved root location (dashboards not in a folder)
+function DroppableSavedRootWrapper({
+  onDrop,
+  children,
+}: {
+  onDrop: (item: DashboardDragItem) => void;
+  children: ReactNode;
+}) {
+  const [{ isOver, canDrop }, drop] = useDrop<DashboardDragItem, void, { isOver: boolean; canDrop: boolean }>({
+    accept: DASHBOARD_DND_TYPE,
+    canDrop: (item) => item.fromProjectId !== null,
+    drop: (item, monitor) => {
+      // If a nested folder target handled this already, do nothing.
+      if (monitor.didDrop()) return;
+      onDrop(item);
+    },
+    collect: (monitor) => ({
+      isOver: monitor.isOver({ shallow: true }),
       canDrop: monitor.canDrop(),
     }),
   });
@@ -267,9 +299,9 @@ export function AppSidebar() {
   const {
     projects,
     moveDashboardToProject,
+    moveDashboardToStandalone,
+    moveStandaloneToFolder,
     standaloneDashboards,
-    deleteStandaloneDashboard,
-    restoreStandaloneDashboard,
   } = useProjects();
 
   // Persisted collapse states
@@ -347,10 +379,22 @@ export function AppSidebar() {
 
   // ── DnD handler ───────────────────────────────────────────────────────
   const handleDndDrop = (item: DashboardDragItem, toProjectId: string) => {
-    moveDashboardToProject(item.fromProjectId, item.dashboardId, toProjectId);
+    if (item.fromProjectId) {
+      moveDashboardToProject(item.fromProjectId, item.dashboardId, toProjectId);
+    } else {
+      moveStandaloneToFolder(item.dashboardId, toProjectId);
+    }
     const targetFolder = projects.find((p) => p.id === toProjectId);
     toast.success("Dashboard moved", {
       description: `"${item.dashboardName}" has been moved to "${targetFolder?.name}".`,
+    });
+  };
+
+  const handleSavedRootDndDrop = (item: DashboardDragItem) => {
+    if (!item.fromProjectId) return;
+    moveDashboardToStandalone(item.fromProjectId, item.dashboardId);
+    toast.success("Dashboard moved", {
+      description: `"${item.dashboardName}" has been moved to "Saved".`,
     });
   };
 
@@ -361,7 +405,8 @@ export function AppSidebar() {
           {/* App switcher dropdown */}
           <SidebarMenu className="mb-0">
             <SidebarMenuItem>
-              <DropdownMenu>
+              {/* Keep the dropdown trigger affordance visible, but disable opening the app menu for now. */}
+              <DropdownMenu open={false}>
                 <DropdownMenuTrigger asChild>
                   <SidebarMenuButton
                     size="lg"
@@ -573,39 +618,40 @@ export function AppSidebar() {
           </CollapsibleSidebarSection>
 
           {/* Saved (user-created) Dashboards */}
-          <CollapsibleSidebarSection
-            icon={Bookmark}
-            label="Saved"
-            path="/saved"
-            open={savedOpen}
-            onToggle={setSavedOpen}
-            itemAction={
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <SidebarMenuAction
-                    className={cn(
-                      "static inset-auto translate-none bg-transparent after:hidden [&>svg]:h-3.5 [&>svg]:w-3.5",
-                      SUB_ITEM_ICON_BUTTON_BOX,
-                    )}
-                    aria-label="New folder"
-                    onMouseDown={(e) => {
-                      if (e.button === 0) e.preventDefault();
-                    }}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      dispatch({ type: "OPEN_NEW_PROJECT" });
-                    }}
-                  >
-                    <Plus />
-                  </SidebarMenuAction>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" sideOffset={6} align="center">
-                  New folder
-                </TooltipContent>
-              </Tooltip>
-            }
-          >
+          <DroppableSavedRootWrapper onDrop={handleSavedRootDndDrop}>
+            <CollapsibleSidebarSection
+              icon={Bookmark}
+              label="Saved"
+              path="/saved"
+              open={savedOpen}
+              onToggle={setSavedOpen}
+              itemAction={
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <SidebarMenuAction
+                      className={cn(
+                        "static inset-auto translate-none bg-transparent after:hidden [&>svg]:h-3.5 [&>svg]:w-3.5",
+                        SUB_ITEM_ICON_BUTTON_BOX,
+                      )}
+                      aria-label="New folder"
+                      onMouseDown={(e) => {
+                        if (e.button === 0) e.preventDefault();
+                      }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dispatch({ type: "OPEN_NEW_PROJECT" });
+                      }}
+                    >
+                      <Plus />
+                    </SidebarMenuAction>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" sideOffset={6} align="center">
+                    New folder
+                  </TooltipContent>
+                </Tooltip>
+              }
+            >
             {projects.length === 0 && standaloneDashboards.length === 0 && (
               <SidebarMenuSubItem>
                 <span className="px-2 py-1.5 text-xs text-muted-foreground">No saved dashboards yet</span>
@@ -642,10 +688,17 @@ export function AppSidebar() {
                               data-folder-row-icon
                               className="relative inline-flex size-4 shrink-0 items-center justify-center"
                             >
-                              <Folder
-                                className="size-4 shrink-0 opacity-100 group-hover/folder-row:opacity-0"
-                                aria-hidden
-                              />
+                              {folderOpen ? (
+                                <FolderOpen
+                                  className="size-4 shrink-0 opacity-100 group-hover/folder-row:opacity-0"
+                                  aria-hidden
+                                />
+                              ) : (
+                                <FolderClosed
+                                  className="size-4 shrink-0 opacity-100 group-hover/folder-row:opacity-0"
+                                  aria-hidden
+                                />
+                              )}
                             </span>
                             <span className="truncate">{project.name}</span>
                           </Link>
@@ -736,17 +789,18 @@ export function AppSidebar() {
                                         <DropdownMenuItem
                                           onClick={() =>
                                             dispatch({
-                                              type: "OPEN_RENAME_DASHBOARD",
+                                              type: "OPEN_EDIT_DASHBOARD",
                                               payload: {
                                                 projectId: project.id,
                                                 dashboardId: dashboard.id,
                                                 name: dashboard.name,
+                                                description: dashboard.description || "",
                                               },
                                             })
                                           }
                                         >
                                           <Pencil className="h-4 w-4 mr-2" />
-                                          Rename
+                                          Edit
                                         </DropdownMenuItem>
                                         <DropdownMenuItem
                                           onClick={() =>
@@ -793,46 +847,71 @@ export function AppSidebar() {
             {standaloneDashboards.map((dashboard) => {
               const isActive = location.pathname === `/saved/dashboard/${dashboard.id}`;
               return (
-                <SidebarMenuSubItem key={dashboard.id}>
-                  <div className={SUB_ITEM_ROW_WRAPPER_CLASS}>
-                    <SidebarMenuSubButton
-                      asChild
-                      isActive={isActive}
-                      className="group-hover/subitem:pr-8 group-focus-within/subitem:pr-8"
-                    >
-                      <Link to={`/saved/dashboard/${dashboard.id}`}>
-                        <span className="truncate">{dashboard.name}</span>
-                      </Link>
-                    </SidebarMenuSubButton>
-                    <SubItemOverflowDropdown
-                      tooltip="More options"
-                      srLabel={`More options for ${dashboard.name}`}
-                    >
-                      <DropdownMenuContent side="right" align="start">
-                        <DropdownMenuItem
-                          onClick={() => {
-                            const snapshot = { ...dashboard };
-                            deleteStandaloneDashboard(dashboard.id);
-                            showDeletedObjectToast({
-                              objectType: "Dashboard",
-                              objectName: dashboard.name,
-                              onUndo: () => {
-                                restoreStandaloneDashboard(snapshot);
-                              },
-                            });
-                          }}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </SubItemOverflowDropdown>
-                  </div>
-                </SidebarMenuSubItem>
+                <DraggableDashboardItem key={dashboard.id} dashboard={dashboard} projectId={null}>
+                  <SidebarMenuSubItem>
+                    <div className={SUB_ITEM_ROW_WRAPPER_CLASS}>
+                      <SidebarMenuSubButton
+                        asChild
+                        isActive={isActive}
+                        className="group-hover/subitem:pr-8 group-focus-within/subitem:pr-8"
+                      >
+                        <Link to={`/saved/dashboard/${dashboard.id}`}>
+                          <span className="truncate">{dashboard.name}</span>
+                        </Link>
+                      </SidebarMenuSubButton>
+                      <SubItemOverflowDropdown
+                        tooltip="More options"
+                        srLabel={`More options for ${dashboard.name}`}
+                      >
+                        <DropdownMenuContent side="right" align="start">
+                          <DropdownMenuItem
+                            onClick={() =>
+                              dispatch({
+                                type: "OPEN_EDIT_DASHBOARD",
+                                payload: {
+                                  projectId: null,
+                                  dashboardId: dashboard.id,
+                                  name: dashboard.name,
+                                  description: dashboard.description || "",
+                                },
+                              })
+                            }
+                          >
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              dispatch({
+                                type: "OPEN_MOVE_DASHBOARD",
+                                payload: {
+                                  fromProjectId: null,
+                                  dashboardId: dashboard.id,
+                                  dashboardName: dashboard.name,
+                                },
+                              })
+                            }
+                          >
+                            <FolderInput className="h-4 w-4 mr-2" />
+                            Move to Folder
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => dialogs.handleDeleteDashboard(null, dashboard.id, dashboard.name)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </SubItemOverflowDropdown>
+                    </div>
+                  </SidebarMenuSubItem>
+                </DraggableDashboardItem>
               );
             })}
-          </CollapsibleSidebarSection>
+            </CollapsibleSidebarSection>
+          </DroppableSavedRootWrapper>
         </SidebarContent>
 
         {/* User avatar footer */}
@@ -900,7 +979,8 @@ export function AppSidebar() {
         projects={projects}
         handleCreateProject={dialogs.handleCreateProject}
         handleRenameProject={dialogs.handleRenameProject}
-        handleRenameDashboard={dialogs.handleRenameDashboard}
+        handleEditDashboard={dialogs.handleEditDashboard}
+        handleCreateFolderFromEdit={dialogs.handleCreateFolderFromEdit}
         handleAddDashboard={dialogs.handleAddDashboard}
         handleMoveDashboard={dialogs.handleMoveDashboard}
         handleRenameConversation={dialogs.handleRenameConversation}

@@ -1,22 +1,22 @@
-import type { ComponentProps } from "react";
-import { WidgetAIPromptButton } from "./WidgetAIPromptButton";
+import type { WidgetAIPromptButtonProps } from "./WidgetAIPromptButton";
 import { WidgetOverflowMenu } from "./WidgetOverflowMenu";
 
-export type WidgetAskAIAndOverflowProps = ComponentProps<typeof WidgetAIPromptButton> & {
-  /** When false, only the Ask AI control is shown (e.g. Observability OOTB dashboards). Default true. */
+export type WidgetAskAIAndOverflowProps = WidgetAIPromptButtonProps & {
+  /** When false, no header controls are shown. Default true. */
   showOverflowMenu?: boolean;
 };
 
-/** Ask AI + overflow menu with zero gap between the two triggers (shared dashboard / widget pattern). */
+/** Shared widget header control wrapper (overflow-only; Ask AI removed app-wide). */
 export function WidgetAskAIAndOverflow({
   showOverflowMenu = true,
   ...props
 }: WidgetAskAIAndOverflowProps) {
+  if (!showOverflowMenu) return null;
+
   const { widgetTitle, chartType } = props;
   return (
     <div className="flex shrink-0 items-center gap-0">
-      <WidgetAIPromptButton {...props} />
-      {showOverflowMenu ? <WidgetOverflowMenu widgetTitle={widgetTitle} chartType={chartType} /> : null}
+      <WidgetOverflowMenu widgetTitle={widgetTitle} chartType={chartType} />
     </div>
   );
 }

@@ -99,6 +99,8 @@ interface ConversationDashboardAreaProps {
   dashboardData: DashboardData | null;
   anomalyPrimaryFinding?: PrimaryFindingViewModel | null;
   conversationTitle?: string;
+  anomalyHeadingActionLabel?: string;
+  onAnomalyHeadingAction?: () => void;
   hasCompletedAssistantMessage?: boolean;
   /** When provided, widget AI prompts are sent to this handler instead of the dashboard chat panel */
   onWidgetPrompt?: (
@@ -204,14 +206,20 @@ function LevelBadge({
 function AnomalyPrimaryFindingContent({
   model,
   conversationTitle,
+  anomalyHeadingActionLabel,
+  onAnomalyHeadingAction,
   onRename,
   onDelete,
 }: {
   model: PrimaryFindingViewModel;
   conversationTitle?: string;
+  anomalyHeadingActionLabel?: string;
+  onAnomalyHeadingAction?: () => void;
   onRename?: () => void;
   onDelete?: () => void;
 }) {
+  const showConversationMenu = Boolean(onRename || onDelete);
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       <PageHeader>
@@ -221,28 +229,40 @@ function AnomalyPrimaryFindingContent({
             <p className="mt-1 text-muted-foreground">{model.headingSubtitle}</p>
           </div>
           <div className="ml-auto flex shrink-0 items-center gap-2">
-            <DropdownMenu>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-8 w-8">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">Conversation options</TooltipContent>
-              </Tooltip>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={onRename}>
-                  <Pencil className="mr-2 h-4 w-4" />
-                  Rename
-                </DropdownMenuItem>
-                <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={onDelete}>
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {onAnomalyHeadingAction ? (
+              <Button size="sm" onClick={onAnomalyHeadingAction}>
+                <Sparkles className="mr-2 h-4 w-4" />
+                {anomalyHeadingActionLabel || "Investigate Further"}
+              </Button>
+            ) : null}
+            {showConversationMenu ? (
+              <DropdownMenu>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="icon" className="h-8 w-8">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">Conversation options</TooltipContent>
+                </Tooltip>
+                <DropdownMenuContent align="end">
+                  {onRename ? (
+                    <DropdownMenuItem onClick={onRename}>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Rename
+                    </DropdownMenuItem>
+                  ) : null}
+                  {onDelete ? (
+                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={onDelete}>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </DropdownMenuItem>
+                  ) : null}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null}
           </div>
         </section>
       </PageHeader>
@@ -761,6 +781,7 @@ function DashboardContent({
           dashboardId={dashboard.id}
           trend={chartTrendDataset}
           category={chartCategoryDataset}
+          expandSingletonRows
         />
         </div>
         </div>
@@ -774,6 +795,8 @@ export function ConversationDashboardArea({
   dashboardData,
   anomalyPrimaryFinding,
   conversationTitle,
+  anomalyHeadingActionLabel,
+  onAnomalyHeadingAction,
   hasCompletedAssistantMessage = false,
   onWidgetPrompt,
   onSave,
@@ -815,6 +838,8 @@ export function ConversationDashboardArea({
         <AnomalyPrimaryFindingContent
           model={anomalyPrimaryFinding}
           conversationTitle={conversationTitle}
+          anomalyHeadingActionLabel={anomalyHeadingActionLabel}
+          onAnomalyHeadingAction={onAnomalyHeadingAction}
           onRename={onRename}
           onDelete={onDelete}
         />

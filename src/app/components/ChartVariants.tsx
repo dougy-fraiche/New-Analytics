@@ -135,6 +135,8 @@ export interface DashboardChartGridProps {
   stackedBelowWidth?: number;
   /** Set false on Observability OOTB dashboards; default true (saved / conversation dashboards). */
   showWidgetOverflowMenu?: boolean;
+  /** When true, rows with a single panel are expanded to full-width (3 columns). */
+  expandSingletonRows?: boolean;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -154,6 +156,40 @@ const COL_SPAN_CLASSES: Record<number, string> = {
   2: "col-span-2",
   3: "col-span-3",
 };
+
+function normalizeSingletonRowSpans(spans: (1 | 2 | 3)[]): (1 | 2 | 3)[] {
+  const normalized = [...spans];
+  let rowStart = 0;
+  let rowWidth = 0;
+
+  for (let i = 0; i < spans.length; i++) {
+    const span = spans[i];
+
+    if (rowWidth > 0 && rowWidth + span > 3) {
+      if (i - rowStart === 1) {
+        normalized[rowStart] = 3;
+      }
+      rowStart = i;
+      rowWidth = 0;
+    }
+
+    rowWidth += span;
+
+    if (rowWidth === 3) {
+      if (i - rowStart === 0) {
+        normalized[rowStart] = 3;
+      }
+      rowStart = i + 1;
+      rowWidth = 0;
+    }
+  }
+
+  if (rowStart < spans.length && spans.length - rowStart === 1) {
+    normalized[rowStart] = 3;
+  }
+
+  return normalized;
+}
 
 // Each template is a flat list of col-spans; consecutive spans summing to 3 form rows
 const LAYOUT_TEMPLATES: (1 | 2 | 3)[][] = [
@@ -575,6 +611,7 @@ export function DashboardChartGrid({
   anomalyClassName,
   stackedBelowWidth = 768,
   showWidgetOverflowMenu = true,
+  expandSingletonRows = false,
 }: DashboardChartGridProps) {
   const { ref: containerRef, isBelowBreakpoint: isStacked } =
     useContainerBreakpoint<HTMLDivElement>(stackedBelowWidth);
@@ -590,6 +627,11 @@ export function DashboardChartGrid({
       ? highlightedPanelIndices
       : new Set(highlightedPanelIndices);
   }, [highlightedPanelIndices]);
+
+  const effectiveColSpans = useMemo<(1 | 2 | 3)[]>(() => {
+    const spans = layout.panels.map((panel) => panel.colSpan);
+    return expandSingletonRows ? normalizeSingletonRowSpans(spans) : spans;
+  }, [layout.panels, expandSingletonRows]);
 
   // Memoize chart configs to avoid recalculating on every render
   // (e.g. when chat panel toggles or unrelated state changes)
@@ -611,9 +653,9 @@ export function DashboardChartGrid({
         i
       );
 
-      return { panel, dataset, config };
+      return { panel, dataset, config, effectiveColSpan: effectiveColSpans[i] };
     });
-  }, [layout, trend, category, comparison]);
+  }, [layout, trend, category, comparison, effectiveColSpans]);
 
   const [openAskPanelIndex, setOpenAskPanelIndex] = useState<number | null>(null);
   const [selectedKpiLabel, setSelectedKpiLabel] = useState<string | null>(null);
@@ -641,7 +683,7 @@ export function DashboardChartGrid({
       ref={containerRef}
       className={cn("grid gap-4", isStacked ? "grid-cols-1" : "grid-cols-3")}
     >
-      {panelConfigs.map(({ panel, dataset, config }, i) => {
+      {panelConfigs.map(({ panel, dataset, config, effectiveColSpan }, i) => {
         const isHighlighted = !!highlightedSet?.has(i);
         const chartContent = (
           <Card
@@ -688,7 +730,7 @@ export function DashboardChartGrid({
                   y2Key={dataset.y2Key}
                   config={config}
                   panelId={`${dashboardId}-${i}`}
-                  colSpan={panel.colSpan}
+                  colSpan={effectiveColSpan}
                   onDataSelect={handleChartDataSelect(i)}
                 />
               </div>
@@ -701,7 +743,7 @@ export function DashboardChartGrid({
           </Card>
         );
 
-        const spanClass = isStacked ? "col-span-1" : COL_SPAN_CLASSES[panel.colSpan];
+        const spanClass = isStacked ? "col-span-1" : COL_SPAN_CLASSES[effectiveColSpan];
 
         if (animated) {
           return (

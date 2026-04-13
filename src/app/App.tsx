@@ -87,6 +87,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, Component: ExplorePage },
       { path: "conversation/:conversationId", Component: ExplorePage },
+      { path: "anomaly-investigation/:insightId", Component: ExplorePage },
       { path: "conversations", ...lazyRoute(() => import("./components/AllConversationsPage"), "AllConversationsPage") },
       {
         path: "automation-opportunities/agent/:agentId",

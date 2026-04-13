@@ -52,7 +52,6 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { PageTransition } from "./PageTransition";
 import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
-import { WidgetAIPromptButton } from "./WidgetAIPromptButton";
 import { WidgetAIProvider } from "../contexts/WidgetAIContext";
 import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 
@@ -320,17 +319,9 @@ export function ActionsHistoryPage() {
           <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
             <div
               id="actions-history-insight-completed"
-              className="relative flex min-w-0 flex-col gap-2 rounded-xl border border-primary/40 bg-primary/[0.03] p-4 transition-[box-shadow,border-color,background-color] hover:border-primary/55 hover:bg-primary/[0.05] hover:shadow-md"
+              className="flex min-w-0 flex-col gap-2 rounded-xl border border-primary/40 bg-primary/[0.03] p-4 transition-[box-shadow,border-color,background-color] hover:border-primary/55 hover:bg-primary/[0.05] hover:shadow-md"
             >
-              <div className="absolute right-3 top-3 z-10">
-                <WidgetAIPromptButton
-                  widgetTitle={`History insight: Completed actions (${counts.completed} in this log)`}
-                  chartType="metric"
-                  widgetAnchorId="actions-history-insight-completed"
-                  tooltipLabel="Ask AI about this insight"
-                />
-              </div>
-              <div className="flex min-w-0 flex-col gap-2.5 pr-10">
+              <div className="flex min-w-0 flex-col gap-2.5">
                 <p className="text-xs text-muted-foreground">Completed</p>
                 <p className="text-xl font-semibold leading-6 tracking-tight tabular-nums text-foreground">
                   {counts.completed}
@@ -342,17 +333,9 @@ export function ActionsHistoryPage() {
             </div>
             <div
               id="actions-history-insight-failed-active"
-              className="relative flex min-w-0 flex-col gap-2 rounded-xl border border-primary/40 bg-primary/[0.03] p-4 transition-[box-shadow,border-color,background-color] hover:border-primary/55 hover:bg-primary/[0.05] hover:shadow-md"
+              className="flex min-w-0 flex-col gap-2 rounded-xl border border-primary/40 bg-primary/[0.03] p-4 transition-[box-shadow,border-color,background-color] hover:border-primary/55 hover:bg-primary/[0.05] hover:shadow-md"
             >
-              <div className="absolute right-3 top-3 z-10">
-                <WidgetAIPromptButton
-                  widgetTitle={`History insight: Failed or active actions (${counts.failed + counts.active} in this log)`}
-                  chartType="metric"
-                  widgetAnchorId="actions-history-insight-failed-active"
-                  tooltipLabel="Ask AI about this insight"
-                />
-              </div>
-              <div className="flex min-w-0 flex-col gap-2.5 pr-10">
+              <div className="flex min-w-0 flex-col gap-2.5">
                 <p className="text-xs text-muted-foreground">Failed / active</p>
                 <p className="text-xl font-semibold leading-6 tracking-tight tabular-nums text-foreground">
                   {counts.failed + counts.active}

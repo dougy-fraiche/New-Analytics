@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 
@@ -15,6 +15,7 @@ import {
   generateConversationName,
   generateAIResponse,
   isRecognizableExplorePrompt,
+  topInsightsCards,
   type TopInsightCard,
 } from "../data/explore-data";
 import type { AnomalyInvestigationMeta } from "../types/conversation-types";
@@ -26,15 +27,18 @@ import {
   type StartOpportunityInvestigationChatDetail,
 } from "../lib/start-opportunity-investigation-chat";
 import { normalizeAskAiWidgetTitle } from "../lib/normalize-ask-ai-widget-title";
+import { buildAnomalyPrimaryFindingModel } from "../lib/anomaly-primary-finding";
 
 import { WidgetAIProvider } from "../contexts/WidgetAIContext";
 import { ExplorePhase } from "./ExplorePhase";
 import { ConversationPhase } from "./ConversationPhase";
+import { ConversationDashboardArea } from "./ConversationDashboardArea";
 
 // Two UI phases:
 // "explore"      — hero + input centred + insights cards
 // "conversation" — chat with optional artifact panel on the right
-type Phase = "explore" | "conversation";
+// "anomaly-preview" — direct anomaly page, no conversation created yet
+type Phase = "explore" | "conversation" | "anomaly-preview";
 type ExplorePromptSource = "footer-chip" | "typeahead" | "freeform" | "investigation";
 
 const DRAFT_KEY = "explore-draft-query";
@@ -68,6 +72,22 @@ function buildTopInsightOpportunityInvestigationPrompt(
     `Target location: ${insight.automationTarget.scope} > ${insight.automationTarget.id}.`,
     "Provide readiness assessment, expected impact, implementation approach, key risks, and prioritized next steps.",
   ].join(" ");
+}
+
+function toAnomalyInvestigationMeta(
+  insight: Extract<TopInsightCard, { segment: "anomaly" }>,
+): AnomalyInvestigationMeta {
+  return {
+    source: "top-insight",
+    insight: {
+      id: insight.id,
+      title: insight.title,
+      description: insight.description,
+      detail: insight.detail,
+      severity: insight.severity,
+      timestamp: insight.timestamp,
+    },
+  };
 }
 
 export function ExplorePage() {
@@ -111,6 +131,16 @@ export function ExplorePage() {
 
   // Derive active conversation ID directly from URL params
   const currentConversationId = params.conversationId ?? null;
+  const currentAnomalyInsightId = params.insightId ?? null;
+  const previewAnomalyInsight = useMemo(() => {
+    if (!currentAnomalyInsightId) return null;
+    const id = Number.parseInt(currentAnomalyInsightId, 10);
+    if (!Number.isFinite(id)) return null;
+    return topInsightsCards.find(
+      (card): card is Extract<TopInsightCard, { segment: "anomaly" }> =>
+        card.segment === "anomaly" && card.id === id,
+    ) ?? null;
+  }, [currentAnomalyInsightId]);
 
   // ── Voice input ───────────────────────────────────────────────────
   const voice = useVoiceInput({
@@ -172,9 +202,11 @@ export function ExplorePage() {
 
   useEffect(() => {
     const conversationId = params.conversationId ?? null;
+    const insightId = params.insightId ?? null;
+    const routeKey = conversationId ? `conv:${conversationId}` : insightId ? `anomaly:${insightId}` : "explore";
 
-    if (lastSyncedIdRef.current === conversationId) return;
-    lastSyncedIdRef.current = conversationId;
+    if (lastSyncedIdRef.current === routeKey) return;
+    lastSyncedIdRef.current = routeKey;
 
     if (conversationId) {
       const conversation = conversationsRef.current.find((c) => c.id === conversationId);
@@ -183,12 +215,25 @@ export function ExplorePage() {
         setMessages(conversation.messages ?? []);
         setPhase("conversation");
       }
+    } else if (insightId) {
+      setPhase("anomaly-preview");
+      setConversationName("");
+      setMessages([]);
+      setIsThinking(false);
     } else {
       setPhase("explore");
       setConversationName("");
       setMessages([]);
+      setIsThinking(false);
     }
-  }, [params.conversationId]);
+  }, [params.conversationId, params.insightId]);
+
+  useEffect(() => {
+    if (!currentAnomalyInsightId) return;
+    if (previewAnomalyInsight) return;
+    toast.error("Anomaly insight not found");
+    navigate(ROUTES.EXPLORE, { replace: true });
+  }, [currentAnomalyInsightId, navigate, previewAnomalyInsight]);
 
   /** First user message — same path as sending from the hero {@link ChatInputBar} (new thread + navigate). */
   const sendExploreFirstMessage = useCallback(
@@ -306,21 +351,7 @@ export function ExplorePage() {
   const handleTopInsightInvestigate = useCallback(
     (insight: TopInsightCard) => {
       if (insight.segment === "anomaly") {
-        sendExploreFirstMessage(buildTopInsightInvestigationPrompt(insight), {
-          conversationNameOverride: `Investigation: ${insight.title}`,
-          promptSource: "investigation",
-          anomalyInvestigation: {
-            source: "top-insight",
-            insight: {
-              id: insight.id,
-              title: insight.title,
-              description: insight.description,
-              detail: insight.detail,
-              severity: insight.severity,
-              timestamp: insight.timestamp,
-            },
-          },
-        });
+        navigate(ROUTES.ANOMALY_INVESTIGATION(insight.id));
         return;
       }
 
@@ -359,6 +390,30 @@ export function ExplorePage() {
     },
     [aiAssistantPanelControl, navigate, sendExploreFirstMessage],
   );
+
+  const anomalyPreviewPrimaryFindingModel = useMemo(() => {
+    if (!previewAnomalyInsight) return null;
+
+    const previewMessages: Message[] = [
+      {
+        id: `preview-anomaly-${previewAnomalyInsight.id}`,
+        role: "user",
+        content: buildTopInsightInvestigationPrompt(previewAnomalyInsight),
+        timestamp: new Date(),
+        anomalyInvestigation: toAnomalyInvestigationMeta(previewAnomalyInsight),
+      },
+    ];
+    return buildAnomalyPrimaryFindingModel(previewMessages, { isThinking: false });
+  }, [previewAnomalyInsight]);
+
+  const handleAnomalyPreviewInvestigateFurther = useCallback(() => {
+    if (!previewAnomalyInsight) return;
+    sendExploreFirstMessage(buildTopInsightInvestigationPrompt(previewAnomalyInsight), {
+      conversationNameOverride: previewAnomalyInsight.title,
+      promptSource: "investigation",
+      anomalyInvestigation: toAnomalyInvestigationMeta(previewAnomalyInsight),
+    });
+  }, [previewAnomalyInsight, sendExploreFirstMessage]);
 
   // ── Render ────────────────────────────────────────────────────────
   return (
@@ -412,6 +467,19 @@ export function ExplorePage() {
           inputAnimStartWidth={inputAnimStartWidth}
           containerRef={containerRef}
           assistantPhaseGenRef={exploreAssistantPhaseGenRef}
+        />
+      )}
+
+      {/* ─── PHASE 3: ANOMALY PREVIEW (no conversation yet) ───────── */}
+      {phase === "anomaly-preview" && previewAnomalyInsight && anomalyPreviewPrimaryFindingModel && (
+        <ConversationDashboardArea
+          isThinking={false}
+          dashboardData={null}
+          anomalyPrimaryFinding={anomalyPreviewPrimaryFindingModel}
+          conversationTitle={previewAnomalyInsight.title}
+          hasCompletedAssistantMessage
+          anomalyHeadingActionLabel="Investigate Further"
+          onAnomalyHeadingAction={handleAnomalyPreviewInvestigateFurther}
         />
       )}
     </div>

@@ -29,7 +29,6 @@ import {
 } from "../data/recommended-actions";
 import { RecommendedActionSheet } from "./RecommendedActionSheet";
 import type { DashboardData } from "../contexts/ConversationContext";
-import { WidgetAIPromptButton } from "./WidgetAIPromptButton";
 import { cn } from "./ui/utils";
 import { useContainerBreakpoint } from "../hooks/useContainerBreakpoint";
 
@@ -971,13 +970,6 @@ export function DashboardAISummary({
                                         onClick={(e) => e.stopPropagation()}
                                         onPointerDown={(e) => e.stopPropagation()}
                                       >
-                                        <WidgetAIPromptButton
-                                          widgetTitle={`Action: ${action.title}`}
-                                          chartType="action"
-                                          widgetAnchorId={`ai-summary-action-${dashboardId}-${action.id}`}
-                                          tooltipLabel="Ask AI about this action"
-                                          tooltipSide="bottom"
-                                        />
                                         <DropdownMenu>
                                           <DropdownMenuTrigger asChild>
                                             <Button variant="ghost" size="icon-xs">

@@ -16,20 +16,21 @@ interface RenameConversationPayload {
   name: string;
 }
 
-interface RenameDashboardPayload {
-  projectId: string;
+interface EditDashboardPayload {
+  projectId: string | null;
   dashboardId: string;
   name: string;
+  description: string;
 }
 
 interface MoveDashboardPayload {
-  fromProjectId: string;
+  fromProjectId: string | null;
   dashboardId: string;
   dashboardName: string;
 }
 
 interface DeleteDashboardPayload {
-  projectId: string;
+  projectId: string | null;
   dashboardId: string;
   dashboardName: string;
 }
@@ -50,7 +51,7 @@ export interface SidebarDialogState {
   newProjectName: string;
   renameDialog: RenameProjectPayload | null;
   renameConversationDialog: RenameConversationPayload | null;
-  renameDashboardDialog: RenameDashboardPayload | null;
+  editDashboardDialog: EditDashboardPayload | null;
   moveDashboardDialog: MoveDashboardPayload | null;
   moveTargetProjectId: string;
   deleteDashboardConfirm: DeleteDashboardPayload | null;
@@ -72,9 +73,8 @@ type DialogAction =
   | { type: "OPEN_RENAME_CONVERSATION"; payload: RenameConversationPayload }
   | { type: "CLOSE_RENAME_CONVERSATION" }
   | { type: "UPDATE_RENAME_CONVERSATION_NAME"; name: string }
-  | { type: "OPEN_RENAME_DASHBOARD"; payload: RenameDashboardPayload }
-  | { type: "CLOSE_RENAME_DASHBOARD" }
-  | { type: "UPDATE_RENAME_DASHBOARD_NAME"; name: string }
+  | { type: "OPEN_EDIT_DASHBOARD"; payload: EditDashboardPayload }
+  | { type: "CLOSE_EDIT_DASHBOARD" }
   | { type: "OPEN_MOVE_DASHBOARD"; payload: MoveDashboardPayload }
   | { type: "CLOSE_MOVE_DASHBOARD" }
   | { type: "SET_MOVE_TARGET"; projectId: string }
@@ -95,7 +95,7 @@ const initialState: SidebarDialogState = {
   newProjectName: "",
   renameDialog: null,
   renameConversationDialog: null,
-  renameDashboardDialog: null,
+  editDashboardDialog: null,
   moveDashboardDialog: null,
   moveTargetProjectId: "",
   deleteDashboardConfirm: null,
@@ -129,14 +129,10 @@ function dialogReducer(state: SidebarDialogState, action: DialogAction): Sidebar
       return state.renameConversationDialog
         ? { ...state, renameConversationDialog: { ...state.renameConversationDialog, name: action.name } }
         : state;
-    case "OPEN_RENAME_DASHBOARD":
-      return { ...state, renameDashboardDialog: action.payload };
-    case "CLOSE_RENAME_DASHBOARD":
-      return { ...state, renameDashboardDialog: null };
-    case "UPDATE_RENAME_DASHBOARD_NAME":
-      return state.renameDashboardDialog
-        ? { ...state, renameDashboardDialog: { ...state.renameDashboardDialog, name: action.name } }
-        : state;
+    case "OPEN_EDIT_DASHBOARD":
+      return { ...state, editDashboardDialog: action.payload };
+    case "CLOSE_EDIT_DASHBOARD":
+      return { ...state, editDashboardDialog: null };
     case "OPEN_MOVE_DASHBOARD":
       return { ...state, moveDashboardDialog: action.payload, moveTargetProjectId: "" };
     case "CLOSE_MOVE_DASHBOARD":
@@ -181,11 +177,17 @@ export function useSidebarDialogs(options?: UseSidebarDialogsOptions) {
     renameProject,
     deleteProject,
     addDashboardToProject,
-    renameDashboardInProject,
+    updateDashboardInProject,
     deleteDashboardFromProject,
     moveDashboardToProject,
     restoreProject,
     restoreDashboardToProject,
+    standaloneDashboards,
+    updateStandaloneDashboard,
+    deleteStandaloneDashboard,
+    restoreStandaloneDashboard,
+    moveStandaloneToFolder,
+    moveDashboardToStandalone,
   } = useProjects();
   const { conversations, renameConversation, deleteConversation, restoreConversation } = useConversations();
 
@@ -255,7 +257,7 @@ export function useSidebarDialogs(options?: UseSidebarDialogsOptions) {
     dispatch({ type: "CLOSE_DELETE_FOLDER" });
   };
 
-  const handleDeleteDashboard = (projectId: string, dashboardId: string, dashboardName: string) => {
+  const handleDeleteDashboard = (projectId: string | null, dashboardId: string, dashboardName: string) => {
     dispatch({
       type: "OPEN_DELETE_DASHBOARD",
       payload: { projectId, dashboardId, dashboardName },
@@ -265,15 +267,27 @@ export function useSidebarDialogs(options?: UseSidebarDialogsOptions) {
   const confirmDeleteDashboard = () => {
     if (!state.deleteDashboardConfirm) return;
     const { projectId, dashboardId, dashboardName } = state.deleteDashboardConfirm;
-    const project = projects.find((p) => p.id === projectId);
-    const dashboardSnapshot = project?.dashboards.find((d) => d.id === dashboardId);
-    deleteDashboardFromProject(projectId, dashboardId);
+    const project = projectId ? projects.find((p) => p.id === projectId) : undefined;
+    const dashboardSnapshot = project
+      ? project.dashboards.find((d) => d.id === dashboardId)
+      : standaloneDashboards.find((d) => d.id === dashboardId);
+
+    if (projectId) {
+      deleteDashboardFromProject(projectId, dashboardId);
+    } else {
+      deleteStandaloneDashboard(dashboardId);
+    }
+
     showDeletedObjectToast({
       objectType: "Dashboard",
       objectName: dashboardName,
       onUndo: dashboardSnapshot
         ? () => {
-            restoreDashboardToProject(projectId, dashboardSnapshot);
+            if (projectId) {
+              restoreDashboardToProject(projectId, dashboardSnapshot);
+            } else {
+              restoreStandaloneDashboard(dashboardSnapshot);
+            }
           }
         : undefined,
     });
@@ -309,18 +323,59 @@ export function useSidebarDialogs(options?: UseSidebarDialogsOptions) {
     dispatch({ type: "CLOSE_DELETE_CONVERSATION" });
   };
 
-  const handleRenameDashboard = () => {
-    if (state.renameDashboardDialog && state.renameDashboardDialog.name.trim()) {
-      renameDashboardInProject(
-        state.renameDashboardDialog.projectId,
-        state.renameDashboardDialog.dashboardId,
-        state.renameDashboardDialog.name
-      );
-      toast.success("Dashboard renamed", {
-        description: `Renamed to "${state.renameDashboardDialog.name.trim()}".`,
+  const handleEditDashboard = (values: {
+    name: string;
+    description: string;
+    locationProjectId: string | null;
+  }) => {
+    if (!state.editDashboardDialog || !values.name.trim()) return;
+
+    const sourceProjectId = state.editDashboardDialog.projectId;
+    const description = values.description || undefined;
+
+    if (sourceProjectId) {
+      updateDashboardInProject(sourceProjectId, state.editDashboardDialog.dashboardId, {
+        name: values.name,
+        description,
       });
-      dispatch({ type: "CLOSE_RENAME_DASHBOARD" });
+    } else {
+      updateStandaloneDashboard(state.editDashboardDialog.dashboardId, {
+        name: values.name,
+        description,
+      });
     }
+
+    if (sourceProjectId && values.locationProjectId === null) {
+      moveDashboardToStandalone(sourceProjectId, state.editDashboardDialog.dashboardId);
+    } else if (
+      sourceProjectId &&
+      values.locationProjectId &&
+      values.locationProjectId !== sourceProjectId
+    ) {
+      moveDashboardToProject(
+        sourceProjectId,
+        state.editDashboardDialog.dashboardId,
+        values.locationProjectId,
+      );
+    } else if (!sourceProjectId && values.locationProjectId) {
+      moveStandaloneToFolder(state.editDashboardDialog.dashboardId, values.locationProjectId);
+    }
+
+    toast.success("Dashboard updated", {
+      description: `"${values.name}" has been updated.`,
+    });
+    dispatch({ type: "CLOSE_EDIT_DASHBOARD" });
+  };
+
+  const handleCreateFolderFromEdit = (folderName: string) => {
+    const name = folderName.trim();
+    if (!name) return null;
+    const project = addProject(name);
+    options?.onFolderCreated?.(project);
+    toast.success("Folder created", {
+      description: `"${name}" has been created.`,
+    });
+    return project;
   };
 
   const handleAddDashboard = () => {
@@ -335,11 +390,18 @@ export function useSidebarDialogs(options?: UseSidebarDialogsOptions) {
 
   const handleMoveDashboard = () => {
     if (state.moveDashboardDialog && state.moveTargetProjectId) {
-      moveDashboardToProject(
-        state.moveDashboardDialog.fromProjectId,
-        state.moveDashboardDialog.dashboardId,
-        state.moveTargetProjectId
-      );
+      if (state.moveDashboardDialog.fromProjectId) {
+        moveDashboardToProject(
+          state.moveDashboardDialog.fromProjectId,
+          state.moveDashboardDialog.dashboardId,
+          state.moveTargetProjectId
+        );
+      } else {
+        moveStandaloneToFolder(
+          state.moveDashboardDialog.dashboardId,
+          state.moveTargetProjectId
+        );
+      }
       toast.success("Dashboard moved", {
         description: `"${state.moveDashboardDialog.dashboardName}" has been moved to "${projects.find((p) => p.id === state.moveTargetProjectId)?.name}".`,
       });
@@ -372,7 +434,8 @@ export function useSidebarDialogs(options?: UseSidebarDialogsOptions) {
     confirmDeleteConversation,
     handleDeleteDashboard,
     confirmDeleteDashboard,
-    handleRenameDashboard,
+    handleEditDashboard,
+    handleCreateFolderFromEdit,
     handleAddDashboard,
     handleMoveDashboard,
     handleRenameConversation,

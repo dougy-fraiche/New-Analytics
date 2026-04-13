@@ -43,8 +43,6 @@ import {
 import { PageTransition } from "./PageTransition";
 import { WidgetAIProvider } from "../contexts/WidgetAIContext";
 import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
-import { WidgetAIPromptButton } from "./WidgetAIPromptButton";
-import { WidgetAIExplanation } from "./WidgetAIExplanation";
 import {
   automationAnalyzedPeriodStats,
   automationSubtopicsTabPeriodStats,
@@ -80,10 +78,6 @@ const SUBTOPICS_OPPORTUNITIES_PAGE_SIZE = 20;
 /** Matches dashboard KPI / chart widget cards (DashboardPage, ChartVariants). */
 const AUTOMATION_CARD_HOVER =
   "group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30";
-
-/** Match overflow trigger (`h-9 w-9`, `size-4` icon). */
-const AUTOMATION_ASK_AI_TRIGGER_CLASS =
-  "size-9 rounded-md [&_svg:not([class*='size-'])]:size-4";
 
 /** 1rem vertical rhythm between header, body, and footer on Top Opportunities cards. */
 const TOP_OPPORTUNITY_CARD_GAP = "gap-4";
@@ -154,15 +148,7 @@ function AnalyzedPeriodSection({
           {stats.map((stat) => (
             <Card key={stat.label} className={cn(AUTOMATION_CARD_HOVER)}>
               <CardContent className="space-y-1.5 p-4">
-                <div className="flex items-start gap-2">
-                  <p className="min-w-0 flex-1 text-sm text-muted-foreground">{stat.label}</p>
-                  <WidgetAIPromptButton
-                    widgetTitle={`Analyzed Period • ${stat.label}`}
-                    chartType="metric"
-                    tooltipLabel="Ask AI about this metric"
-                    triggerClassName="size-8 rounded-md [&_svg:not([class*='size-'])]:size-3.5"
-                  />
-                </div>
+                <p className="text-sm text-muted-foreground">{stat.label}</p>
                 <p className="text-xl font-semibold tracking-tight tabular-nums">{stat.value}</p>
               </CardContent>
             </Card>
@@ -460,18 +446,10 @@ function AutomationTopicsTabTopicCard({
               sourceKey={`${agentTabKey}:${row.id}`}
               scopeTitle={row.title}
             />
-            <div className="flex items-center gap-0">
-              <WidgetAIPromptButton
-                widgetTitle={row.title}
-                chartType="bar"
-                tooltipLabel="Ask AI about this opportunity"
-                triggerClassName={AUTOMATION_ASK_AI_TRIGGER_CLASS}
-              />
-              <OverflowActionsMenu
-                categoryTitle={row.sampleInteractionsLabel}
-                onOpenSampleInteractions={onOpenSampleInteractions}
-              />
-            </div>
+            <OverflowActionsMenu
+              categoryTitle={row.sampleInteractionsLabel}
+              onOpenSampleInteractions={onOpenSampleInteractions}
+            />
           </div>
         </div>
       </CardHeader>
@@ -488,7 +466,6 @@ function AutomationTopicsTabTopicCard({
             />
           </div>
         ) : null}
-        <WidgetAIExplanation widgetTitle={row.title} chartType="bar" />
       </CardContent>
 
       <CardFooter>
@@ -552,18 +529,10 @@ function TopOpportunityCard({
               sourceKey={`category:${category.id}`}
               scopeTitle={category.title}
             />
-            <div className="flex items-center gap-0">
-              <WidgetAIPromptButton
-                widgetTitle={category.title}
-                chartType="bar"
-                tooltipLabel="Ask AI about this opportunity"
-                triggerClassName={AUTOMATION_ASK_AI_TRIGGER_CLASS}
-              />
-              <OverflowActionsMenu
-                categoryTitle={category.title}
-                onOpenSampleInteractions={onOpenSampleInteractions}
-              />
-            </div>
+            <OverflowActionsMenu
+              categoryTitle={category.title}
+              onOpenSampleInteractions={onOpenSampleInteractions}
+            />
           </div>
         </div>
       </CardHeader>
@@ -625,7 +594,6 @@ function TopOpportunityCard({
               : null}
           </div>
         ) : null}
-        <WidgetAIExplanation widgetTitle={category.title} chartType="bar" />
       </CardContent>
 
       <CardFooter>

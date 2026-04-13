@@ -40,27 +40,10 @@ import {
 } from "./ui/select";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import { cn } from "./ui/utils";
-import { WidgetAIPromptButton } from "./WidgetAIPromptButton";
 import { ScrollArea } from "./ui/scroll-area";
 
 const PROJECT_OPTIONS = ["Project Alpha", "Project Atlas", "Project Nova"] as const;
 const AGENT_PAGE_OOTB_ID = "automation-opportunities";
-const AGENT_PAGE_ASK_AI_TRIGGER_CLASS =
-  "size-9 rounded-md [&_svg:not([class*='size-'])]:size-4";
-const AGENT_PAGE_ASK_AI_PROMPTS = [
-  "Rewrite description",
-  "Rewrite instruction",
-] as const;
-const AGENT_PAGE_REWRITE_PROMPT_SOURCE_OVERRIDES = {
-  "Rewrite description": {
-    widgetTitle: "Job Description",
-    chartType: "bot",
-  },
-  "Rewrite instruction": {
-    widgetTitle: "Job Instructions",
-    chartType: "bot",
-  },
-} as const;
 
 const UUID_V4_OR_V7_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[147][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -486,17 +469,6 @@ export function AutomationOpportunitiesAgentPage() {
                             <CardTitle className="flex-1 text-base">
                               Descriptions
                             </CardTitle>
-                            <WidgetAIPromptButton
-                              widgetTitle={`${selectedJob.name} · Descriptions`}
-                              chartType="metric"
-                              tooltipLabel="Ask AI about this section"
-                              triggerClassName={AGENT_PAGE_ASK_AI_TRIGGER_CLASS}
-                              suggestedPrompts={[...AGENT_PAGE_ASK_AI_PROMPTS]}
-                              suggestedPromptSourceOverrides={
-                                AGENT_PAGE_REWRITE_PROMPT_SOURCE_OVERRIDES
-                              }
-                              onSuggestedPromptSelect={handleSuggestedPromptSelect}
-                            />
                           </div>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -538,9 +510,7 @@ export function AutomationOpportunitiesAgentPage() {
                           key={tool.id}
                           tool={tool}
                           index={index}
-                          selectedJobName={selectedJob.name}
                           onToolFieldChange={updateToolField}
-                          onSuggestedPromptSelect={handleSuggestedPromptSelect}
                         />
                       ))}
                     </div>
@@ -603,13 +573,10 @@ function LoadingTextareaSkeleton() {
 function ToolSection({
   tool,
   index,
-  selectedJobName,
   onToolFieldChange,
-  onSuggestedPromptSelect,
 }: {
   tool: AgentToolDraft;
   index: number;
-  selectedJobName: string;
   onToolFieldChange: (
     toolId: string,
     field:
@@ -620,7 +587,6 @@ function ToolSection({
       | "parameters",
     value: string,
   ) => void;
-  onSuggestedPromptSelect?: (prompt: string) => void;
 }) {
   return (
     <Card className="border-border/80 bg-background">
@@ -629,17 +595,6 @@ function ToolSection({
           <CardTitle className="flex-1 text-base">
             Tools {index + 1}
           </CardTitle>
-          <WidgetAIPromptButton
-            widgetTitle={`${selectedJobName} · Tools ${index + 1} (${tool.name})`}
-            chartType="metric"
-            tooltipLabel="Ask AI about this tool"
-            triggerClassName={AGENT_PAGE_ASK_AI_TRIGGER_CLASS}
-            suggestedPrompts={[...AGENT_PAGE_ASK_AI_PROMPTS]}
-            suggestedPromptSourceOverrides={
-              AGENT_PAGE_REWRITE_PROMPT_SOURCE_OVERRIDES
-            }
-            onSuggestedPromptSelect={onSuggestedPromptSelect}
-          />
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

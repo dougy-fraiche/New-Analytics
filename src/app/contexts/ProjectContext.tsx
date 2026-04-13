@@ -23,6 +23,11 @@ interface ProjectContextType {
   renameProject: (projectId: string, newName: string) => void;
   deleteProject: (projectId: string) => void;
   addDashboardToProject: (projectId: string, dashboardName: string, sourceOotbId?: string, description?: string) => Dashboard;
+  updateDashboardInProject: (
+    projectId: string,
+    dashboardId: string,
+    updates: Partial<Pick<Dashboard, "name" | "description">>,
+  ) => void;
   renameDashboardInProject: (projectId: string, dashboardId: string, newName: string) => void;
   deleteDashboardFromProject: (projectId: string, dashboardId: string) => void;
   moveDashboardToProject: (fromProjectId: string, dashboardId: string, toProjectId: string) => void;
@@ -30,6 +35,10 @@ interface ProjectContextType {
   restoreDashboardToProject: (projectId: string, dashboard: Dashboard) => void;
   standaloneDashboards: Dashboard[];
   addStandaloneDashboard: (dashboardName: string, sourceOotbId?: string, description?: string) => Dashboard;
+  updateStandaloneDashboard: (
+    dashboardId: string,
+    updates: Partial<Pick<Dashboard, "name" | "description">>,
+  ) => void;
   renameStandaloneDashboard: (dashboardId: string, newName: string) => void;
   deleteStandaloneDashboard: (dashboardId: string) => void;
   restoreStandaloneDashboard: (dashboard: Dashboard) => void;
@@ -108,15 +117,28 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     return newDashboard;
   }, []);
 
-  const renameDashboardInProject = useCallback((projectId: string, dashboardId: string, newName: string) => {
+  const updateDashboardInProject = useCallback((
+    projectId: string,
+    dashboardId: string,
+    updates: Partial<Pick<Dashboard, "name" | "description">>,
+  ) => {
     setProjects((prev) =>
       prev.map((p) =>
         p.id === projectId
-          ? { ...p, dashboards: p.dashboards.map((d) => d.id === dashboardId ? { ...d, name: newName } : d) }
+          ? {
+              ...p,
+              dashboards: p.dashboards.map((d) =>
+                d.id === dashboardId ? { ...d, ...updates } : d,
+              ),
+            }
           : p
       )
     );
   }, []);
+
+  const renameDashboardInProject = useCallback((projectId: string, dashboardId: string, newName: string) => {
+    updateDashboardInProject(projectId, dashboardId, { name: newName });
+  }, [updateDashboardInProject]);
 
   const deleteDashboardFromProject = useCallback((projectId: string, dashboardId: string) => {
     setProjects((prev) =>
@@ -175,11 +197,18 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     return newDashboard;
   }, []);
 
-  const renameStandaloneDashboard = useCallback((dashboardId: string, newName: string) => {
+  const updateStandaloneDashboard = useCallback((
+    dashboardId: string,
+    updates: Partial<Pick<Dashboard, "name" | "description">>,
+  ) => {
     setStandaloneDashboards((prev) =>
-      prev.map((d) => (d.id === dashboardId ? { ...d, name: newName } : d))
+      prev.map((d) => (d.id === dashboardId ? { ...d, ...updates } : d))
     );
   }, []);
+
+  const renameStandaloneDashboard = useCallback((dashboardId: string, newName: string) => {
+    updateStandaloneDashboard(dashboardId, { name: newName });
+  }, [updateStandaloneDashboard]);
 
   const deleteStandaloneDashboard = useCallback((dashboardId: string) => {
     setStandaloneDashboards((prev) => prev.filter((d) => d.id !== dashboardId));
@@ -248,6 +277,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       renameProject,
       deleteProject,
       addDashboardToProject,
+      updateDashboardInProject,
       renameDashboardInProject,
       deleteDashboardFromProject,
       moveDashboardToProject,
@@ -255,6 +285,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       restoreDashboardToProject,
       standaloneDashboards,
       addStandaloneDashboard,
+      updateStandaloneDashboard,
       renameStandaloneDashboard,
       deleteStandaloneDashboard,
       restoreStandaloneDashboard,
@@ -267,6 +298,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       renameProject,
       deleteProject,
       addDashboardToProject,
+      updateDashboardInProject,
       renameDashboardInProject,
       deleteDashboardFromProject,
       moveDashboardToProject,
@@ -274,6 +306,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       restoreDashboardToProject,
       standaloneDashboards,
       addStandaloneDashboard,
+      updateStandaloneDashboard,
       renameStandaloneDashboard,
       deleteStandaloneDashboard,
       restoreStandaloneDashboard,

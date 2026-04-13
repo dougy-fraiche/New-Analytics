@@ -2,6 +2,7 @@
 export const ROUTES = {
   EXPLORE: "/",
   CONVERSATION: (id: string) => `/conversation/${id}`,
+  ANOMALY_INVESTIGATION: (insightId: string | number) => `/anomaly-investigation/${insightId}`,
   CONVERSATIONS: "/conversations",
   AUTOMATION_OPPORTUNITIES: "/automation-opportunities",
   /** Stable agent id (UUID) as the path segment. */

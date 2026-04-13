@@ -19,6 +19,7 @@ import {
 import { DeleteDashboardDialog } from "./DeleteDashboardDialog";
 import { DeleteFolderDialog } from "./DeleteFolderDialog";
 import { DeleteConversationDialog } from "./DeleteConversationDialog";
+import { EditDashboardDialog } from "./EditDashboardDialog";
 import type { SidebarDialogState } from "../hooks/useSidebarDialogs";
 import type { Project } from "../contexts/ProjectContext";
 
@@ -28,7 +29,12 @@ interface SidebarDialogsProps {
   projects: Project[];
   handleCreateProject: () => void;
   handleRenameProject: () => void;
-  handleRenameDashboard: () => void;
+  handleEditDashboard: (values: {
+    name: string;
+    description: string;
+    locationProjectId: string | null;
+  }) => void;
+  handleCreateFolderFromEdit: (folderName: string) => Project | null;
   handleAddDashboard: () => void;
   handleMoveDashboard: () => void;
   handleRenameConversation: () => void;
@@ -43,7 +49,8 @@ export function SidebarDialogs({
   projects,
   handleCreateProject,
   handleRenameProject,
-  handleRenameDashboard,
+  handleEditDashboard,
+  handleCreateFolderFromEdit,
   handleAddDashboard,
   handleMoveDashboard,
   handleRenameConversation,
@@ -127,39 +134,18 @@ export function SidebarDialogs({
         </DialogContent>
       </Dialog>
 
-      {/* Rename Dashboard Dialog */}
-      <Dialog
-        open={!!state.renameDashboardDialog}
-        onOpenChange={() => dispatch({ type: "CLOSE_RENAME_DASHBOARD" })}
-      >
-        <DialogContent className="sm:max-w-[25rem]">
-          <DialogHeader>
-            <DialogTitle>Rename Dashboard</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-2 py-4">
-            <Label className="sr-only" htmlFor="rename-dashboard">Dashboard Name</Label>
-            <Input
-              id="rename-dashboard"
-              value={state.renameDashboardDialog?.name || ""}
-              onChange={(e) =>
-                dispatch({ type: "UPDATE_RENAME_DASHBOARD_NAME", name: e.target.value })
-              }
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleRenameDashboard();
-              }}
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => dispatch({ type: "CLOSE_RENAME_DASHBOARD" })}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleRenameDashboard}>Rename</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <EditDashboardDialog
+        open={!!state.editDashboardDialog}
+        onOpenChange={(open) => {
+          if (!open) dispatch({ type: "CLOSE_EDIT_DASHBOARD" });
+        }}
+        initialName={state.editDashboardDialog?.name || ""}
+        initialDescription={state.editDashboardDialog?.description || ""}
+        initialLocationProjectId={state.editDashboardDialog?.projectId ?? null}
+        projects={projects.map((project) => ({ id: project.id, name: project.name }))}
+        onCreateFolder={(folderName) => handleCreateFolderFromEdit(folderName)}
+        onSubmit={handleEditDashboard}
+      />
 
       {/* Add Dashboard Dialog */}
       <Dialog

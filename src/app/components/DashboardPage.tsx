@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   RotateCcw,
   Download,
@@ -38,7 +38,6 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { Separator } from "./ui/separator";
 import { useProjects } from "../contexts/ProjectContext";
 import { DashboardChartGrid } from "./ChartVariants";
 import { toast } from "sonner";
@@ -71,20 +70,12 @@ import {
 } from "../data/dashboard-filters";
 import { LabeledFilterInline, LabeledSelectValue } from "./HeaderFilters";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "./ui/dialog";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { getDashboardAnomalyHighlights } from "../lib/dashboard-anomaly-highlights";
 import { useContainerBreakpoint } from "../hooks/useContainerBreakpoint";
 import { cn } from "./ui/utils";
 import { showDeletedObjectToast } from "../lib/object-deletion-toast";
+import { EditDashboardDialog } from "./EditDashboardDialog";
 
 // Build OOTB meta lookup
 const dashboardMeta: Record<string, { title: string; description: string }> = {};
@@ -170,11 +161,23 @@ const tableData = [
 
 export function DashboardPage() {
   const { dashboardId, projectId } = useParams();
-  const { projects, renameDashboardInProject, deleteDashboardFromProject, restoreDashboardToProject, standaloneDashboards, renameStandaloneDashboard, deleteStandaloneDashboard, restoreStandaloneDashboard } = useProjects();
+  const {
+    projects,
+    addProject,
+    updateDashboardInProject,
+    deleteDashboardFromProject,
+    restoreDashboardToProject,
+    standaloneDashboards,
+    updateStandaloneDashboard,
+    deleteStandaloneDashboard,
+    restoreStandaloneDashboard,
+    moveDashboardToProject,
+    moveDashboardToStandalone,
+    moveStandaloneToFolder,
+  } = useProjects();
 
-  // Rename state
-  const [showRenameDialog, setShowRenameDialog] = useState(false);
-  const [renameValue, setRenameValue] = useState("");
+  // Edit state
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
   const [dateRange, setDateRange] = useState<DateRangeOption>(DEFAULT_FILTERS.dateRange);
@@ -234,36 +237,8 @@ export function DashboardPage() {
       }
     : { title: "Dashboard", description: "" };
 
-  // Sync rename value when title changes externally
-  useEffect(() => {
-    if (!showRenameDialog) {
-      setRenameValue(meta.title);
-    }
-  }, [meta.title, showRenameDialog]);
-
-  const handleStartRename = () => {
-    setRenameValue(meta.title);
-    setShowRenameDialog(true);
-  };
-
-  const handleConfirmRename = () => {
-    const trimmed = renameValue.trim();
-    if (trimmed && trimmed !== meta.title && dashboardId) {
-      if (projectId) {
-        renameDashboardInProject(projectId, dashboardId, trimmed);
-      } else if (isStandaloneDashboard) {
-        renameStandaloneDashboard(dashboardId, trimmed);
-      }
-      toast.success("Dashboard renamed", {
-        description: `Renamed to "${trimmed}".`,
-      });
-    }
-    setShowRenameDialog(false);
-  };
-
-  const handleCancelRename = () => {
-    setRenameValue(meta.title);
-    setShowRenameDialog(false);
+  const handleStartEdit = () => {
+    setShowEditDialog(true);
   };
 
   // For OOTB dashboards, the dashboardId IS the ootb type.
@@ -316,6 +291,59 @@ export function DashboardPage() {
     setShowDeleteConfirm(false);
   };
 
+  const handleConfirmEdit = (values: {
+    name: string;
+    description: string;
+    locationProjectId: string | null;
+  }) => {
+    if (!dashboardId || !isSavedDashboard) return;
+
+    const sourceProjectId = projectId ?? null;
+    const nextDescription = values.description || undefined;
+
+    if (sourceProjectId) {
+      updateDashboardInProject(sourceProjectId, dashboardId, {
+        name: values.name,
+        description: nextDescription,
+      });
+    } else {
+      updateStandaloneDashboard(dashboardId, {
+        name: values.name,
+        description: nextDescription,
+      });
+    }
+
+    let destinationProjectId = sourceProjectId;
+
+    if (sourceProjectId && values.locationProjectId === null) {
+      moveDashboardToStandalone(sourceProjectId, dashboardId);
+      destinationProjectId = null;
+    } else if (
+      sourceProjectId &&
+      values.locationProjectId &&
+      values.locationProjectId !== sourceProjectId
+    ) {
+      moveDashboardToProject(sourceProjectId, dashboardId, values.locationProjectId);
+      destinationProjectId = values.locationProjectId;
+    } else if (!sourceProjectId && values.locationProjectId) {
+      moveStandaloneToFolder(dashboardId, values.locationProjectId);
+      destinationProjectId = values.locationProjectId;
+    }
+
+    toast.success("Dashboard updated", {
+      description: `"${values.name}" has been updated.`,
+    });
+    setShowEditDialog(false);
+
+    if (destinationProjectId !== sourceProjectId) {
+      navigate(
+        destinationProjectId
+          ? `/project/${destinationProjectId}/dashboard/${dashboardId}`
+          : `/saved/dashboard/${dashboardId}`,
+      );
+    }
+  };
+
   return (
     <WidgetAIProvider persistKey={GLOBAL_AI_ASSISTANT_KEY} ootbTypeId={chatSourceOotbId}>
       <div className="flex flex-col h-full min-h-0">
@@ -336,14 +364,26 @@ export function DashboardPage() {
                     <TooltipContent side="bottom">Dashboard options</TooltipContent>
                   </Tooltip>
                   <DropdownMenuContent align="end">
-                  <DropdownMenuItem>
-                    <Download className="h-4 w-4 mr-2" />
-                    Export
-                  </DropdownMenuItem>
+                  {!isSavedDashboard && (
+                    <>
+                      <DropdownMenuItem>
+                        <Download className="h-4 w-4 mr-2" />
+                        Export
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        <Settings className="h-4 w-4 mr-2" />
+                        Edit Settings
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        <Clock className="h-4 w-4 mr-2" />
+                        Schedule Report
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   {isSavedDashboard && (
-                    <DropdownMenuItem onClick={handleStartRename}>
+                    <DropdownMenuItem onClick={handleStartEdit}>
                       <Pencil className="h-4 w-4 mr-2" />
-                      Rename
+                      Edit
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem
@@ -351,14 +391,6 @@ export function DashboardPage() {
                   >
                     <Copy className="h-4 w-4 mr-2" />
                     Duplicate
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Settings className="h-4 w-4 mr-2" />
-                    Edit Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Clock className="h-4 w-4 mr-2" />
-                    Schedule Report
                   </DropdownMenuItem>
                   {isSavedDashboard && (
                     <DropdownMenuItem
@@ -609,6 +641,7 @@ export function DashboardPage() {
             }}
             highlightedPanelIndices={highlightedChartPanels}
             anomalyClassName={anomalyCardClass}
+            expandSingletonRows
           />
 
           {/* Data Table */}
@@ -650,44 +683,22 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {/* Rename Dashboard Dialog */}
-      <Dialog open={showRenameDialog} onOpenChange={setShowRenameDialog}>
-        <DialogContent className="sm:max-w-[25rem]">
-          <DialogHeader>
-            <DialogTitle>Rename Dashboard</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Label className="sr-only" htmlFor="dashboard-rename-name">Name</Label>
-            <Input
-              id="dashboard-rename-name"
-              value={renameValue}
-              onChange={(e) => setRenameValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && renameValue.trim()) {
-                  handleConfirmRename();
-                }
-              }}
-              placeholder="Dashboard name"
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleCancelRename}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              disabled={!renameValue.trim()}
-              onClick={handleConfirmRename}
-            >
-              Rename
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {isSavedDashboard && (
+        <EditDashboardDialog
+          open={showEditDialog}
+          onOpenChange={setShowEditDialog}
+          initialName={meta.title}
+          initialDescription={customDashboardDescription || ""}
+          initialLocationProjectId={projectId ?? null}
+          projects={projects.map((project) => ({ id: project.id, name: project.name }))}
+          onCreateFolder={(folderName) => {
+            const trimmed = folderName.trim();
+            if (!trimmed) return null;
+            return addProject(trimmed);
+          }}
+          onSubmit={handleConfirmEdit}
+        />
+      )}
 
       {/* Delete Dashboard Confirmation Dialog */}
       <DeleteDashboardDialog
@@ -702,6 +713,8 @@ export function DashboardPage() {
         open={showDuplicateDialog}
         onOpenChange={(open) => { if (!open) setShowDuplicateDialog(false); }}
         dashboardName={meta.title}
+        dashboardDescription={isSavedDashboard ? customDashboardDescription : meta.description}
+        initialLocationProjectId={isSavedDashboard ? projectId ?? null : null}
         sourceOotbId={isSavedDashboard ? savedDashboardSourceOotbId : dashboardId}
       />
     </WidgetAIProvider>
