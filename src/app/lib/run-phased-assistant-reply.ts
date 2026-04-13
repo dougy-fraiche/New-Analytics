@@ -40,6 +40,7 @@ export async function runPhasedAssistantReply(options: {
   final: AssistantReplyPayload;
   /** Pause after send before the first tool step (e.g. “Parse prompt”) appears. */
   beforeFirstStepMs?: number;
+  /** When provided, uses a single dwell time for every tool step. */
   stepMs?: number;
   /** Delay between revealed character chunks while typing out `content`. */
   typeTickMs?: number;
@@ -55,7 +56,9 @@ export async function runPhasedAssistantReply(options: {
 }): Promise<void> {
   const { final, patch, isCancelled } = options;
   const beforeFirstStepMs = options.beforeFirstStepMs ?? 500;
-  const stepMs = options.stepMs ?? 2000;
+  const stepMs = options.stepMs;
+  const defaultFirstStepMs = 2000;
+  const defaultSubsequentStepMs = 700;
   const typeTickMs = options.typeTickMs ?? 16;
   const charsPerTypeTick = options.charsPerTypeTick ?? 2;
 
@@ -99,7 +102,9 @@ export async function runPhasedAssistantReply(options: {
     patch({
       toolSteps,
     });
-    await sleep(stepMs);
+    const dwellMs =
+      stepMs ?? (r === 0 ? defaultFirstStepMs : defaultSubsequentStepMs);
+    await sleep(dwellMs);
     if (isCancelled()) return;
   }
 

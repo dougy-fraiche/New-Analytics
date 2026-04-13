@@ -1,10 +1,7 @@
 import { useMemo, useState } from "react";
 import {
-  Clock,
   Download,
-  MoreVertical,
   RotateCcw,
-  Settings,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import {
@@ -14,13 +11,6 @@ import {
   SelectSeparator,
   SelectTrigger,
 } from "./ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import {
   PageHeader,
   pageMainColumnClassName,
@@ -85,32 +75,10 @@ export function CopilotPage() {
             <section className="flex items-center gap-2">
               <h1 className="text-3xl tracking-tight">Copilot</h1>
               <div className="ml-auto flex items-center gap-2">
-                <DropdownMenu>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="icon" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">Dashboard options</TooltipContent>
-                  </Tooltip>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                      <Download className="h-4 w-4 mr-2" />
-                      Export
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Settings className="h-4 w-4 mr-2" />
-                      Edit Settings
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Clock className="h-4 w-4 mr-2" />
-                      Schedule Report
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Button variant="outline" size="sm" className="h-8">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
               </div>
             </section>
             <p className="text-muted-foreground mt-1">{copilotDashboard.description}</p>

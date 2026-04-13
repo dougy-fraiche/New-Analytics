@@ -3,9 +3,6 @@ import { useParams, useNavigate, useLocation } from "react-router";
 import {
   Calendar,
   Download,
-  MoreVertical,
-  Settings,
-  Clock,
   RotateCcw,
   TrendingDown,
   TrendingUp,
@@ -39,13 +36,6 @@ import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
 import { WidgetAIProvider } from "../contexts/WidgetAIContext";
 import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { useContainerBreakpoint } from "../hooks/useContainerBreakpoint";
 import {
   PageHeader,
@@ -219,32 +209,10 @@ export function ObservabilityCategoryPage() {
               <section className="flex items-center gap-2">
                 <h1 className="text-3xl tracking-tight">{category.name}</h1>
                 <div className="ml-auto flex items-center gap-2">
-                  <DropdownMenu>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="icon" className="h-8 w-8">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">Dashboard options</TooltipContent>
-                    </Tooltip>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
-                        <Download className="h-4 w-4 mr-2" />
-                        Export
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Settings className="h-4 w-4 mr-2" />
-                        Edit Settings
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Clock className="h-4 w-4 mr-2" />
-                        Schedule Report
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <Button variant="outline" size="sm" className="h-8">
+                    <Download className="h-4 w-4 mr-2" />
+                    Export
+                  </Button>
                 </div>
               </section>
               <p className="text-muted-foreground mt-1">

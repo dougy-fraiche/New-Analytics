@@ -458,42 +458,38 @@ export function ExplorePhase({
 
             <div className={pageRootListScrollGutterClassName}>
               <div className={exploreMainContentClassName}>
-                <section className="mb-8 flex flex-col items-center">
-                  <div className="mx-auto w-full">
-                    <div className="mb-4">
-                      <h2 className="flex items-center gap-2 text-xl">
-                        <CircleAlert className="h-5 w-5 shrink-0 text-primary" aria-hidden />
-                        Anomalies
-                      </h2>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Active anomalies surfaced from your operations data, updated every 24 hours
-                      </p>
+                {!allAnomalyInsightsDismissed && (
+                  <section className="mb-8 flex flex-col items-center">
+                    <div className="mx-auto w-full">
+                      <div className="mb-4">
+                        <h2 className="flex items-center gap-2 text-xl">
+                          <CircleAlert className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+                          Anomalies
+                        </h2>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          Active anomalies surfaced from your operations data, updated every 24 hours
+                        </p>
+                      </div>
+                      <div className="grid auto-rows-max grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        {anomalyInsights.length === 0 ? (
+                          <Empty variant="solid" className="col-span-full min-h-[180px] bg-white">
+                            <EmptyHeader>
+                              <EmptyMedia variant="icon">
+                                <CircleAlert />
+                              </EmptyMedia>
+                              <EmptyTitle>No anomalies available</EmptyTitle>
+                              <EmptyDescription>
+                                Anomaly signals will appear here when detected.
+                              </EmptyDescription>
+                            </EmptyHeader>
+                          </Empty>
+                        ) : (
+                          anomalyInsights.map(renderTopInsightCard)
+                        )}
+                      </div>
                     </div>
-                    <div className="grid auto-rows-max grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                      {anomalyInsights.length === 0 ? (
-                        <Empty variant="solid" className="col-span-full min-h-[180px] bg-white">
-                          <EmptyHeader>
-                            <EmptyMedia variant="icon">
-                              <CircleAlert />
-                            </EmptyMedia>
-                            <EmptyTitle>
-                              {allAnomalyInsightsDismissed
-                                ? "No anomalies right now"
-                                : "No anomalies available"}
-                            </EmptyTitle>
-                            <EmptyDescription>
-                              {allAnomalyInsightsDismissed
-                                ? "Check back later to see more anomaly signals as new insights are generated."
-                                : "Anomaly signals will appear here when detected."}
-                            </EmptyDescription>
-                          </EmptyHeader>
-                        </Empty>
-                      ) : (
-                        anomalyInsights.map(renderTopInsightCard)
-                      )}
-                    </div>
-                  </div>
-                </section>
+                  </section>
+                )}
 
                 <section className="mb-8 flex flex-col items-center">
                   <div className="mx-auto w-full">

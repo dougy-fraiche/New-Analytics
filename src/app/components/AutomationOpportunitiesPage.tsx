@@ -194,18 +194,21 @@ function ActionBarList({
   items,
   variant = "standalone",
   maxScale,
+  embeddedDivider = false,
 }: {
   title: string;
   items: TopOpportunityBarItem[];
   variant?: "standalone" | "embedded";
   /** When set, bar fill uses this denominator (e.g. 100 for percentage rows). */
   maxScale?: number;
+  /** Adds a divider below embedded bars when more content follows in the same container. */
+  embeddedDivider?: boolean;
 }) {
   const max = maxScale ?? toMax(items);
-  const wrapperClassName =
-    variant === "embedded"
-      ? "border-b bg-neutral-25"
-      : "rounded-lg border bg-muted";
+  const wrapperClassName = cn(
+    variant === "embedded" ? "bg-neutral-25" : "rounded-lg border bg-muted",
+    variant === "embedded" && embeddedDivider && "border-b",
+  );
   return (
     <div className={wrapperClassName}>
       <div className="px-4 py-3">
@@ -547,6 +550,7 @@ function TopOpportunityCard({
                 title={category.bars.title}
                 items={category.bars.items}
                 variant="embedded"
+                embeddedDivider={category.topics.length > 0}
               />
             ) : null}
 
