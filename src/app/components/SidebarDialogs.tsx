@@ -18,6 +18,7 @@ import {
 } from "./ui/select";
 import { DeleteDashboardDialog } from "./DeleteDashboardDialog";
 import { DeleteFolderDialog } from "./DeleteFolderDialog";
+import { DeleteConversationDialog } from "./DeleteConversationDialog";
 import type { SidebarDialogState } from "../hooks/useSidebarDialogs";
 import type { Project } from "../contexts/ProjectContext";
 
@@ -31,6 +32,7 @@ interface SidebarDialogsProps {
   handleAddDashboard: () => void;
   handleMoveDashboard: () => void;
   handleRenameConversation: () => void;
+  confirmDeleteConversation: () => void;
   confirmDeleteDashboard: () => void;
   confirmDeleteFolder: () => void;
 }
@@ -45,6 +47,7 @@ export function SidebarDialogs({
   handleAddDashboard,
   handleMoveDashboard,
   handleRenameConversation,
+  confirmDeleteConversation,
   confirmDeleteDashboard,
   confirmDeleteFolder,
 }: SidebarDialogsProps) {
@@ -95,15 +98,12 @@ export function SidebarDialogs({
         open={!!state.renameDialog}
         onOpenChange={() => dispatch({ type: "CLOSE_RENAME_PROJECT" })}
       >
-        <DialogContent>
+        <DialogContent className="sm:max-w-[25rem]">
           <DialogHeader>
             <DialogTitle>Rename Folder</DialogTitle>
-            <DialogDescription>
-              Enter a new name for your folder.
-            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-2 py-4">
-            <Label htmlFor="rename-project">Folder Name</Label>
+            <Label className="sr-only" htmlFor="rename-project">Folder Name</Label>
             <Input
               id="rename-project"
               value={state.renameDialog?.name || ""}
@@ -132,15 +132,12 @@ export function SidebarDialogs({
         open={!!state.renameDashboardDialog}
         onOpenChange={() => dispatch({ type: "CLOSE_RENAME_DASHBOARD" })}
       >
-        <DialogContent>
+        <DialogContent className="sm:max-w-[25rem]">
           <DialogHeader>
             <DialogTitle>Rename Dashboard</DialogTitle>
-            <DialogDescription>
-              Enter a new name for your dashboard.
-            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-2 py-4">
-            <Label htmlFor="rename-dashboard">Dashboard Name</Label>
+            <Label className="sr-only" htmlFor="rename-dashboard">Dashboard Name</Label>
             <Input
               id="rename-dashboard"
               value={state.renameDashboardDialog?.name || ""}
@@ -207,15 +204,12 @@ export function SidebarDialogs({
         open={!!state.renameConversationDialog}
         onOpenChange={() => dispatch({ type: "CLOSE_RENAME_CONVERSATION" })}
       >
-        <DialogContent>
+        <DialogContent className="sm:max-w-[25rem]">
           <DialogHeader>
             <DialogTitle>Rename Draft</DialogTitle>
-            <DialogDescription>
-              Enter a new name for your draft.
-            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-2 py-4">
-            <Label htmlFor="rename-conversation">Draft Name</Label>
+            <Label className="sr-only" htmlFor="rename-conversation">Draft Name</Label>
             <Input
               id="rename-conversation"
               value={state.renameConversationDialog?.name || ""}
@@ -291,6 +285,16 @@ export function SidebarDialogs({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Conversation Confirmation */}
+      <DeleteConversationDialog
+        open={!!state.deleteConversationConfirm}
+        onOpenChange={(open) => {
+          if (!open) dispatch({ type: "CLOSE_DELETE_CONVERSATION" });
+        }}
+        onConfirm={confirmDeleteConversation}
+        conversationName={state.deleteConversationConfirm?.conversationName}
+      />
 
       {/* Delete Dashboard Confirmation */}
       <DeleteDashboardDialog

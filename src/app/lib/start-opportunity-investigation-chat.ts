@@ -2,6 +2,8 @@ import type { AssistantReplyPayload } from "../types/conversation-types";
 
 export const START_OPPORTUNITY_INVESTIGATION_CHAT_EVENT =
   "start-opportunity-investigation-chat";
+export const PENDING_OPPORTUNITY_INVESTIGATION_CHAT_STORAGE_KEY =
+  "pending-opportunity-investigation-chat";
 
 export type StartOpportunityInvestigationChatDetail = {
   prompt: string;

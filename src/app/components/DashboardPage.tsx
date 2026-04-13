@@ -74,7 +74,6 @@ import { LabeledFilterInline, LabeledSelectValue } from "./HeaderFilters";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -85,6 +84,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { getDashboardAnomalyHighlights } from "../lib/dashboard-anomaly-highlights";
 import { useContainerBreakpoint } from "../hooks/useContainerBreakpoint";
 import { cn } from "./ui/utils";
+import { showDeletedObjectToast } from "../lib/object-deletion-toast";
 
 // Build OOTB meta lookup
 const dashboardMeta: Record<string, { title: string; description: string }> = {};
@@ -292,30 +292,24 @@ export function DashboardPage() {
       const dashboardSnapshot = project?.dashboards.find((d) => d.id === dashboardId);
       deleteDashboardFromProject(projectId, dashboardId);
       navigate("/saved");
-      toast.success("Dashboard deleted", {
-        description: `"${meta.title}" has been deleted.`,
-        action: {
-          label: "Undo",
-          onClick: () => {
-            if (dashboardSnapshot) {
+      showDeletedObjectToast({
+        objectType: "Dashboard",
+        objectName: meta.title,
+        onUndo: dashboardSnapshot
+          ? () => {
               restoreDashboardToProject(projectId, dashboardSnapshot);
-              toast.success("Dashboard restored");
             }
-          },
-        },
+          : undefined,
       });
     } else if (isStandaloneDashboard && standaloneMatch && dashboardId) {
       const snapshot = { ...standaloneMatch };
       deleteStandaloneDashboard(dashboardId);
       navigate("/saved");
-      toast.success("Dashboard deleted", {
-        description: `"${meta.title}" has been deleted.`,
-        action: {
-          label: "Undo",
-          onClick: () => {
-            restoreStandaloneDashboard(snapshot);
-            toast.success("Dashboard restored");
-          },
+      showDeletedObjectToast({
+        objectType: "Dashboard",
+        objectName: meta.title,
+        onUndo: () => {
+          restoreStandaloneDashboard(snapshot);
         },
       });
     }
@@ -658,15 +652,12 @@ export function DashboardPage() {
 
       {/* Rename Dashboard Dialog */}
       <Dialog open={showRenameDialog} onOpenChange={setShowRenameDialog}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[25rem]">
           <DialogHeader>
             <DialogTitle>Rename Dashboard</DialogTitle>
-            <DialogDescription>
-              Enter a new name for this dashboard.
-            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <Label htmlFor="dashboard-rename-name">Name</Label>
+            <Label className="sr-only" htmlFor="dashboard-rename-name">Name</Label>
             <Input
               id="dashboard-rename-name"
               value={renameValue}

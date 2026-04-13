@@ -14,12 +14,14 @@ import { useVoiceInput } from "../hooks/useVoiceInput";
 import {
   generateConversationName,
   generateAIResponse,
+  isRecognizableExplorePrompt,
   type TopInsightCard,
 } from "../data/explore-data";
 import type { AnomalyInvestigationMeta } from "../types/conversation-types";
 import { ROUTES } from "../routes";
 import { useOptionalAiAssistantPanelControl } from "../contexts/AiAssistantPanelControlContext";
 import {
+  PENDING_OPPORTUNITY_INVESTIGATION_CHAT_STORAGE_KEY,
   START_OPPORTUNITY_INVESTIGATION_CHAT_EVENT,
   type StartOpportunityInvestigationChatDetail,
 } from "../lib/start-opportunity-investigation-chat";
@@ -33,12 +35,14 @@ import { ConversationPhase } from "./ConversationPhase";
 // "explore"      — hero + input centred + insights cards
 // "conversation" — chat with optional artifact panel on the right
 type Phase = "explore" | "conversation";
+type ExplorePromptSource = "footer-chip" | "typeahead" | "freeform" | "investigation";
 
 const DRAFT_KEY = "explore-draft-query";
 
 type ExploreFirstMessageOptions = {
   anomalyInvestigation?: AnomalyInvestigationMeta;
   conversationNameOverride?: string;
+  promptSource?: ExplorePromptSource;
 };
 
 function buildTopInsightInvestigationPrompt(
@@ -228,9 +232,15 @@ export function ExplorePage() {
       const targetConversationId = newConversation.id;
       const gen = ++exploreAssistantPhaseGenRef.current;
       const assistantId = crypto.randomUUID();
-      const seedDashboardForTypeahead = exploreTypeaheadPickedRef.current;
+      const typeaheadPicked = exploreTypeaheadPickedRef.current;
       exploreTypeaheadPickedRef.current = false;
-      const aiResponse = generateAIResponse(messageToSend, { seedDashboardForTypeahead });
+      const promptSource: ExplorePromptSource =
+        options?.promptSource ?? (typeaheadPicked ? "typeahead" : "freeform");
+      const shouldSeedDashboard =
+        promptSource === "footer-chip" ||
+        promptSource === "typeahead" ||
+        (promptSource === "freeform" && isRecognizableExplorePrompt(messageToSend));
+      const aiResponse = generateAIResponse(messageToSend, { seedDashboard: shouldSeedDashboard });
       const stub: Message = {
         id: assistantId,
         role: "assistant",
@@ -275,7 +285,7 @@ export function ExplorePage() {
 
   // ── Explore phase handlers ────────────────────────────────────────
   const handleActionClick = useCallback((prompt: string) => {
-    sendExploreFirstMessage(prompt);
+    sendExploreFirstMessage(prompt, { promptSource: "footer-chip" });
   }, [sendExploreFirstMessage]);
 
   const handleSend = useCallback(() => {
@@ -298,6 +308,7 @@ export function ExplorePage() {
       if (insight.segment === "anomaly") {
         sendExploreFirstMessage(buildTopInsightInvestigationPrompt(insight), {
           conversationNameOverride: `Investigation: ${insight.title}`,
+          promptSource: "investigation",
           anomalyInvestigation: {
             source: "top-insight",
             insight: {
@@ -326,16 +337,25 @@ export function ExplorePage() {
         pagePath: destinationPath,
       };
 
-      aiAssistantPanelControl?.openPanel();
-      window.dispatchEvent(
-        new CustomEvent(START_OPPORTUNITY_INVESTIGATION_CHAT_EVENT, { detail }),
-      );
-
       const params = new URLSearchParams({
         scope: insight.automationTarget.scope,
         target: insight.automationTarget.id,
       });
       navigate(`${ROUTES.AUTOMATION_OPPORTUNITIES}?${params.toString()}#top-opportunities`);
+
+      // Queue for destination-route start to avoid route-change cancellation races.
+      try {
+        sessionStorage.setItem(
+          PENDING_OPPORTUNITY_INVESTIGATION_CHAT_STORAGE_KEY,
+          JSON.stringify({ ...detail, queuedAt: Date.now() }),
+        );
+      } catch {
+        // Fallback when sessionStorage is unavailable.
+        window.dispatchEvent(
+          new CustomEvent(START_OPPORTUNITY_INVESTIGATION_CHAT_EVENT, { detail }),
+        );
+      }
+      aiAssistantPanelControl?.openPanel();
     },
     [aiAssistantPanelControl, navigate, sendExploreFirstMessage],
   );

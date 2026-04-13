@@ -475,6 +475,7 @@
       0 2px 12px 0 color-mix(in oklch, var(--primary-400) 35%, transparent),
       0 8px 28px 0 color-mix(in oklch, var(--primary-500) 25%, transparent);
   }
+
 }
 
 @layer base {

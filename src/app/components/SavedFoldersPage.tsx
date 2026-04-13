@@ -29,6 +29,7 @@ import {
   tableOverflowMenuColumnClassName,
 } from "./ui/table";
 import { toast } from "sonner";
+import { showDeletedObjectToast, showObjectDeletionToast } from "../lib/object-deletion-toast";
 import { useProjects } from "../contexts/ProjectContext";
 import { BulkActionBar } from "./BulkActionBar";
 import { DeleteDashboardDialog } from "./DeleteDashboardDialog";
@@ -156,14 +157,11 @@ export function SavedFoldersPage() {
     if (!snapshot) return;
     if (snapshot.dashboards.length === 0) {
       deleteProject(projectId);
-      toast.success("Folder deleted", {
-        description: `"${snapshot.name}" has been deleted.`,
-        action: {
-          label: "Undo",
-          onClick: () => {
-            restoreProject(snapshot);
-            toast.success("Folder restored");
-          },
+      showDeletedObjectToast({
+        objectType: "Folder",
+        objectName: snapshot.name,
+        onUndo: () => {
+          restoreProject(snapshot);
         },
       });
     } else {
@@ -184,14 +182,11 @@ export function SavedFoldersPage() {
     const snapshot = projects.find(p => p.id === projectId);
     if (snapshot) {
       deleteProject(projectId);
-      toast.success("Folder deleted", {
-        description: `"${projectName}" has been deleted.`,
-        action: {
-          label: "Undo",
-          onClick: () => {
-            restoreProject(snapshot);
-            toast.success("Folder restored");
-          },
+      showDeletedObjectToast({
+        objectType: "Folder",
+        objectName: projectName,
+        onUndo: () => {
+          restoreProject(snapshot);
         },
       });
     }
@@ -227,14 +222,12 @@ export function SavedFoldersPage() {
       const snapshots = selected;
       ids.forEach((id) => deleteProject(id));
       clearFolderSelection();
-      toast.success(`Deleted ${ids.length} folder${ids.length > 1 ? "s" : ""}`, {
-        action: {
-          label: "Undo",
-          onClick: () => {
-            snapshots.forEach((s) => restoreProject(s));
-            toast.success("Folders restored");
-          },
+      showObjectDeletionToast({
+        title: `Deleted ${ids.length} folder${ids.length > 1 ? "s" : ""}`,
+        onUndo: () => {
+          snapshots.forEach((s) => restoreProject(s));
         },
+        restoredTitle: "Folders restored",
       });
     }
   };
@@ -244,14 +237,12 @@ export function SavedFoldersPage() {
     const snapshots = projects.filter((p) => ids.includes(p.id));
     ids.forEach((id) => deleteProject(id));
     clearFolderSelection();
-    toast.success(`Deleted ${ids.length} folder${ids.length > 1 ? "s" : ""}`, {
-      action: {
-        label: "Undo",
-        onClick: () => {
-          snapshots.forEach((s) => restoreProject(s));
-          toast.success("Folders restored");
-        },
+    showObjectDeletionToast({
+      title: `Deleted ${ids.length} folder${ids.length > 1 ? "s" : ""}`,
+      onUndo: () => {
+        snapshots.forEach((s) => restoreProject(s));
       },
+      restoredTitle: "Folders restored",
     });
     setShowBulkDeleteFolderConfirm(false);
   };
@@ -286,14 +277,12 @@ export function SavedFoldersPage() {
     const snapshots = selectedFolder.dashboards.filter((d) => ids.includes(d.id));
     ids.forEach((id) => deleteDashboardFromProject(selectedFolder.id, id));
     clearDashboardSelection();
-    toast.success(`Deleted ${ids.length} dashboard${ids.length > 1 ? "s" : ""}`, {
-      action: {
-        label: "Undo",
-        onClick: () => {
-          snapshots.forEach((d) => restoreDashboardToProject(selectedFolder.id, d));
-          toast.success("Dashboards restored");
-        },
+    showObjectDeletionToast({
+      title: `Deleted ${ids.length} dashboard${ids.length > 1 ? "s" : ""}`,
+      onUndo: () => {
+        snapshots.forEach((d) => restoreDashboardToProject(selectedFolder.id, d));
       },
+      restoredTitle: "Dashboards restored",
     });
     setShowBulkDeleteConfirm(false);
   };
@@ -303,17 +292,14 @@ export function SavedFoldersPage() {
     const { dashboardId, dashboardName } = deleteDashboardConfirm;
     const snapshot = selectedFolder.dashboards.find((d) => d.id === dashboardId);
     deleteDashboardFromProject(selectedFolder.id, dashboardId);
-    toast.success("Dashboard deleted", {
-      description: `"${dashboardName}" has been deleted.`,
-      action: {
-        label: "Undo",
-        onClick: () => {
-          if (snapshot) {
+    showDeletedObjectToast({
+      objectType: "Dashboard",
+      objectName: dashboardName,
+      onUndo: snapshot
+        ? () => {
             restoreDashboardToProject(selectedFolder.id, snapshot);
-            toast.success("Dashboard restored");
           }
-        },
-      },
+        : undefined,
     });
     setDeleteDashboardConfirm(null);
   };
@@ -628,15 +614,12 @@ export function SavedFoldersPage() {
 
         {/* Rename Dashboard Dialog (folder detail view) */}
         <Dialog open={!!renameDashboardDialog} onOpenChange={() => setRenameDashboardDialog(null)}>
-          <DialogContent>
+          <DialogContent className="sm:max-w-[25rem]">
             <DialogHeader>
               <DialogTitle>Rename Dashboard</DialogTitle>
-              <DialogDescription>
-                Enter a new name for your dashboard.
-              </DialogDescription>
             </DialogHeader>
             <div className="grid gap-2 py-4">
-              <Label htmlFor="rename-dashboard-folder">Dashboard Name</Label>
+              <Label className="sr-only" htmlFor="rename-dashboard-folder">Dashboard Name</Label>
               <Input
                 id="rename-dashboard-folder"
                 value={renameDashboardDialog?.dashboardName || ""}
@@ -714,6 +697,47 @@ export function SavedFoldersPage() {
           dashboardName={duplicateDashboardDialog?.dashboardName || ""}
           sourceOotbId={duplicateDashboardDialog?.sourceOotbId}
         />
+
+        {/* Rename Folder Dialog (folder detail view) */}
+        <Dialog open={!!renameDialog} onOpenChange={() => setRenameDialog(null)}>
+          <DialogContent className="sm:max-w-[25rem]">
+            <DialogHeader>
+              <DialogTitle>Rename Folder</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-2 py-4">
+              <Label className="sr-only" htmlFor="rename-project">Folder Name</Label>
+              <Input
+                id="rename-project"
+                value={renameDialog?.name || ""}
+                onChange={(e) =>
+                  setRenameDialog(
+                    renameDialog ? { ...renameDialog, name: e.target.value } : null
+                  )
+                }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleRenameFolder();
+                  }
+                }}
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setRenameDialog(null)}>
+                Cancel
+              </Button>
+              <Button onClick={handleRenameFolder}>Rename</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Folder Confirmation Dialog (folder detail view) */}
+        <DeleteFolderDialog
+          open={!!deleteFolderConfirm}
+          onOpenChange={(open) => { if (!open) setDeleteFolderConfirm(null); }}
+          onConfirm={confirmDeleteFolder}
+          folderName={deleteFolderConfirm?.projectName}
+          dashboardCount={deleteFolderConfirm?.dashboardCount}
+        />
         </PageTransition>
           </div>
         </div>
@@ -769,20 +793,18 @@ export function SavedFoldersPage() {
       }
     });
     clearDashboardSelection();
-    toast.success(`Deleted ${ids.length} dashboard${ids.length > 1 ? "s" : ""}`, {
-      action: {
-        label: "Undo",
-        onClick: () => {
-          snapshots.forEach((d) => {
-            if (d.projectId) {
-              restoreDashboardToProject(d.projectId!, d.dashboard);
-            } else {
-              restoreStandaloneDashboard(d.dashboard);
-            }
-          });
-          toast.success("Dashboards restored");
-        },
+    showObjectDeletionToast({
+      title: `Deleted ${ids.length} dashboard${ids.length > 1 ? "s" : ""}`,
+      onUndo: () => {
+        snapshots.forEach((d) => {
+          if (d.projectId) {
+            restoreDashboardToProject(d.projectId!, d.dashboard);
+          } else {
+            restoreStandaloneDashboard(d.dashboard);
+          }
+        });
       },
+      restoredTitle: "Dashboards restored",
     });
     setShowBulkDeleteConfirm(false);
   };
@@ -1066,28 +1088,22 @@ export function SavedFoldersPage() {
                                   const snapshot = project?.dashboards.find((d) => d.id === item.dashboard.id);
                                   if (snapshot) {
                                     deleteDashboardFromProject(item.projectId, item.dashboard.id);
-                                    toast.success("Dashboard deleted", {
-                                      description: `"${item.dashboard.name}" has been deleted.`,
-                                      action: {
-                                        label: "Undo",
-                                        onClick: () => {
-                                          restoreDashboardToProject(item.projectId!, snapshot);
-                                          toast.success("Dashboard restored");
-                                        },
+                                    showDeletedObjectToast({
+                                      objectType: "Dashboard",
+                                      objectName: item.dashboard.name,
+                                      onUndo: () => {
+                                        restoreDashboardToProject(item.projectId!, snapshot);
                                       },
                                     });
                                   }
                                 } else {
                                   const snapshot = { ...item.dashboard };
                                   deleteStandaloneDashboard(item.dashboard.id);
-                                  toast.success("Dashboard deleted", {
-                                    description: `"${item.dashboard.name}" has been deleted.`,
-                                    action: {
-                                      label: "Undo",
-                                      onClick: () => {
-                                        restoreStandaloneDashboard(snapshot);
-                                        toast.success("Dashboard restored");
-                                      },
+                                  showDeletedObjectToast({
+                                    objectType: "Dashboard",
+                                    objectName: item.dashboard.name,
+                                    onUndo: () => {
+                                      restoreStandaloneDashboard(snapshot);
                                     },
                                   });
                                 }
@@ -1176,17 +1192,14 @@ export function SavedFoldersPage() {
 
       {/* Rename Folder Dialog */}
       <Dialog open={!!renameDialog} onOpenChange={() => setRenameDialog(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[25rem]">
           <DialogHeader>
             <DialogTitle>Rename Folder</DialogTitle>
-            <DialogDescription>
-              Enter a new name for your folder.
-            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-2 py-4">
-            <Label htmlFor="rename-folder">Folder Name</Label>
+            <Label className="sr-only" htmlFor="rename-project">Folder Name</Label>
             <Input
-              id="rename-folder"
+              id="rename-project"
               value={renameDialog?.name || ""}
               onChange={(e) =>
                 setRenameDialog(
@@ -1272,15 +1285,12 @@ export function SavedFoldersPage() {
 
       {/* Rename Dashboard Dialog (main view) */}
       <Dialog open={!!renameDashboardDialog} onOpenChange={() => setRenameDashboardDialog(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[25rem]">
           <DialogHeader>
             <DialogTitle>Rename Dashboard</DialogTitle>
-            <DialogDescription>
-              Enter a new name for your dashboard.
-            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-2 py-4">
-            <Label htmlFor="rename-dashboard">Dashboard Name</Label>
+            <Label className="sr-only" htmlFor="rename-dashboard">Dashboard Name</Label>
             <Input
               id="rename-dashboard"
               value={renameDashboardDialog?.dashboardName || ""}

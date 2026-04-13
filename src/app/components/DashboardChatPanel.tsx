@@ -24,6 +24,7 @@ import {
   Check,
   Sparkles,
   Bot,
+  PanelRightClose,
 } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
@@ -46,6 +47,7 @@ import {
   EmptyTitle,
 } from "./ui/empty";
 import { toast } from "sonner";
+import { showDeletedObjectToast } from "../lib/object-deletion-toast";
 import {
   useDashboardChat,
   useDashboardMessages,
@@ -82,6 +84,7 @@ import {
 } from "../lib/create-ai-agent-chat";
 import {
   buildOpportunityInvestigationAssistantPayload,
+  PENDING_OPPORTUNITY_INVESTIGATION_CHAT_STORAGE_KEY,
   START_OPPORTUNITY_INVESTIGATION_CHAT_EVENT,
   type StartOpportunityInvestigationChatDetail,
 } from "../lib/start-opportunity-investigation-chat";
@@ -108,6 +111,8 @@ interface DashboardChatPanelProps {
   /** Lets the app shell disable width transitions while the user drags the panel edge. */
   onAssistantPanelResizeStart?: () => void;
   onAssistantPanelResizeEnd?: () => void;
+  /** Collapse/hide the right assistant panel. */
+  onCollapse?: () => void;
 }
 
 // ─── Dashboard-specific suggested questions ──────────────────────────────────
@@ -1019,6 +1024,7 @@ export function DashboardChatPanel({
   pageContextLabel,
   onAssistantPanelResizeStart,
   onAssistantPanelResizeEnd,
+  onCollapse,
 }: DashboardChatPanelProps) {
   const dashboardChat = useDashboardChat();
   const location = useLocation();
@@ -1228,9 +1234,8 @@ export function DashboardChatPanel({
     location.search,
   ]);
 
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const raw = (e as CustomEvent<StartOpportunityInvestigationChatDetail>).detail;
+  const startOpportunityInvestigation = useCallback(
+    (raw: StartOpportunityInvestigationChatDetail | null | undefined) => {
       const prompt = raw?.prompt?.trim();
       if (!prompt) return;
 
@@ -1285,6 +1290,15 @@ export function DashboardChatPanel({
           setInternalIsThinking(false);
         }
       });
+    },
+    [dashboardChat],
+  );
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      startOpportunityInvestigation(
+        (e as CustomEvent<StartOpportunityInvestigationChatDetail>).detail,
+      );
     };
 
     window.addEventListener(
@@ -1296,7 +1310,50 @@ export function DashboardChatPanel({
         START_OPPORTUNITY_INVESTIGATION_CHAT_EVENT,
         handler as EventListener,
       );
-  }, [dashboardChat]);
+  }, [startOpportunityInvestigation]);
+
+  useEffect(() => {
+    if (location.pathname !== ROUTES.AUTOMATION_OPPORTUNITIES) return;
+    let raw: string | null = null;
+    try {
+      raw = sessionStorage.getItem(PENDING_OPPORTUNITY_INVESTIGATION_CHAT_STORAGE_KEY);
+    } catch {
+      return;
+    }
+    if (!raw) return;
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      try {
+        sessionStorage.removeItem(PENDING_OPPORTUNITY_INVESTIGATION_CHAT_STORAGE_KEY);
+      } catch {
+        // ignore
+      }
+      return;
+    }
+
+    const queuedAt =
+      typeof parsed === "object" && parsed !== null && "queuedAt" in parsed
+        ? Number((parsed as { queuedAt?: unknown }).queuedAt)
+        : Number.NaN;
+    if (Number.isFinite(queuedAt) && Date.now() - queuedAt > 60_000) {
+      try {
+        sessionStorage.removeItem(PENDING_OPPORTUNITY_INVESTIGATION_CHAT_STORAGE_KEY);
+      } catch {
+        // ignore
+      }
+      return;
+    }
+
+    try {
+      sessionStorage.removeItem(PENDING_OPPORTUNITY_INVESTIGATION_CHAT_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+    startOpportunityInvestigation(parsed as StartOpportunityInvestigationChatDetail);
+  }, [location.pathname, startOpportunityInvestigation]);
 
   const chatVoice = useVoiceInput({
     onTranscript: (text) => {
@@ -1499,6 +1556,23 @@ export function DashboardChatPanel({
 
       <div className="flex-1 min-h-0 flex flex-col min-w-0 pt-4">
         <div className="shrink-0 px-4 flex items-center justify-between gap-2 h-[60px] min-w-0 bg-page relative z-30">
+        <div className="min-w-0 flex-1 flex items-center gap-1">
+              {onCollapse ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 shrink-0"
+                      onClick={onCollapse}
+                      aria-label="Collapse assistant panel"
+                    >
+                      <PanelRightClose className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">Collapse panel</TooltipContent>
+                </Tooltip>
+              ) : null}
         <div className="min-w-0 flex-1">
               {titleEditing ? (
                 <Input
@@ -1528,6 +1602,7 @@ export function DashboardChatPanel({
                   {headerDisplayTitle}
                 </button>
               )}
+            </div>
             </div>
             <div className="flex items-center gap-0.5 shrink-0">
               <Tooltip>
@@ -1753,7 +1828,7 @@ export function DashboardChatPanel({
                 onSelectConversation={handleSelectConversation}
                 onDeleteConversation={(id) => {
                   dashboardChat.deleteGlobalAiConversation(id);
-                  toast.success("Conversation deleted");
+                  showDeletedObjectToast({ objectType: "Conversation" });
                 }}
               />
             </div>

@@ -2,6 +2,7 @@ import { useReducer } from "react";
 import { useProjects, type Project } from "../contexts/ProjectContext";
 import { useConversations } from "../contexts/ConversationContext";
 import { toast } from "sonner";
+import { showDeletedObjectToast } from "../lib/object-deletion-toast";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -39,6 +40,11 @@ interface DeleteFolderPayload {
   dashboardCount: number;
 }
 
+interface DeleteConversationPayload {
+  conversationId: string;
+  conversationName: string;
+}
+
 export interface SidebarDialogState {
   newProjectDialog: boolean;
   newProjectName: string;
@@ -49,6 +55,7 @@ export interface SidebarDialogState {
   moveTargetProjectId: string;
   deleteDashboardConfirm: DeleteDashboardPayload | null;
   deleteFolderConfirm: DeleteFolderPayload | null;
+  deleteConversationConfirm: DeleteConversationPayload | null;
   newDashboardDialog: string | null;
   newDashboardName: string;
 }
@@ -75,6 +82,8 @@ type DialogAction =
   | { type: "CLOSE_DELETE_DASHBOARD" }
   | { type: "OPEN_DELETE_FOLDER"; payload: DeleteFolderPayload }
   | { type: "CLOSE_DELETE_FOLDER" }
+  | { type: "OPEN_DELETE_CONVERSATION"; payload: DeleteConversationPayload }
+  | { type: "CLOSE_DELETE_CONVERSATION" }
   | { type: "OPEN_NEW_DASHBOARD"; projectId: string }
   | { type: "CLOSE_NEW_DASHBOARD" }
   | { type: "SET_NEW_DASHBOARD_NAME"; name: string };
@@ -91,6 +100,7 @@ const initialState: SidebarDialogState = {
   moveTargetProjectId: "",
   deleteDashboardConfirm: null,
   deleteFolderConfirm: null,
+  deleteConversationConfirm: null,
   newDashboardDialog: null,
   newDashboardName: "",
 };
@@ -141,6 +151,10 @@ function dialogReducer(state: SidebarDialogState, action: DialogAction): Sidebar
       return { ...state, deleteFolderConfirm: action.payload };
     case "CLOSE_DELETE_FOLDER":
       return { ...state, deleteFolderConfirm: null };
+    case "OPEN_DELETE_CONVERSATION":
+      return { ...state, deleteConversationConfirm: action.payload };
+    case "CLOSE_DELETE_CONVERSATION":
+      return { ...state, deleteConversationConfirm: null };
     case "OPEN_NEW_DASHBOARD":
       return { ...state, newDashboardDialog: action.projectId, newDashboardName: "" };
     case "CLOSE_NEW_DASHBOARD":
@@ -173,7 +187,7 @@ export function useSidebarDialogs(options?: UseSidebarDialogsOptions) {
     restoreProject,
     restoreDashboardToProject,
   } = useProjects();
-  const { renameConversation } = useConversations();
+  const { conversations, renameConversation, deleteConversation, restoreConversation } = useConversations();
 
   // ── Handlers ───────────────────────────────────────────────────────────
 
@@ -205,14 +219,11 @@ export function useSidebarDialogs(options?: UseSidebarDialogsOptions) {
     if (snapshot.dashboards.length === 0) {
       // Empty folder — delete immediately, no confirmation needed
       deleteProject(projectId);
-      toast.success("Folder deleted", {
-        description: `"${snapshot.name}" has been deleted.`,
-        action: {
-          label: "Undo",
-          onClick: () => {
-            restoreProject(snapshot);
-            toast.success("Folder restored");
-          },
+      showDeletedObjectToast({
+        objectType: "Folder",
+        objectName: snapshot.name,
+        onUndo: () => {
+          restoreProject(snapshot);
         },
       });
     } else {
@@ -233,14 +244,11 @@ export function useSidebarDialogs(options?: UseSidebarDialogsOptions) {
     const snapshot = projects.find((p) => p.id === projectId);
     if (snapshot) {
       deleteProject(projectId);
-      toast.success("Folder deleted", {
-        description: `"${projectName}" has been deleted.`,
-        action: {
-          label: "Undo",
-          onClick: () => {
-            restoreProject(snapshot);
-            toast.success("Folder restored");
-          },
+      showDeletedObjectToast({
+        objectType: "Folder",
+        objectName: projectName,
+        onUndo: () => {
+          restoreProject(snapshot);
         },
       });
     }
@@ -260,19 +268,45 @@ export function useSidebarDialogs(options?: UseSidebarDialogsOptions) {
     const project = projects.find((p) => p.id === projectId);
     const dashboardSnapshot = project?.dashboards.find((d) => d.id === dashboardId);
     deleteDashboardFromProject(projectId, dashboardId);
-    toast.success("Dashboard deleted", {
-      description: `"${dashboardName}" has been deleted.`,
-      action: {
-        label: "Undo",
-        onClick: () => {
-          if (dashboardSnapshot) {
+    showDeletedObjectToast({
+      objectType: "Dashboard",
+      objectName: dashboardName,
+      onUndo: dashboardSnapshot
+        ? () => {
             restoreDashboardToProject(projectId, dashboardSnapshot);
-            toast.success("Dashboard restored");
           }
-        },
-      },
+        : undefined,
     });
     dispatch({ type: "CLOSE_DELETE_DASHBOARD" });
+  };
+
+  const handleDeleteConversation = (conversationId: string) => {
+    const snapshot = conversations.find((conversation) => conversation.id === conversationId);
+    if (!snapshot) return;
+    dispatch({
+      type: "OPEN_DELETE_CONVERSATION",
+      payload: {
+        conversationId,
+        conversationName: snapshot.name,
+      },
+    });
+  };
+
+  const confirmDeleteConversation = () => {
+    if (!state.deleteConversationConfirm) return;
+    const { conversationId, conversationName } = state.deleteConversationConfirm;
+    const snapshot = conversations.find((conversation) => conversation.id === conversationId);
+    deleteConversation(conversationId);
+    showDeletedObjectToast({
+      objectType: "Conversation",
+      objectName: conversationName,
+      onUndo: snapshot
+        ? () => {
+            restoreConversation(snapshot);
+          }
+        : undefined,
+    });
+    dispatch({ type: "CLOSE_DELETE_CONVERSATION" });
   };
 
   const handleRenameDashboard = () => {
@@ -334,6 +368,8 @@ export function useSidebarDialogs(options?: UseSidebarDialogsOptions) {
     handleRenameProject,
     handleDeleteProject,
     confirmDeleteFolder,
+    handleDeleteConversation,
+    confirmDeleteConversation,
     handleDeleteDashboard,
     confirmDeleteDashboard,
     handleRenameDashboard,

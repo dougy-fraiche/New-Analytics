@@ -451,6 +451,72 @@ export type ExploreAIResponse = AssistantReplyPayload & {
   widgetData?: WidgetData;
 };
 
+const exploreRecognizerKeywords = [
+  "dashboard",
+  "report",
+  "summary",
+  "insight",
+  "trend",
+  "analysis",
+  "analytics",
+  "metric",
+  "metrics",
+  "csat",
+  "sentiment",
+  "escalation",
+  "resolution",
+  "ticket",
+  "tickets",
+  "agent",
+  "agents",
+  "copilot",
+  "automation",
+  "sla",
+  "volume",
+  "handle time",
+];
+
+/**
+ * Heuristic for first-turn Explore submissions:
+ * - false for obvious noise / keyboard-smash-like input
+ * - true for natural-language or support-analytics-intent prompts
+ */
+export function isRecognizableExplorePrompt(input: string): boolean {
+  const text = input.trim();
+  if (!text || text.length < 3) return false;
+
+  const alphaNumCount = (text.match(/[a-z0-9]/gi) ?? []).length;
+  if (alphaNumCount === 0) return false;
+
+  const letterCount = (text.match(/[a-z]/gi) ?? []).length;
+  if (letterCount === 0) return false;
+
+  const nonSpaceCount = text.replace(/\s+/g, "").length;
+  const symbolCount = (text.match(/[^a-z0-9\s]/gi) ?? []).length;
+  const symbolRatio = symbolCount / Math.max(1, nonSpaceCount);
+
+  const tokens = text.split(/\s+/).filter(Boolean);
+  const singleToken = tokens.length === 1 ? tokens[0].toLowerCase() : "";
+  const lower = text.toLowerCase();
+
+  const isKeyboardSmashLikeSingleToken =
+    singleToken.length >= 6 &&
+    (!/[aeiou]/.test(singleToken) ||
+      /[bcdfghjklmnpqrstvwxyz]{5,}/.test(singleToken) ||
+      /(.)\1{3,}/.test(singleToken));
+
+  if (isKeyboardSmashLikeSingleToken) return false;
+  if (symbolRatio > 0.55 && tokens.length < 2) return false;
+
+  if (text.includes("?")) return true;
+  if (exploreRecognizerKeywords.some((keyword) => lower.includes(keyword))) return true;
+
+  const wordLikeTokenCount = tokens.filter((token) => /[a-z]{2,}/i.test(token)).length;
+  if (wordLikeTokenCount >= 2) return true;
+
+  return singleToken.length >= 4 && /[aeiou]/.test(singleToken);
+}
+
 /** Default dashboard shell for Explore — keyed off the user query via {@link generateDashboardTitle}. */
 export function buildExploreDashboardFromQuery(userMessage: string): DashboardData {
   const { title, description } = generateDashboardTitle(userMessage);
@@ -543,9 +609,11 @@ function generateAIResponseCore(userMessage: string): ExploreAIResponse {
 
 export type GenerateExploreAIResponseOptions = {
   /**
-   * When true (hero typeahead / suggestion pick), attach {@link buildExploreDashboardFromQuery}
+   * When true, attach {@link buildExploreDashboardFromQuery}
    * if the core reply did not already include dashboard data — avoids an empty dashboard panel.
    */
+  seedDashboard?: boolean;
+  /** @deprecated Prefer `seedDashboard`. */
   seedDashboardForTypeahead?: boolean;
 };
 
@@ -554,7 +622,8 @@ export const generateAIResponse = (
   options?: GenerateExploreAIResponseOptions,
 ): ExploreAIResponse => {
   const res = generateAIResponseCore(userMessage);
-  if (options?.seedDashboardForTypeahead && !res.dashboardData) {
+  const shouldSeedDashboard = options?.seedDashboard ?? options?.seedDashboardForTypeahead ?? false;
+  if (shouldSeedDashboard && !res.dashboardData) {
     return { ...res, dashboardData: buildExploreDashboardFromQuery(userMessage) };
   }
   return res;

@@ -76,6 +76,7 @@ import { useKeyboardShortcut } from "../hooks/useKeyboardShortcuts";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { useSidebar } from "./ui/sidebar";
 import { ROUTES } from "../routes";
+import { showDeletedObjectToast } from "../lib/object-deletion-toast";
 import {
   DropdownMenu as UserDropdownMenu,
   DropdownMenuContent as UserDropdownMenuContent,
@@ -262,7 +263,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { state: sidebarState, toggleSidebar } = useSidebar();
   const isCollapsed = sidebarState === "collapsed";
-  const { conversations, deleteConversation, restoreConversation } = useConversations();
+  const { conversations } = useConversations();
   const {
     projects,
     moveDashboardToProject,
@@ -466,20 +467,7 @@ export function AppSidebar() {
                               Rename
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() => {
-                                const snapshot = { ...conversation };
-                                deleteConversation(conversation.id);
-                                toast.success("Conversation deleted", {
-                                  description: `"${conversation.name}" has been deleted.`,
-                                  action: {
-                                    label: "Undo",
-                                    onClick: () => {
-                                      restoreConversation(snapshot);
-                                      toast.success("Conversation restored");
-                                    },
-                                  },
-                                });
-                              }}
+                              onClick={() => dialogs.handleDeleteConversation(conversation.id)}
                               className="text-destructive"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
@@ -825,14 +813,11 @@ export function AppSidebar() {
                           onClick={() => {
                             const snapshot = { ...dashboard };
                             deleteStandaloneDashboard(dashboard.id);
-                            toast.success("Dashboard deleted", {
-                              description: `"${dashboard.name}" has been deleted.`,
-                              action: {
-                                label: "Undo",
-                                onClick: () => {
-                                  restoreStandaloneDashboard(snapshot);
-                                  toast.success("Dashboard restored");
-                                },
+                            showDeletedObjectToast({
+                              objectType: "Dashboard",
+                              objectName: dashboard.name,
+                              onUndo: () => {
+                                restoreStandaloneDashboard(snapshot);
                               },
                             });
                           }}
@@ -919,6 +904,7 @@ export function AppSidebar() {
         handleAddDashboard={dialogs.handleAddDashboard}
         handleMoveDashboard={dialogs.handleMoveDashboard}
         handleRenameConversation={dialogs.handleRenameConversation}
+        confirmDeleteConversation={dialogs.confirmDeleteConversation}
         confirmDeleteDashboard={dialogs.confirmDeleteDashboard}
         confirmDeleteFolder={dialogs.confirmDeleteFolder}
       />

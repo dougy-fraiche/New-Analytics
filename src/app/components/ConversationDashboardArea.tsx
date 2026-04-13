@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
-import { motion, useReducedMotion } from "motion/react";
 import {
   Sparkles,
   LayoutDashboard,
   BarChart3,
+  Loader2,
   Bookmark,
   MoreVertical,
   Pencil,
@@ -18,6 +18,13 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "./ui/empty";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -107,119 +114,25 @@ interface ConversationDashboardAreaProps {
   onDelete?: () => void;
 }
 
-const DASHBOARD_BUILD_BAR_HEIGHTS = [34, 62, 48, 78, 55, 70, 41, 66];
-
 /** Shown while the assistant is generating the first dashboard payload (Explore → conversation). */
 function DashboardBuildingAnimation() {
-  const reduceMotion = useReducedMotion() ?? false;
-  const barEase = [0.22, 1, 0.36, 1] as const;
-  const barDuration = reduceMotion ? 0.01 : 0.55;
-  const barStagger = reduceMotion ? 0 : 0.055;
-
   return (
-    <div
-      className="flex h-full min-h-[min(320px,50vh)] flex-col items-center justify-center gap-8 p-6"
+    <Empty
+      variant="solid"
+      className="h-full min-h-[min(320px,50vh)] border-0"
       role="status"
       aria-live="polite"
       aria-busy="true"
       aria-label="AI is preparing your dashboard"
     >
-      <div className="relative w-full max-w-[320px] overflow-hidden rounded-xl border border-primary/25 bg-gradient-to-b from-primary/[0.06] via-muted/30 to-muted/50 p-5 shadow-sm">
-        {!reduceMotion ? (
-          <motion.div
-            className="pointer-events-none absolute inset-y-2 left-0 w-[42%] bg-gradient-to-r from-transparent via-primary/18 to-transparent"
-            initial={{ x: "-100%" }}
-            animate={{ x: "280%" }}
-            transition={{ duration: 2.4, repeat: Infinity, ease: "linear" }}
-            aria-hidden
-          />
-        ) : null}
-
-        <div className="relative flex flex-col gap-4">
-          <div className="space-y-2">
-            <motion.div
-              className="h-2.5 rounded-md bg-primary/30"
-              initial={{ scaleX: reduceMotion ? 1 : 0 }}
-              animate={{ scaleX: 1 }}
-              transition={{
-                duration: reduceMotion ? 0.01 : 0.45,
-                ease: barEase,
-                delay: reduceMotion ? 0 : 0.05,
-              }}
-              style={{ transformOrigin: "left center" }}
-            />
-            <motion.div
-              className="h-2 w-[82%] rounded-md bg-muted-foreground/18"
-              initial={{ scaleX: reduceMotion ? 1 : 0 }}
-              animate={{ scaleX: 1 }}
-              transition={{
-                duration: reduceMotion ? 0.01 : 0.45,
-                ease: barEase,
-                delay: reduceMotion ? 0 : 0.12,
-              }}
-              style={{ transformOrigin: "left center" }}
-            />
-          </div>
-
-          <div className="flex h-[7.5rem] items-end gap-1.5 px-0.5">
-            {DASHBOARD_BUILD_BAR_HEIGHTS.map((pct, i) => (
-              <motion.div
-                key={i}
-                className="min-h-0 flex-1 rounded-t-[3px] bg-primary/50 shadow-[0_-1px_0_0_rgba(0,0,0,0.06)] dark:bg-primary/45"
-                initial={{ height: reduceMotion ? `${pct}%` : "0%" }}
-                animate={{ height: `${pct}%` }}
-                transition={{
-                  duration: barDuration,
-                  ease: barEase,
-                  delay: reduceMotion ? 0 : 0.14 + barStagger * i,
-                }}
-              />
-            ))}
-          </div>
-
-          <div className="flex gap-2 pt-0.5">
-            {[0, 1, 2].map((i) => (
-              <motion.div
-                key={i}
-                className="h-10 flex-1 rounded-lg border border-border/70 bg-background/85 dark:bg-background/40"
-                initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={
-                  reduceMotion
-                    ? { duration: 0.01 }
-                    : {
-                        type: "spring",
-                        stiffness: 420,
-                        damping: 28,
-                        delay: 0.55 + i * 0.07,
-                      }
-                }
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="flex max-w-sm flex-col items-center gap-1.5 text-center">
-        <div className="flex items-center gap-2 text-foreground">
-          <motion.span
-            aria-hidden
-            animate={reduceMotion ? {} : { rotate: [0, 10, -8, 0] }}
-            transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <Sparkles className="h-4 w-4 text-primary" />
-          </motion.span>
-          <span className="text-sm font-medium">AI is preparing your dashboard</span>
-        </div>
-        <motion.p
-          className="text-xs text-muted-foreground"
-          animate={reduceMotion ? {} : { opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-        >
-          Building charts and layout…
-        </motion.p>
-      </div>
-    </div>
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </EmptyMedia>
+        <EmptyTitle>Preparing your dashboard</EmptyTitle>
+        <EmptyDescription>Building charts and layout...</EmptyDescription>
+      </EmptyHeader>
+    </Empty>
   );
 }
 
@@ -291,16 +204,46 @@ function LevelBadge({
 function AnomalyPrimaryFindingContent({
   model,
   conversationTitle,
+  onRename,
+  onDelete,
 }: {
   model: PrimaryFindingViewModel;
   conversationTitle?: string;
+  onRename?: () => void;
+  onDelete?: () => void;
 }) {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <PageHeader>
-        <section>
-          <h1 className="text-3xl tracking-tight">{conversationTitle || "Primary Finding"}</h1>
-          <p className="mt-1 text-muted-foreground">{model.headingSubtitle}</p>
+        <section className="flex items-start gap-2">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-3xl tracking-tight">{conversationTitle || "Primary Finding"}</h1>
+            <p className="mt-1 text-muted-foreground">{model.headingSubtitle}</p>
+          </div>
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            <DropdownMenu>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon" className="h-8 w-8">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Conversation options</TooltipContent>
+              </Tooltip>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={onRename}>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Rename
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={onDelete}>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </section>
       </PageHeader>
 
@@ -489,12 +432,14 @@ function AnomalyPrimaryFindingContent({
 
 function DashboardContent({
   dashboard,
+  conversationTitle,
   onSave,
   isSaved,
   onRename,
   onDelete,
 }: {
   dashboard: DashboardData;
+  conversationTitle?: string;
   onSave?: (dashboard: DashboardData) => void;
   isSaved?: boolean;
   onRename?: () => void;
@@ -554,7 +499,7 @@ function DashboardContent({
     <div ref={dashboardContentRef} key="dashboard-content" className="flex h-full min-h-0 flex-col">
       <PageHeader>
           <section className="flex items-center gap-2">
-            <h1 className="text-3xl tracking-tight">{dashboard.title}</h1>
+            <h1 className="text-3xl tracking-tight">{conversationTitle || dashboard.title}</h1>
             <div className="ml-auto flex items-center gap-2 shrink-0">
               {isSaved ? (
                 <Badge variant="secondary" className="h-8 gap-1.5 px-3">
@@ -851,6 +796,7 @@ export function ConversationDashboardArea({
       <WidgetAIProvider persistKey={`conversation-${dashboardData.id}`} onWidgetPrompt={onWidgetPrompt}>
         <DashboardContent
           dashboard={dashboardData}
+          conversationTitle={conversationTitle}
           onSave={onSave}
           isSaved={isSaved}
           onRename={onRename}
@@ -869,6 +815,8 @@ export function ConversationDashboardArea({
         <AnomalyPrimaryFindingContent
           model={anomalyPrimaryFinding}
           conversationTitle={conversationTitle}
+          onRename={onRename}
+          onDelete={onDelete}
         />
       </WidgetAIProvider>
     );

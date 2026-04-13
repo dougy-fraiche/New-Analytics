@@ -49,6 +49,7 @@ import {
 } from "./ui/alert-dialog";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
+import { showDeletedObjectToast } from "../lib/object-deletion-toast";
 
 import { ConversationDashboardArea } from "./ConversationDashboardArea";
 import { useConversations, type Message, type DashboardData } from "../contexts/ConversationContext";
@@ -396,17 +397,14 @@ export function ConversationPhase({
       const snapshot = conversations.find((c) => c.id === currentConversationId);
       deleteConversation(currentConversationId);
       setDeleteConfirmOpen(false);
-      toast.success("Conversation deleted", {
-        description: snapshot ? `"${snapshot.name}" has been deleted.` : undefined,
-        action: {
-          label: "Undo",
-          onClick: () => {
-            if (snapshot) {
+      showDeletedObjectToast({
+        objectType: "Conversation",
+        objectName: snapshot?.name,
+        onUndo: snapshot
+          ? () => {
               restoreConversation(snapshot);
-              toast.success("Conversation restored");
             }
-          },
-        },
+          : undefined,
       });
       navigate("/");
     }
@@ -607,13 +605,12 @@ export function ConversationPhase({
 
       {/* ─── Rename Conversation Dialog ────────────────────── */}
       <Dialog open={renameConvDialogOpen} onOpenChange={setRenameConvDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[25rem]">
           <DialogHeader>
             <DialogTitle>Rename Conversation</DialogTitle>
-            <DialogDescription>Enter a new name for this conversation.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <Label htmlFor="conv-rename-name">Name</Label>
+            <Label className="sr-only" htmlFor="conv-rename-name">Name</Label>
             <Input
               id="conv-rename-name"
               value={renameConvName}

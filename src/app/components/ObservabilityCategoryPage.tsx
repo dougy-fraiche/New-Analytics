@@ -60,6 +60,7 @@ import { LabeledFilterInline, LabeledSelectValue } from "./HeaderFilters";
 import { AIAgentsOverviewTab } from "./AIAgentsOverviewTab";
 import { AIAgentsEvaluationTab } from "./AIAgentsEvaluationTab";
 import { AIAgentsIntentNluTab } from "./AIAgentsIntentNluTab";
+import { AIAgentsGoalsOutcomesTab } from "./AIAgentsGoalsOutcomesTab";
 import { cn } from "./ui/utils";
 import { ROUTES } from "../routes";
 import {
@@ -348,6 +349,11 @@ export function ObservabilityCategoryPage() {
                   />
                 ) : dashboard.id === "intent-nlu" ? (
                   <AIAgentsIntentNluTab
+                    isCompactDashboard={isCompactDashboard}
+                    showWidgetOverflowMenu={false}
+                  />
+                ) : dashboard.id === "goals-outcomes" ? (
+                  <AIAgentsGoalsOutcomesTab
                     isCompactDashboard={isCompactDashboard}
                     showWidgetOverflowMenu={false}
                   />

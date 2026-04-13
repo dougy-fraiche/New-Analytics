@@ -44,6 +44,7 @@ import { PageTransition } from "./PageTransition";
 import { WidgetAIProvider } from "../contexts/WidgetAIContext";
 import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 import { WidgetAIPromptButton } from "./WidgetAIPromptButton";
+import { WidgetAIExplanation } from "./WidgetAIExplanation";
 import {
   automationAnalyzedPeriodStats,
   automationSubtopicsTabPeriodStats,
@@ -487,6 +488,7 @@ function AutomationTopicsTabTopicCard({
             />
           </div>
         ) : null}
+        <WidgetAIExplanation widgetTitle={row.title} chartType="bar" />
       </CardContent>
 
       <CardFooter>
@@ -623,6 +625,7 @@ function TopOpportunityCard({
               : null}
           </div>
         ) : null}
+        <WidgetAIExplanation widgetTitle={category.title} chartType="bar" />
       </CardContent>
 
       <CardFooter>

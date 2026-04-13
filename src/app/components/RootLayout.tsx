@@ -209,11 +209,11 @@ function RootLayoutInner() {
       return [{ label: "Settings" }];
     }
 
-    // Draft Insights list (sub of Explore)
+    // Drafts list (sub of Explore)
     if (location.pathname === "/conversations") {
       return [
         { label: "Explore", href: "/" },
-        { label: "Draft Insights" },
+        { label: "Drafts" },
       ];
     }
 
@@ -221,32 +221,10 @@ function RootLayoutInner() {
     if (params.conversationId) {
       const conversation = conversations.find(c => c.id === params.conversationId);
       if (conversation) {
-        const isTopInsightInvestigation = conversation.messages.some(
-          (message) => message.anomalyInvestigation?.source === "top-insight",
-        );
-        if (isTopInsightInvestigation) {
-          return [
-            { label: "Explore", href: "/" },
-            { label: conversation.name || "Investigation" },
-          ];
-        }
-
-        // Find the latest dashboard title from messages — only show a title crumb once insights are loaded
-        let latestDashboardTitle: string | null = null;
-        for (let i = conversation.messages.length - 1; i >= 0; i--) {
-          if (conversation.messages[i].dashboardData) {
-            latestDashboardTitle = conversation.messages[i].dashboardData!.title;
-            break;
-          }
-        }
-        if (latestDashboardTitle) {
-          return [
-            { label: "Explore", href: "/" },
-            { label: latestDashboardTitle },
-          ];
-        }
-        // No dashboard yet — show a generic crumb so the user can navigate back
-        return [{ label: "Explore", href: "/" }, { label: "New Thread" }];
+        return [
+          { label: "Explore", href: "/" },
+          { label: conversation.name || "New Thread" },
+        ];
       }
     }
 
@@ -395,6 +373,7 @@ function RootLayoutInner() {
                 pageContextLabel={aiPageContextLabel}
                 onAssistantPanelResizeStart={() => setAssistantPanelResizing(true)}
                 onAssistantPanelResizeEnd={() => setAssistantPanelResizing(false)}
+                onCollapse={() => setAiAssistantOpen(false)}
               />
             </div>
             {/* App shell — sits above the assistant; width + padding animate to expose the panel behind */}

@@ -678,19 +678,25 @@ export function DashboardChartGrid({
                 <CardDescription>{panel.description}</CardDescription>
               ) : null}
             </CardHeader>
-            <CardContent>
-              <UniversalChart
-                type={panel.chartType}
-                data={dataset.data}
-                xKey={dataset.xKey}
-                yKey={dataset.yKey}
-                y2Key={dataset.y2Key}
-                config={config}
-                panelId={`${dashboardId}-${i}`}
-                colSpan={panel.colSpan}
-                onDataSelect={handleChartDataSelect(i)}
+            <CardContent className="flex min-h-0 flex-1 flex-col">
+              <div className="shrink-0">
+                <UniversalChart
+                  type={panel.chartType}
+                  data={dataset.data}
+                  xKey={dataset.xKey}
+                  yKey={dataset.yKey}
+                  y2Key={dataset.y2Key}
+                  config={config}
+                  panelId={`${dashboardId}-${i}`}
+                  colSpan={panel.colSpan}
+                  onDataSelect={handleChartDataSelect(i)}
+                />
+              </div>
+              <WidgetAIExplanation
+                widgetTitle={panel.title}
+                chartType={panel.chartType}
+                className="!mt-auto pt-3"
               />
-              <WidgetAIExplanation widgetTitle={panel.title} chartType={panel.chartType} />
             </CardContent>
           </Card>
         );

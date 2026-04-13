@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import { toast } from "sonner";
+import { showDeletedObjectToast } from "../lib/object-deletion-toast";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import {
   DATE_RANGE_CUSTOM_OPTION,
@@ -82,7 +83,9 @@ export function WidgetOverflowMenu({
     if (onDelete) {
       onDelete();
     }
-    toast.success("Widget removed", {
+    showDeletedObjectToast({
+      objectType: "Widget",
+      objectName: widgetTitle,
       description: `"${widgetTitle}" has been removed.`,
     });
     setDeleteOpen(false);

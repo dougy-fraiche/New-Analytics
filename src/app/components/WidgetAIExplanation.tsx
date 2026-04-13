@@ -1,10 +1,13 @@
 import { useMemo } from "react";
 import { Sparkles } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { Button } from "./ui/button";
+import { cn } from "./ui/utils";
 
 interface WidgetAIExplanationProps {
   widgetTitle: string;
   chartType?: string;
+  className?: string;
 }
 
 /**
@@ -60,7 +63,7 @@ const explanationPool: Record<string, string[]> = {
   ],
 };
 
-export function WidgetAIExplanation({ widgetTitle, chartType }: WidgetAIExplanationProps) {
+export function WidgetAIExplanation({ widgetTitle, chartType, className }: WidgetAIExplanationProps) {
   const explanation = useMemo(() => {
     const type = chartType ?? "default";
     const pool = explanationPool[type] ?? explanationPool.default;
@@ -69,16 +72,18 @@ export function WidgetAIExplanation({ widgetTitle, chartType }: WidgetAIExplanat
   }, [widgetTitle, chartType]);
 
   return (
-    <div className="mt-4">
+    <div className={cn("widget-ai-explanation mt-3 flex items-center justify-start", className)}>
       <Popover>
         <PopoverTrigger asChild>
-          <button
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full group/ai-btn"
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 text-xs font-normal text-muted-foreground transition-colors hover:bg-primary-25 hover:text-foreground"
             type="button"
           >
-            <Sparkles className="h-3 w-3 text-primary shrink-0" />
-            <span className="font-normal">AI Explanation</span>
-          </button>
+            <Sparkles className="shrink-0 text-primary" />
+            <span>AI Explanation</span>
+          </Button>
         </PopoverTrigger>
         <PopoverContent align="start" className="w-80 p-3">
           <div className="flex items-center gap-2 mb-2">

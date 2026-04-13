@@ -200,9 +200,9 @@ export function SearchOverlay({ open, onOpenChange }: SearchOverlayProps) {
                 <Sparkles className="mr-2 h-4 w-4" />
                 <span>Recommended Actions</span>
               </CommandItem>
-              <CommandItem value="Draft Insights" onSelect={() => handleSelect(ROUTES.CONVERSATIONS, "Draft Insights")}>
+              <CommandItem value="Drafts" onSelect={() => handleSelect(ROUTES.CONVERSATIONS, "Drafts")}>
                 <MessageSquare className="mr-2 h-4 w-4" />
-                <span>Draft Insights</span>
+                <span>Drafts</span>
               </CommandItem>
               <CommandItem value="Settings" onSelect={() => handleSelect(ROUTES.SETTINGS, "Settings")}>
                 <Settings className="mr-2 h-4 w-4" />
