@@ -12,7 +12,6 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "./ui/empty";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { ChatInputBar } from "./ChatInputBar";
 import { KpiMetricValueTitle } from "./KpiMetricValueTitle";
 import { KpiSparkline } from "./KpiSparkline";
@@ -22,7 +21,7 @@ import {
   exploreHeadings,
   topInsightsCards,
 } from "../data/explore-data";
-import { aiAgentEvaluationKpis, aiAgentOverviewKpis, aiAgentProductivityRows } from "../data/ai-agent-kpis";
+import { aiAgentEvaluationKpis, aiAgentOverviewKpis } from "../data/ai-agent-kpis";
 import { currentUserProfile, getFirstName } from "../data/user-profile";
 
 const exploreMainContentClassName = "mx-auto w-full min-w-0 max-w-[1366px]";
@@ -202,14 +201,6 @@ export function ExplorePhase({
     },
     [],
   );
-  const aiAgentProductivityComparisonRows = useMemo(
-    () =>
-      [...aiAgentProductivityRows]
-        .sort((a, b) => b.totalSessions - a.totalSessions)
-        .slice(0, 10),
-    [],
-  );
-
   useLayoutEffect(() => {
     const root = exploreSurfaceRef.current;
     const barWrap = heroInputBarRef.current;
@@ -557,44 +548,6 @@ export function ExplorePhase({
                       </Card>
                     ))}
                   </div>
-                  <Card className="mt-4 mb-8 transition-[box-shadow,border-color] hover:border-primary/30 hover:shadow-md">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">By AI Agent</CardTitle>
-                      <CardDescription>
-                        Compare sessions, sentiment, and brand alignment across your top 10 AI agents
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <div className="min-w-0 overflow-x-auto">
-                        <Table className="min-w-[36rem] table-auto">
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>AI Agent</TableHead>
-                              <TableHead className="text-right">Total Sessions</TableHead>
-                              <TableHead className="text-right">Sentiment</TableHead>
-                              <TableHead className="text-right">Brand Alignment</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {aiAgentProductivityComparisonRows.map((row) => (
-                              <TableRow key={row.agentName}>
-                                <TableCell>{row.agentName}</TableCell>
-                                <TableCell className="text-right tabular-nums">
-                                  {row.totalSessions.toLocaleString("en-US")}
-                                </TableCell>
-                                <TableCell className="text-right tabular-nums">
-                                  {`${row.sentimentPct}%`}
-                                </TableCell>
-                                <TableCell className="text-right tabular-nums">
-                                  {`${row.brandAlignmentPct}%`}
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </CardContent>
-                  </Card>
                 </section>
               </div>
             </div>
