@@ -1,4 +1,5 @@
-import { Bot } from "lucide-react";
+import { useMemo, useState } from "react";
+import { RotateCcw } from "lucide-react";
 import {
   PageHeader,
   pageMainColumnClassName,
@@ -9,11 +10,46 @@ import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 import { ootbCategories } from "../data/ootb-dashboards";
 import { PageTransition } from "./PageTransition";
 import { cn } from "./ui/utils";
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "./ui/empty";
+import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
+import { AIAgentsOverviewTab } from "./AIAgentsOverviewTab";
+import { useContainerBreakpoint } from "../hooks/useContainerBreakpoint";
+import { Button } from "./ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectSeparator,
+  SelectTrigger,
+} from "./ui/select";
+import { LabeledFilterInline, LabeledSelectValue } from "./HeaderFilters";
+import {
+  DATE_RANGE_CUSTOM_OPTION,
+  DATE_RANGE_LABELS,
+  DATE_RANGE_PRIMARY_OPTIONS,
+  DATE_RANGE_SECONDARY_OPTIONS,
+  type DateRangeOption,
+} from "../data/date-ranges";
+import {
+  DEFAULT_DASHBOARD_FILTERS as DEFAULT_FILTERS,
+  type DashboardProductFilter,
+  type DashboardTeamFilter,
+} from "../data/dashboard-filters";
 
 export function CopilotPage() {
   const aiAgentsCategory = ootbCategories.find((c) => c.id === "ai-agents");
   const copilotDashboard = aiAgentsCategory?.dashboards.find((d) => d.id === "ai-agents-copilot");
+  const { ref: dashboardContentRef, isBelowBreakpoint: isCompactDashboard } =
+    useContainerBreakpoint<HTMLDivElement>(768);
+  const [dateRange, setDateRange] = useState<DateRangeOption>(DEFAULT_FILTERS.dateRange);
+  const [team, setTeam] = useState(DEFAULT_FILTERS.team);
+  const [product, setProduct] = useState(DEFAULT_FILTERS.product);
+  const hasFilterChanges = useMemo(() => {
+    return (
+      dateRange !== DEFAULT_FILTERS.dateRange ||
+      team !== DEFAULT_FILTERS.team ||
+      product !== DEFAULT_FILTERS.product
+    );
+  }, [dateRange, team, product]);
 
   if (!copilotDashboard) {
     return (
@@ -36,22 +72,106 @@ export function CopilotPage() {
             </section>
             <p className="text-muted-foreground mt-1">{copilotDashboard.description}</p>
           </section>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRangeOption)}>
+              <SelectTrigger className="h-8 w-auto shrink-0">
+                <LabeledFilterInline label="Date range">{DATE_RANGE_LABELS[dateRange]}</LabeledFilterInline>
+              </SelectTrigger>
+              <SelectContent>
+                {DATE_RANGE_PRIMARY_OPTIONS.map((opt) => (
+                  <SelectItem key={opt} value={opt}>
+                    {DATE_RANGE_LABELS[opt]}
+                  </SelectItem>
+                ))}
+                <SelectSeparator />
+                {DATE_RANGE_SECONDARY_OPTIONS.map((opt) => (
+                  <SelectItem key={opt} value={opt}>
+                    {DATE_RANGE_LABELS[opt]}
+                  </SelectItem>
+                ))}
+                <SelectSeparator />
+                <SelectItem value={DATE_RANGE_CUSTOM_OPTION}>
+                  {DATE_RANGE_LABELS[DATE_RANGE_CUSTOM_OPTION]}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={team} onValueChange={(v) => setTeam(v as DashboardTeamFilter)}>
+              <SelectTrigger className="h-8 w-auto shrink-0">
+                <LabeledSelectValue label="Team" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all-teams">All Teams</SelectItem>
+                <SelectItem value="tier-1">Tier 1 Support</SelectItem>
+                <SelectItem value="tier-2">Tier 2 Support</SelectItem>
+                <SelectItem value="technical">Technical Team</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={product} onValueChange={(v) => setProduct(v as DashboardProductFilter)}>
+              <SelectTrigger className="h-8 w-auto shrink-0">
+                <LabeledSelectValue label="Product" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all-products">All Products</SelectItem>
+                <SelectItem value="product-a">Product A</SelectItem>
+                <SelectItem value="product-b">Product B</SelectItem>
+                <SelectItem value="product-c">Product C</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {hasFilterChanges && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 shrink-0"
+                onClick={() => {
+                  setDateRange(DEFAULT_FILTERS.dateRange);
+                  setTeam(DEFAULT_FILTERS.team);
+                  setProduct(DEFAULT_FILTERS.product);
+                }}
+              >
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Reset Filters
+              </Button>
+            )}
+          </div>
         </PageHeader>
 
         <div className="flex-1 min-h-0 overflow-auto">
           <div className={cn(pageRootListScrollGutterClassName, "pb-4 md:pb-8")}>
             <PageTransition className={pageMainColumnClassName}>
-              <Empty className="min-h-[24rem]">
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <Bot />
-                  </EmptyMedia>
-                  <EmptyTitle>Copilot coming soon</EmptyTitle>
-                  <EmptyDescription>
-                    We&apos;re actively building this page.
-                  </EmptyDescription>
-                </EmptyHeader>
-              </Empty>
+              <div ref={dashboardContentRef} className="space-y-4">
+                <HeaderAIInsightsRow
+                  dashboardId={copilotDashboard.id}
+                  dashboardData={{
+                    id: copilotDashboard.id,
+                    title: copilotDashboard.name,
+                    description: copilotDashboard.description,
+                  }}
+                  hideDismissAll
+                  recommendedActionsContent={
+                    <div className="grid grid-cols-1 items-start gap-4">
+                      <div className="flex min-w-0 flex-col gap-2 rounded-xl border border-primary/40 bg-primary/[0.03] p-4 transition-[box-shadow,border-color,background-color] hover:border-primary/55 hover:bg-primary/[0.05] hover:shadow-md">
+                        <div className="flex min-w-0 flex-col gap-2.5">
+                          <p className="text-base font-medium leading-6 text-foreground">
+                            Run micro-training for Task Assist adoption
+                          </p>
+                          <p className="text-sm leading-snug text-foreground/80">
+                            Task Assist adoption is 48%, significantly behind AutoSummary at 82%.
+                            Short 15-minute live-demo sessions have historically lifted adoption by
+                            12–18pp within two weeks.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  }
+                />
+                <AIAgentsOverviewTab
+                  isCompactDashboard={isCompactDashboard}
+                  showWidgetOverflowMenu={false}
+                />
+              </div>
             </PageTransition>
           </div>
         </div>

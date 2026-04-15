@@ -212,6 +212,21 @@ interface AISummaryData {
 }
 
 const dashboardSummaries: Record<string, AISummaryData> = {
+  "ai-agents-copilot": {
+    summary:
+      "Agent adoption rate increased to 76% (+3pp WoW), with AutoSummary leading at 82% adoption among active agents. Time saved per agent averages 47 minutes/day, translating to roughly 11% capacity gain across the team. Quality score of 0.87 (V3 engine) represents a +0.04 improvement over V2 baseline.",
+    bullets: [
+      { label: "Task Assist adoption: 48%", detail: "Significantly behind other features; agents report unclear trigger conditions." },
+      { label: "Real-time Summary adoption: 39%", detail: "Lowest feature adoption, primarily due to latency concerns." },
+      { label: "Micro-training recommendation", detail: "Run 15-minute live-demo sessions to improve confidence and feature usage." },
+      { label: "Expected impact", detail: "Prior sessions have lifted adoption by 12–18pp within two weeks." },
+    ],
+    linkedActionId: 3,
+    opportunity:
+      "Task Assist adoption at 48% is materially behind AutoSummary at 82%, creating a measurable productivity gap across active agents.",
+    actionText:
+      "Run focused 15-minute micro-training sessions with live demos to lift Task Assist adoption by an expected 12–18pp.",
+  },
   "dash-1": {
     summary:
       "Escalations rose 12% this quarter, driven primarily by misrouted tickets adding an average of 12 minutes to resolution. Here's the breakdown:",

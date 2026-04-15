@@ -418,7 +418,7 @@ export function AppSidebar() {
                       alt="Agentic Analytics"
                       className="size-8 shrink-0 object-contain"
                     />
-                    <span className="truncate flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
+                    <span className="truncate flex-1 text-left text-sm font-semibold leading-tight group-data-[collapsible=icon]:hidden">
                       Agentic Analytics
                     </span>
                     <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 text-muted-foreground group-data-[collapsible=icon]:hidden" />
