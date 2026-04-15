@@ -454,7 +454,7 @@ export function AppSidebar() {
         </SidebarHeader>
 
         <SidebarContent className="gap-1 pt-2 group-data-[collapsible=icon]:pt-4">
-          {/* Explore — collapsible draft threads (`E` still navigates to Explore via RootLayout) */}
+          {/* Explore — collapsible conversation threads (`E` still navigates to Explore via RootLayout) */}
           <CollapsibleSidebarSection
             icon={Compass}
             label="Explore"
@@ -465,7 +465,7 @@ export function AppSidebar() {
           >
             {activeConversations.length === 0 ? (
               <SidebarMenuSubItem>
-                <span className="px-2 py-1.5 text-xs text-muted-foreground">No drafts yet</span>
+                <span className="px-2 py-1.5 text-xs text-muted-foreground">No conversations yet</span>
               </SidebarMenuSubItem>
             ) : (
               <>

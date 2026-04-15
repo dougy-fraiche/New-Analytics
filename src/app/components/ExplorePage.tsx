@@ -7,6 +7,7 @@ import { useDashboardChat } from "../contexts/DashboardChatContext";
 import {
   EXPLORE_THREAD_USER_TURN_EVENT,
   GLOBAL_AI_ASSISTANT_KEY,
+  getExploreConversationAssistantKey,
 } from "../lib/ai-assistant-global";
 import { conversationMessageToGlobalChat } from "../lib/conversation-message-to-global-chat";
 import { runPhasedExploreAssistantReply } from "../lib/run-phased-explore-assistant-reply";
@@ -122,8 +123,6 @@ export function ExplorePage() {
   const {
     appendMessage,
     patchMessage,
-    startNewGlobalAiDraft,
-    setGlobalAiDraftDisplayName,
   } = useDashboardChat();
   const aiAssistantPanelControl = useOptionalAiAssistantPanelControl();
   const navigate = useNavigate();
@@ -250,6 +249,7 @@ export function ExplorePage() {
       const name = options?.conversationNameOverride?.trim() || generateConversationName(messageToSend);
       setConversationName(name);
       const newConversation = addConversation(name);
+      const conversationAssistantKey = getExploreConversationAssistantKey(newConversation.id);
       setPhase("conversation");
 
       lastSyncedIdRef.current = newConversation.id;
@@ -262,9 +262,7 @@ export function ExplorePage() {
         anomalyInvestigation: options?.anomalyInvestigation,
       };
       addMessageToConversation(newConversation.id, userMessage);
-      startNewGlobalAiDraft();
-      setGlobalAiDraftDisplayName(name.trim(), { userSet: true });
-      appendMessage(GLOBAL_AI_ASSISTANT_KEY, conversationMessageToGlobalChat(userMessage));
+      appendMessage(conversationAssistantKey, conversationMessageToGlobalChat(userMessage));
       setMessages([userMessage]);
       setQuery("");
       try {
@@ -293,7 +291,7 @@ export function ExplorePage() {
         timestamp: new Date(),
       };
       addMessageToConversation(targetConversationId, stub);
-      appendMessage(GLOBAL_AI_ASSISTANT_KEY, conversationMessageToGlobalChat(stub));
+      appendMessage(conversationAssistantKey, conversationMessageToGlobalChat(stub));
       setMessages([userMessage, stub]);
 
       queueMicrotask(() => {
@@ -307,7 +305,7 @@ export function ExplorePage() {
         isCancelled: () => gen !== exploreAssistantPhaseGenRef.current,
         patchMessageInConversation,
         patchGlobalMessage: (messageId, partial) =>
-          patchMessage(GLOBAL_AI_ASSISTANT_KEY, messageId, partial),
+          patchMessage(conversationAssistantKey, messageId, partial),
         syncLocalMessages: (updater) => setMessages(updater),
       }).finally(() => {
         if (gen === exploreAssistantPhaseGenRef.current) {
@@ -323,8 +321,6 @@ export function ExplorePage() {
       patchMessage,
       patchMessageInConversation,
       navigate,
-      startNewGlobalAiDraft,
-      setGlobalAiDraftDisplayName,
     ],
   );
 

@@ -13,8 +13,8 @@ export type AiAssistantRouteContext = {
 
 /**
  * Route-based context for the global AI assistant (single thread).
- * The Explore hero route (`/`) hides the global panel; `/conversation/*` uses the same
- * assistant thread as the rest of the app (see RootLayout).
+ * This only resolves prompt/response context metadata. Assistant thread persistence
+ * (global vs route-scoped) is handled by RootLayout.
  */
 export function resolveAiAssistantRouteContext(
   pathname: string,
@@ -31,7 +31,7 @@ export function resolveAiAssistantRouteContext(
     return { dashboardId: "conversations", sourceOotbId: "explore-thread" };
   }
 
-  // Explore conversation thread — same global assistant; explicit id for prompts + handlers
+  // Explore conversation thread — explicit id for prompts + handlers
   if (pathname.startsWith(ROUTE_PREFIXES.conversation) && params.conversationId) {
     return { dashboardId: params.conversationId, sourceOotbId: "explore-thread" };
   }

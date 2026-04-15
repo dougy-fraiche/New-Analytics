@@ -19,7 +19,10 @@ import { PortalContainerContext } from "../contexts/PortalContainerContext";
 import { CreateAIAgentJobsProvider, useCreateAIAgentJobs } from "../contexts/CreateAIAgentJobsContext";
 import { DashboardChatPanel } from "./DashboardChatPanel";
 import { resolveAiAssistantRouteContext } from "../lib/resolve-ai-assistant-route-context";
-import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
+import {
+  GLOBAL_AI_ASSISTANT_KEY,
+  getExploreConversationAssistantKey,
+} from "../lib/ai-assistant-global";
 import { AiAssistantPanelControlProvider } from "../contexts/AiAssistantPanelControlContext";
 import { ROUTES } from "../routes";
 import { cn } from "./ui/utils";
@@ -210,11 +213,11 @@ function RootLayoutInner() {
       return [{ label: "Settings" }];
     }
 
-    // Drafts list (sub of Explore)
+    // Conversations list (sub of Explore)
     if (location.pathname === "/conversations") {
       return [
         { label: "Explore", href: "/" },
-        { label: "Drafts" },
+        { label: "Conversations" },
       ];
     }
 
@@ -347,6 +350,14 @@ function RootLayoutInner() {
     return trimmed || undefined;
   }, [breadcrumbs, location.pathname, params.dashboardId, params.agentId, getAgentById]);
 
+  const isExploreConversationRoute =
+    location.pathname.startsWith("/conversation/") && Boolean(params.conversationId);
+  const assistantPersistKey =
+    isExploreConversationRoute && params.conversationId
+      ? getExploreConversationAssistantKey(params.conversationId)
+      : GLOBAL_AI_ASSISTANT_KEY;
+  const showAssistantResetButton = !isExploreConversationRoute;
+
   // Check if current route needs full-height layout (no outer scroll/padding — page manages its own)
   const isFullHeightPage =
     location.pathname.includes('/dashboard') ||
@@ -385,10 +396,11 @@ function RootLayoutInner() {
               <DashboardChatPanel
                 dashboardId={aiRouteContext.dashboardId}
                 sourceOotbId={aiRouteContext.sourceOotbId}
+                assistantPersistKey={assistantPersistKey}
+                showResetButton={showAssistantResetButton}
                 pageContextLabel={aiPageContextLabel}
                 onAssistantPanelResizeStart={() => setAssistantPanelResizing(true)}
                 onAssistantPanelResizeEnd={() => setAssistantPanelResizing(false)}
-                onCollapse={() => setAiAssistantOpen(false)}
               />
             </div>
             {/* App shell — sits above the assistant; width + padding animate to expose the panel behind */}

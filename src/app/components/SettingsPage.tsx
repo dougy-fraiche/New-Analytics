@@ -232,7 +232,7 @@ export function SettingsPage() {
           <Separator />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="auto-archive">Auto-archive Drafts After</Label>
+              <Label htmlFor="auto-archive">Auto-archive Conversations After</Label>
               <Select value={autoArchiveDays} onValueChange={setAutoArchiveDays}>
                 <SelectTrigger id="auto-archive">
                   <SelectValue />

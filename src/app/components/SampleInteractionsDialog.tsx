@@ -216,7 +216,7 @@ export function SampleInteractionsDialog({
                   <TableHead>Duration</TableHead>
                   <TableHead>CSAT</TableHead>
                   <TableHead>Skill</TableHead>
-                  <TableHead className={`${tableOverflowMenuColumnClassName} text-center`}>
+                  <TableHead className={`${tableOverflowMenuColumnClassName} px-0 text-center`}>
                     <span className="sr-only">Play sample</span>
                   </TableHead>
                 </TableRow>
@@ -230,7 +230,7 @@ export function SampleInteractionsDialog({
                     <TableCell>{row.duration}</TableCell>
                     <TableCell>{row.csat}</TableCell>
                     <TableCell>{row.skill}</TableCell>
-                    <TableCell className={`${tableOverflowMenuColumnClassName} text-center`}>
+                    <TableCell className={`${tableOverflowMenuColumnClassName} px-0 text-center`}>
                       <Button
                         type="button"
                         variant="ghost"

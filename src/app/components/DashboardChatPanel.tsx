@@ -9,45 +9,26 @@ import {
   type SetStateAction,
 } from "react";
 import {
-  Plus,
+  RotateCcw,
   ArrowUp,
   Square,
   Loader2,
-  History,
   ChevronDown,
-  Trash2,
-  X,
   Check,
   Sparkles,
   Bot,
-  PanelRightClose,
 } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { ResizeHandle } from "./ResizeHandle";
 import { useVoiceInput } from "../hooks/useVoiceInput";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "./ui/empty";
 import { toast } from "sonner";
-import { showDeletedObjectToast } from "../lib/object-deletion-toast";
 import {
   useDashboardChat,
   useDashboardMessages,
-  useGlobalAiConversations,
-  useActiveGlobalAiConversationId,
-  useGlobalAiDraftDisplayName,
-  GLOBAL_AI_DEFAULT_CHAT_TITLE,
   conversationNameFromPrompt,
   type ChatMessage,
-  type GlobalAiConversation,
 } from "../contexts/DashboardChatContext";
 import { useAiAssistantExploreBridge } from "../contexts/AiAssistantExploreBridgeContext";
 import {
@@ -57,7 +38,6 @@ import {
 import { Link, useLocation, useNavigate } from "react-router";
 import { ROUTES } from "../routes";
 import { getChartIconForWidgetType } from "./ChartVariants";
-import { Sheet, SheetContent, SheetTitle } from "./ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { cn } from "./ui/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
@@ -93,14 +73,16 @@ interface DashboardChatPanelProps {
    * Falls back to dashboardId when not provided.
    */
   sourceOotbId?: string;
+  /** Chat store key for the assistant panel thread (global or route-scoped). */
+  assistantPersistKey: string;
+  /** Hide reset in routes where thread reset is disallowed (e.g. conversation pages). */
+  showResetButton?: boolean;
   placeholder?: string;
   /** Human-readable current page title for the input context pill (from route / breadcrumbs). */
   pageContextLabel?: string;
   /** Lets the app shell disable width transitions while the user drags the panel edge. */
   onAssistantPanelResizeStart?: () => void;
   onAssistantPanelResizeEnd?: () => void;
-  /** Collapse/hide the right assistant panel. */
-  onCollapse?: () => void;
 }
 
 // ─── Dashboard-specific suggested questions ──────────────────────────────────
@@ -396,40 +378,6 @@ const CHAT_PANEL_MIN_WIDTH_REM = 280 / REM_PX; // 17.5rem
 const CHAT_PANEL_MAX_WIDTH_REM = 600 / REM_PX; // 37.5rem
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
-
-function isSameCalendarDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
-
-function isYesterday(d: Date, now: Date): boolean {
-  const y = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
-  return isSameCalendarDay(d, y);
-}
-
-/** Relative time for history cards: minutes / hours on the same day, then "yesterday", then day count. */
-function formatHistoryRelativeTime(d: Date, now: Date = new Date()): string {
-  const diffMs = now.getTime() - d.getTime();
-  if (diffMs < 0) return "just now";
-  const minutesTotal = Math.floor(diffMs / 60_000);
-  if (isSameCalendarDay(d, now)) {
-    if (minutesTotal < 1) return "just now";
-    if (minutesTotal < 60) {
-      return minutesTotal === 1 ? "1 minute ago" : `${minutesTotal} minutes ago`;
-    }
-    const hours = Math.floor(minutesTotal / 60);
-    return hours === 1 ? "1 hour ago" : `${hours} hours ago`;
-  }
-  if (isYesterday(d, now)) return "yesterday";
-  const startD = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const startN = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const dayDiff = Math.round((startN.getTime() - startD.getTime()) / 86_400_000);
-  if (dayDiff === 1) return "1 day ago";
-  return `${dayDiff} days ago`;
-}
 
 function formatInlineBold(text: string): ReactNode[] {
   const segments = text.split(/(\*\*[^*]+\*\*)/g);
@@ -900,114 +848,17 @@ function ThreadView({
   );
 }
 
-function historyCardDisplayTitle(conversation: GlobalAiConversation): string {
-  const firstUser = conversation.messages.find((m) => m.role === "user" && m.content.trim());
-  const isDefaultName = conversation.name.trim() === GLOBAL_AI_DEFAULT_CHAT_TITLE;
-  if (conversation.usesAutoTitle && isDefaultName && firstUser) {
-    return conversationNameFromPrompt(firstUser.content);
-  }
-  return conversation.name;
-}
-
-function HistoryView({
-  conversations,
-  onSelectConversation,
-  onDeleteConversation,
-}: {
-  conversations: GlobalAiConversation[];
-  onSelectConversation: (conversationId: string) => void;
-  onDeleteConversation: (conversationId: string) => void;
-}) {
-  const [, setRelativeTimeTick] = useState(0);
-
-  useEffect(() => {
-    const id = window.setInterval(() => setRelativeTimeTick((t) => t + 1), 60_000);
-    return () => clearInterval(id);
-  }, []);
-
-  if (conversations.length === 0) {
-    return (
-      <div className="h-full min-h-0 p-6 flex items-center justify-center text-center">
-        <section>
-          <p className="text-sm font-medium">No previous conversations</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Start a new chat and send a prompt to save it here.
-          </p>
-        </section>
-      </div>
-    );
-  }
-
-  return (
-    <div className="h-full overflow-y-auto space-y-2 pt-0 px-4 pb-4">
-      {conversations.map((conversation) => {
-        const displayTitle = historyCardDisplayTitle(conversation);
-        return (
-          <div
-            key={conversation.id}
-            role="button"
-            tabIndex={0}
-            onClick={() => onSelectConversation(conversation.id)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                onSelectConversation(conversation.id);
-              }
-            }}
-            className={cn(
-              "group w-full rounded-lg border border-border bg-background p-4 text-left transition-colors cursor-pointer outline-none hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-            )}
-          >
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
-              <p
-                className="min-w-0 text-sm font-normal text-foreground truncate"
-                title={displayTitle}
-              >
-                {displayTitle}
-              </p>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      "h-8 w-8 shrink-0",
-                      "opacity-0 transition-opacity group-hover:opacity-100",
-                      "focus-visible:opacity-100",
-                    )}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeleteConversation(conversation.id);
-                    }}
-                    aria-label="Delete conversation"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="left">Delete conversation</TooltipContent>
-              </Tooltip>
-            </div>
-            <p className="mt-0.5 text-sm font-normal text-neutral-400">
-              {formatHistoryRelativeTime(conversation.updatedAt)}
-            </p>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function DashboardChatPanel({
   dashboardId,
   sourceOotbId,
+  assistantPersistKey,
+  showResetButton = true,
   placeholder,
   pageContextLabel,
   onAssistantPanelResizeStart,
   onAssistantPanelResizeEnd,
-  onCollapse,
 }: DashboardChatPanelProps) {
   const dashboardChat = useDashboardChat();
   const location = useLocation();
@@ -1017,52 +868,21 @@ export function DashboardChatPanel({
     onSend: exploreOnSend,
     onCancelInFlight: exploreCancelInFlight,
   } = useAiAssistantExploreBridge();
-  const conversations = useGlobalAiConversations();
-  const activeConversationId = useActiveGlobalAiConversationId();
-  const draftDisplayName = useGlobalAiDraftDisplayName();
-
-  const activeConversation = useMemo(
-    () => conversations.find((c) => c.id === activeConversationId),
-    [conversations, activeConversationId],
-  );
-
-  const [showHistory, setShowHistory] = useState(false);
-  const [panelPortalEl, setPanelPortalEl] = useState<HTMLDivElement | null>(null);
-
-  /**
-   * While actively chatting (thread view) with an auto-titled thread, keep the header as "New Chat"
-   * until manual rename or leaving the thread (finalize).
-   */
-  const headerDisplayTitle = useMemo(() => {
-    if (!activeConversationId) return draftDisplayName;
-    const c = activeConversation;
-    if (!c) return GLOBAL_AI_DEFAULT_CHAT_TITLE;
-    const isDefaultName = c.name.trim() === GLOBAL_AI_DEFAULT_CHAT_TITLE;
-    if (c.usesAutoTitle && isDefaultName) {
-      return GLOBAL_AI_DEFAULT_CHAT_TITLE;
-    }
-    return c.name;
-  }, [activeConversationId, activeConversation, draftDisplayName]);
 
   // The OOTB type used for prompts / AI responses: explicit sourceOotbId > dashboardId
   const ootbTypeId = sourceOotbId || dashboardId;
+  const isGlobalAssistantThread = assistantPersistKey === GLOBAL_AI_ASSISTANT_KEY;
 
-  const storedMessages = useDashboardMessages(GLOBAL_AI_ASSISTANT_KEY);
+  const storedMessages = useDashboardMessages(assistantPersistKey);
 
   const [query, setQuery] = useState("");
   const [internalIsThinking, setInternalIsThinking] = useState(false);
   const [panelWidthRem, setPanelWidthRem] = useState(CHAT_PANEL_DEFAULT_WIDTH_REM);
   const [isResizing, setIsResizing] = useState(false);
-  const [titleEditing, setTitleEditing] = useState(false);
-  const [titleEditValue, setTitleEditValue] = useState("");
-  const titleEditBaselineRef = useRef("");
-  const titleInputRef = useRef<HTMLInputElement | null>(null);
   /** Bumps to cancel in-flight phased assistant replies (new chat, switch thread, route change). */
   const phaseGenerationRef = useRef(0);
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
-  const historyScrollRef = useRef<HTMLDivElement | null>(null);
   const [chatFade, setChatFade] = useState({ top: false, bottom: false });
-  const [historyFade, setHistoryFade] = useState({ top: false, bottom: false });
 
   const messages = storedMessages;
   const isThinking = exploreOnSend ? exploreThinking : internalIsThinking;
@@ -1087,12 +907,6 @@ export function DashboardChatPanel({
     assistantReplyInFlight || (!exploreOnSend && isThinking);
   const canSend = query.trim().length > 0;
 
-  useEffect(() => {
-    if (!titleEditing) return;
-    titleInputRef.current?.focus();
-    titleInputRef.current?.select();
-  }, [titleEditing]);
-
   const updateFadeForElement = useCallback(
     (
       el: HTMLDivElement | null,
@@ -1113,16 +927,12 @@ export function DashboardChatPanel({
 
   useEffect(() => {
     const raf = requestAnimationFrame(() => {
-      if (showHistory) {
-        updateFadeForElement(historyScrollRef.current, setHistoryFade);
-      } else {
-        updateFadeForElement(chatScrollRef.current, setChatFade);
-      }
+      updateFadeForElement(chatScrollRef.current, setChatFade);
     });
     return () => cancelAnimationFrame(raf);
-  }, [showHistory, messages.length, conversations.length, isThinking, updateFadeForElement]);
+  }, [messages.length, isThinking, updateFadeForElement]);
 
-  const routeContextKey = `${dashboardId ?? ""}|${sourceOotbId ?? ""}`;
+  const routeContextKey = `${dashboardId ?? ""}|${sourceOotbId ?? ""}|${assistantPersistKey}`;
   const prevRouteContextKeyRef = useRef(routeContextKey);
   useEffect(() => {
     if (prevRouteContextKeyRef.current !== routeContextKey) {
@@ -1143,7 +953,11 @@ export function DashboardChatPanel({
       const gen = phaseGenerationRef.current;
 
       if (!detail.appendToCurrentConversation) {
-        dashboardChat.startNewGlobalAiDraft();
+        if (isGlobalAssistantThread) {
+          dashboardChat.startNewGlobalAiDraft();
+        } else {
+          dashboardChat.clearMessages(assistantPersistKey);
+        }
       }
 
       const scope = detail.scopeTitle.trim();
@@ -1154,7 +968,7 @@ export function DashboardChatPanel({
         content: userText,
         timestamp: new Date(),
       };
-      dashboardChat.appendMessage(GLOBAL_AI_ASSISTANT_KEY, userMessage);
+      dashboardChat.appendMessage(assistantPersistKey, userMessage);
 
       const assistantId = crypto.randomUUID();
       const finalPayload = buildCreateAIAgentReplyPayload(scope, {
@@ -1168,7 +982,7 @@ export function DashboardChatPanel({
         content: "",
         timestamp: new Date(),
       };
-      dashboardChat.appendMessage(GLOBAL_AI_ASSISTANT_KEY, stub);
+      dashboardChat.appendMessage(assistantPersistKey, stub);
 
       void runPhasedAssistantReply({
         final: finalPayload,
@@ -1176,7 +990,7 @@ export function DashboardChatPanel({
         isCancelled: () => gen !== phaseGenerationRef.current,
         patch: (partial) => {
           if (gen !== phaseGenerationRef.current) return;
-          dashboardChat.patchMessage(GLOBAL_AI_ASSISTANT_KEY, assistantId, partial);
+          dashboardChat.patchMessage(assistantPersistKey, assistantId, partial);
           if (partial.toolSteps && partial.toolSteps.length > 0) {
             const runningIdx = partial.toolSteps.findIndex((s) => s.status === "running");
             const step = runningIdx >= 0 ? runningIdx + 1 : partial.toolSteps.length;
@@ -1190,7 +1004,7 @@ export function DashboardChatPanel({
       }).then(() => {
         const cancelled = gen !== phaseGenerationRef.current;
         if (!cancelled) {
-          dashboardChat.patchMessage(GLOBAL_AI_ASSISTANT_KEY, assistantId, {
+          dashboardChat.patchMessage(assistantPersistKey, assistantId, {
             createAgentView: { scopeTitle: scope, agentId: detail.agentId },
           });
         }
@@ -1212,6 +1026,8 @@ export function DashboardChatPanel({
   }, [
     isExploreHome,
     dashboardChat,
+    assistantPersistKey,
+    isGlobalAssistantThread,
     ootbTypeId,
     pageContextLabel,
     location.pathname,
@@ -1236,10 +1052,14 @@ export function DashboardChatPanel({
       const gen = phaseGenerationRef.current;
       setInternalIsThinking(true);
 
-      dashboardChat.startNewGlobalAiDraft();
-      dashboardChat.setGlobalAiDraftDisplayName(detail.conversationTitle, {
-        userSet: true,
-      });
+      if (isGlobalAssistantThread) {
+        dashboardChat.startNewGlobalAiDraft();
+        dashboardChat.setGlobalAiDraftDisplayName(detail.conversationTitle, {
+          userSet: true,
+        });
+      } else {
+        dashboardChat.clearMessages(assistantPersistKey);
+      }
 
       const userMessage: ChatMessage = {
         id: crypto.randomUUID(),
@@ -1247,7 +1067,7 @@ export function DashboardChatPanel({
         content: detail.prompt,
         timestamp: new Date(),
       };
-      dashboardChat.appendMessage(GLOBAL_AI_ASSISTANT_KEY, userMessage);
+      dashboardChat.appendMessage(assistantPersistKey, userMessage);
 
       const assistantId = crypto.randomUUID();
       const finalPayload = buildOpportunityInvestigationAssistantPayload(
@@ -1260,14 +1080,14 @@ export function DashboardChatPanel({
         content: "",
         timestamp: new Date(),
       };
-      dashboardChat.appendMessage(GLOBAL_AI_ASSISTANT_KEY, stub);
+      dashboardChat.appendMessage(assistantPersistKey, stub);
 
       void runPhasedAssistantReply({
         final: finalPayload,
         isCancelled: () => gen !== phaseGenerationRef.current,
         patch: (partial) => {
           if (gen !== phaseGenerationRef.current) return;
-          dashboardChat.patchMessage(GLOBAL_AI_ASSISTANT_KEY, assistantId, partial);
+          dashboardChat.patchMessage(assistantPersistKey, assistantId, partial);
         },
       }).finally(() => {
         if (gen === phaseGenerationRef.current) {
@@ -1275,7 +1095,7 @@ export function DashboardChatPanel({
         }
       });
     },
-    [dashboardChat],
+    [dashboardChat, assistantPersistKey, isGlobalAssistantThread],
   );
 
   useEffect(() => {
@@ -1409,7 +1229,7 @@ export function DashboardChatPanel({
         content: message,
         timestamp: new Date(),
       };
-      dashboardChat.appendMessage(GLOBAL_AI_ASSISTANT_KEY, userMessage);
+      dashboardChat.appendMessage(assistantPersistKey, userMessage);
       setInternalIsThinking(true);
 
       const gen = ++phaseGenerationRef.current;
@@ -1424,14 +1244,14 @@ export function DashboardChatPanel({
         content: "",
         timestamp: new Date(),
       };
-      dashboardChat.appendMessage(GLOBAL_AI_ASSISTANT_KEY, stub);
+      dashboardChat.appendMessage(assistantPersistKey, stub);
 
       void runPhasedAssistantReply({
         final: finalPayload,
         isCancelled: () => gen !== phaseGenerationRef.current,
         patch: (partial) => {
           if (gen !== phaseGenerationRef.current) return;
-          dashboardChat.patchMessage(GLOBAL_AI_ASSISTANT_KEY, assistantId, partial);
+          dashboardChat.patchMessage(assistantPersistKey, assistantId, partial);
         },
       }).finally(() => {
         if (gen === phaseGenerationRef.current) {
@@ -1439,7 +1259,14 @@ export function DashboardChatPanel({
         }
       });
     },
-    [dashboardChat, ootbTypeId, pageContextLabel, location.pathname, location.search],
+    [
+      dashboardChat,
+      assistantPersistKey,
+      ootbTypeId,
+      pageContextLabel,
+      location.pathname,
+      location.search,
+    ],
   );
 
   const handleSend = (message: string = query) => {
@@ -1466,7 +1293,7 @@ export function DashboardChatPanel({
     const threadMsgs = storedMessages.filter((m) => !m.dashboardData);
     const last = threadMsgs[threadMsgs.length - 1];
     if (last?.role === "assistant") {
-      dashboardChat.patchMessage(GLOBAL_AI_ASSISTANT_KEY, last.id, {
+      dashboardChat.patchMessage(assistantPersistKey, last.id, {
         content: last.content.trim() ? last.content : "Stopped.",
         isTypingContent: false,
         toolSteps: undefined,
@@ -1475,56 +1302,24 @@ export function DashboardChatPanel({
   }, [
     exploreOnSend,
     exploreCancelInFlight,
+    assistantPersistKey,
     storedMessages,
     dashboardChat,
   ]);
 
-  const handleNewChat = useCallback(() => {
+  const handleResetChat = useCallback(() => {
     phaseGenerationRef.current += 1;
     setInternalIsThinking(false);
     setQuery("");
-    setShowHistory(false);
-    setTitleEditing(false);
-    dashboardChat.startNewGlobalAiDraft();
-  }, [dashboardChat]);
-
-  const handleSelectConversation = useCallback(
-    (conversationId: string) => {
-      phaseGenerationRef.current += 1;
-      dashboardChat.setActiveGlobalAiConversation(conversationId);
-      setShowHistory(false);
-      setInternalIsThinking(false);
-      setTitleEditing(false);
-    },
-    [dashboardChat],
-  );
-
-  const beginTitleEdit = useCallback(() => {
-    titleEditBaselineRef.current = headerDisplayTitle;
-    setTitleEditValue(headerDisplayTitle);
-    setTitleEditing(true);
-  }, [headerDisplayTitle]);
-
-  const commitTitleEdit = useCallback(() => {
-    const next = titleEditValue.trim() || GLOBAL_AI_DEFAULT_CHAT_TITLE;
-    const baseline = titleEditBaselineRef.current.trim() || GLOBAL_AI_DEFAULT_CHAT_TITLE;
-    const userChangedFromBaseline = next !== baseline;
-
-    if (activeConversationId) {
-      dashboardChat.updateGlobalAiConversationTitle(activeConversationId, next);
-    } else {
-      dashboardChat.setGlobalAiDraftDisplayName(next, { userSet: userChangedFromBaseline });
+    if (isGlobalAssistantThread) {
+      dashboardChat.startNewGlobalAiDraft();
+      return;
     }
-    setTitleEditing(false);
-  }, [titleEditValue, activeConversationId, dashboardChat]);
-
-  const cancelTitleEdit = useCallback(() => {
-    setTitleEditing(false);
-  }, []);
+    dashboardChat.clearMessages(assistantPersistKey);
+  }, [dashboardChat, assistantPersistKey, isGlobalAssistantThread]);
 
   return (
     <div
-      ref={setPanelPortalEl}
       data-chat-panel-root="true"
       className="h-full flex flex-col bg-page relative shrink-0"
       style={{ width: `${panelWidthRem}rem`, transition: isResizing ? 'none' : 'width 200ms ease' }}
@@ -1540,72 +1335,22 @@ export function DashboardChatPanel({
 
       <div className="flex-1 min-h-0 flex flex-col min-w-0 pt-4">
         <div className="shrink-0 px-4 flex items-center justify-between gap-2 h-[60px] min-w-0 bg-page relative z-30">
-        <div className="min-w-0 flex-1 flex items-center gap-1">
-              {onCollapse ? (
+          <div className="min-w-0 flex-1 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+            <h2 className="truncate text-sm font-semibold text-foreground">AI Assistant</h2>
+          </div>
+            {showResetButton ? (
+              <div className="flex items-center gap-0.5 shrink-0">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 shrink-0"
-                      onClick={onCollapse}
-                      aria-label="Collapse assistant panel"
-                    >
-                      <PanelRightClose className="h-4 w-4" />
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleResetChat} aria-label="Reset Chat">
+                      <RotateCcw className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom">Collapse panel</TooltipContent>
+                  <TooltipContent side="bottom">Reset Chat</TooltipContent>
                 </Tooltip>
-              ) : null}
-        <div className="min-w-0 flex-1">
-              {titleEditing ? (
-                <Input
-                  ref={titleInputRef}
-                  value={titleEditValue}
-                  onChange={(e) => setTitleEditValue(e.target.value)}
-                  onBlur={commitTitleEdit}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      commitTitleEdit();
-                    }
-                    if (e.key === "Escape") {
-                      e.preventDefault();
-                      cancelTitleEdit();
-                    }
-                  }}
-                  className="h-8 text-sm font-semibold bg-transparent border-dashed"
-                  aria-label="Chat title"
-                />
-              ) : (
-                <button
-                  type="button"
-                  onClick={beginTitleEdit}
-                  className="text-left w-full min-w-0 truncate text-sm font-semibold text-foreground rounded-md px-2 py-1 -ml-2 border border-transparent transition-colors hover:bg-muted/80 hover:border-border/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                >
-                  {headerDisplayTitle}
-                </button>
-              )}
-            </div>
-            </div>
-            <div className="flex items-center gap-0.5 shrink-0">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleNewChat} aria-label="New Chat">
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">New Chat</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowHistory(true)} aria-label="Open History">
-                    <History className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">Open History</TooltipContent>
-              </Tooltip>
-            </div>
+              </div>
+            ) : null}
         </div>
 
         <div className="flex-1 min-h-0 relative overflow-hidden min-w-0">
@@ -1716,72 +1461,6 @@ export function DashboardChatPanel({
             </section>
           </div>
         </div>
-
-      <Sheet
-        open={showHistory}
-        onOpenChange={(open) => {
-          if (!open) {
-            setShowHistory(false);
-            setTitleEditing(false);
-          }
-        }}
-      >
-        <SheetContent
-          variant="contained"
-          side="right"
-          portalContainer={panelPortalEl}
-          hideCloseButton
-          aria-describedby={undefined}
-          className="bg-neutral-0 border-border rounded-xl shadow-md"
-        >
-          <div className="shrink-0 px-4 flex items-center justify-between gap-2 h-[60px] min-w-0 bg-neutral-0">
-            <SheetTitle className="min-w-0 flex-1 text-sm font-semibold tracking-tight text-foreground text-left">
-              Chat History
-            </SheetTitle>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 shrink-0"
-                  onClick={() => {
-                    setShowHistory(false);
-                    setTitleEditing(false);
-                  }}
-                  aria-label="Close history and return to chat"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Back to chat</TooltipContent>
-            </Tooltip>
-          </div>
-          <div className="flex-1 min-h-0 relative overflow-hidden min-w-0">
-            <div
-              ref={historyScrollRef}
-              onScroll={() => updateFadeForElement(historyScrollRef.current, setHistoryFade)}
-              className="h-full overflow-y-auto overflow-x-hidden"
-            >
-              <HistoryView
-                conversations={conversations}
-                onSelectConversation={handleSelectConversation}
-                onDeleteConversation={(id) => {
-                  dashboardChat.deleteGlobalAiConversation(id);
-                  showDeletedObjectToast({ objectType: "Conversation" });
-                }}
-              />
-            </div>
-            <div
-              className={`pointer-events-none absolute inset-x-0 top-0 z-10 h-14 bg-gradient-to-b from-neutral-0 from-[12%] via-neutral-0/80 via-45% to-transparent to-100% transition-opacity ${historyFade.top ? "opacity-100" : "opacity-0"}`}
-              aria-hidden
-            />
-            <div
-              className={`pointer-events-none absolute inset-x-0 bottom-0 z-10 h-14 bg-gradient-to-t from-neutral-0 from-[12%] via-neutral-0/80 via-45% to-transparent to-100% transition-opacity ${historyFade.bottom ? "opacity-100" : "opacity-0"}`}
-              aria-hidden
-            />
-          </div>
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }

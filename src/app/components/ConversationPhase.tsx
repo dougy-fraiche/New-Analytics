@@ -60,7 +60,7 @@ import { useKeyboardShortcut } from "../hooks/useKeyboardShortcuts";
 import { useDashboardChat } from "../contexts/DashboardChatContext";
 import {
   EXPLORE_THREAD_USER_TURN_EVENT,
-  GLOBAL_AI_ASSISTANT_KEY,
+  getExploreConversationAssistantKey,
 } from "../lib/ai-assistant-global";
 import { conversationMessageToGlobalChat } from "../lib/conversation-message-to-global-chat";
 import { exploreAssistantPartialToGlobalPatch } from "../lib/explore-to-global-ai-patch";
@@ -136,7 +136,8 @@ export function ConversationPhase({
   const { projects, addDashboardToProject, addProject, addStandaloneDashboard } = useProjects();
   const navigate = useNavigate();
   const headerActionsSlot = useHeaderActionsSlot();
-  const { appendMessage, patchMessage } = useDashboardChat();
+  const dashboardChat = useDashboardChat();
+  const { appendMessage, patchMessage } = dashboardChat;
   const { setExploreBridge } = useAiAssistantExploreBridge();
 
   // ── Local state ───────────────────────────────────────────────────
@@ -201,6 +202,7 @@ export function ConversationPhase({
     setIsThinking(false);
     const convId = currentConversationId;
     if (!convId) return;
+    const conversationAssistantKey = getExploreConversationAssistantKey(convId);
     const prev = messagesRef.current;
     const last = prev[prev.length - 1];
     if (last?.role !== "assistant") return;
@@ -212,7 +214,7 @@ export function ConversationPhase({
     patchMessageInConversation(convId, last.id, partial);
     const g = exploreAssistantPartialToGlobalPatch(partial);
     if (Object.keys(g).length > 0) {
-      patchMessage(GLOBAL_AI_ASSISTANT_KEY, last.id, g);
+      patchMessage(conversationAssistantKey, last.id, g);
     }
     setMessages((p) => p.map((m) => (m.id === last.id ? { ...m, ...partial } : m)));
   }, [
@@ -235,6 +237,8 @@ export function ConversationPhase({
       window.dispatchEvent(new Event(EXPLORE_THREAD_USER_TURN_EVENT));
 
       const targetConversationId = currentConversationId;
+      const conversationAssistantKey =
+        getExploreConversationAssistantKey(targetConversationId);
 
       const userMessage: Message = {
         id: crypto.randomUUID(),
@@ -244,7 +248,7 @@ export function ConversationPhase({
         ...meta,
       };
       addMessageToConversation(targetConversationId, userMessage);
-      appendMessage(GLOBAL_AI_ASSISTANT_KEY, conversationMessageToGlobalChat(userMessage));
+      appendMessage(conversationAssistantKey, conversationMessageToGlobalChat(userMessage));
       setMessages((prev) => [...prev, userMessage]);
       onQueryChange("");
       setIsThinking(true);
@@ -259,7 +263,7 @@ export function ConversationPhase({
         timestamp: new Date(),
       };
       addMessageToConversation(targetConversationId, stub);
-      appendMessage(GLOBAL_AI_ASSISTANT_KEY, conversationMessageToGlobalChat(stub));
+      appendMessage(conversationAssistantKey, conversationMessageToGlobalChat(stub));
       setMessages((prev) => [...prev, stub]);
 
       void runPhasedExploreAssistantReply({
@@ -271,7 +275,7 @@ export function ConversationPhase({
           conversationIdRef.current !== targetConversationId,
         patchMessageInConversation,
         patchGlobalMessage: (messageId, partial) =>
-          patchMessage(GLOBAL_AI_ASSISTANT_KEY, messageId, partial),
+          patchMessage(conversationAssistantKey, messageId, partial),
         syncLocalMessages: (updater) => setMessages(updater),
       }).finally(() => {
         if (gen === assistantPhaseGenRef.current) {
@@ -353,6 +357,9 @@ export function ConversationPhase({
     toast.success("Dashboard saved successfully!");
     // Saved dashboards should no longer appear as active conversations.
     if (currentConversationId) {
+      dashboardChat.clearMessages(
+        getExploreConversationAssistantKey(currentConversationId),
+      );
       deleteConversation(currentConversationId);
     }
     // Move from conversation draft view to the persisted dashboard destination.
@@ -395,6 +402,10 @@ export function ConversationPhase({
   const handleDeleteConversation = () => {
     if (currentConversationId) {
       const snapshot = conversations.find((c) => c.id === currentConversationId);
+      const conversationAssistantKey =
+        getExploreConversationAssistantKey(currentConversationId);
+      const assistantSnapshot = dashboardChat.getMessages(conversationAssistantKey);
+      dashboardChat.clearMessages(conversationAssistantKey);
       deleteConversation(currentConversationId);
       setDeleteConfirmOpen(false);
       showDeletedObjectToast({
@@ -403,6 +414,9 @@ export function ConversationPhase({
         onUndo: snapshot
           ? () => {
               restoreConversation(snapshot);
+              if (assistantSnapshot.length > 0) {
+                dashboardChat.setMessages(conversationAssistantKey, assistantSnapshot);
+              }
             }
           : undefined,
       });

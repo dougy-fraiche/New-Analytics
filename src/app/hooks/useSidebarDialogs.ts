@@ -1,6 +1,8 @@
 import { useReducer } from "react";
 import { useProjects, type Project } from "../contexts/ProjectContext";
 import { useConversations } from "../contexts/ConversationContext";
+import { useDashboardChat } from "../contexts/DashboardChatContext";
+import { getExploreConversationAssistantKey } from "../lib/ai-assistant-global";
 import { toast } from "sonner";
 import { showDeletedObjectToast } from "../lib/object-deletion-toast";
 
@@ -190,6 +192,7 @@ export function useSidebarDialogs(options?: UseSidebarDialogsOptions) {
     moveDashboardToStandalone,
   } = useProjects();
   const { conversations, renameConversation, deleteConversation, restoreConversation } = useConversations();
+  const dashboardChat = useDashboardChat();
 
   // ── Handlers ───────────────────────────────────────────────────────────
 
@@ -310,13 +313,19 @@ export function useSidebarDialogs(options?: UseSidebarDialogsOptions) {
     if (!state.deleteConversationConfirm) return;
     const { conversationId, conversationName } = state.deleteConversationConfirm;
     const snapshot = conversations.find((conversation) => conversation.id === conversationId);
+    const assistantKey = getExploreConversationAssistantKey(conversationId);
+    const assistantSnapshot = dashboardChat.getMessages(assistantKey);
     deleteConversation(conversationId);
+    dashboardChat.clearMessages(assistantKey);
     showDeletedObjectToast({
       objectType: "Conversation",
       objectName: conversationName,
       onUndo: snapshot
         ? () => {
             restoreConversation(snapshot);
+            if (assistantSnapshot.length > 0) {
+              dashboardChat.setMessages(assistantKey, assistantSnapshot);
+            }
           }
         : undefined,
     });

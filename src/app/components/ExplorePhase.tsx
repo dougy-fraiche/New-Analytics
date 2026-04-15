@@ -15,7 +15,7 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "./
 import { ChatInputBar } from "./ChatInputBar";
 import { KpiMetricValueTitle } from "./KpiMetricValueTitle";
 import { KpiSparkline } from "./KpiSparkline";
-import { pageRootListScrollGutterClassName } from "./PageChrome";
+import { cn } from "./ui/utils";
 import {
   type TopInsightCard,
   exploreHeadings,
@@ -154,6 +154,10 @@ export function ExplorePhase({
   const [dismissedTopInsightIds, setDismissedTopInsightIds] = useState<Set<number>>(
     () => new Set(),
   );
+  const [exploreContentNode, setExploreContentNode] = useState<HTMLDivElement | null>(null);
+  const [exploreContentWidth, setExploreContentWidth] = useState<number>(() =>
+    typeof window === "undefined" ? 0 : window.innerWidth,
+  );
   const exploreSurfaceRef = useRef<HTMLDivElement>(null);
   const contentScrollRef = useRef<HTMLDivElement>(null);
   const contentBodyRef = useRef<HTMLDivElement>(null);
@@ -166,6 +170,30 @@ export function ExplorePhase({
     () => getFirstName(currentUserProfile.displayName),
     [],
   );
+  const setExploreContentRef = useCallback((node: HTMLDivElement | null) => {
+    setExploreContentNode(node);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!exploreContentNode) return;
+
+    const update = () => {
+      setExploreContentWidth(exploreContentNode.clientWidth);
+    };
+
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(exploreContentNode);
+    return () => observer.disconnect();
+  }, [exploreContentNode]);
+
+  const isNarrowExploreContainer = exploreContentWidth < 768;
+  const topInsightGridColumnsClassName = isNarrowExploreContainer
+    ? "grid-cols-1"
+    : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
+  const aiProductivityGridColumnsClassName = isNarrowExploreContainer
+    ? "grid-cols-1"
+    : "grid-cols-1 md:grid-cols-3";
   const aiAgentProductivityMetrics = useMemo(
     () => {
       const baseMetrics = [
@@ -341,7 +369,7 @@ export function ExplorePhase({
   const renderTopInsightCard = (card: TopInsightCard) => (
     <Card
       key={card.id}
-      className="group/widget relative flex h-[8rem] shrink-0 flex-col overflow-hidden transition-[box-shadow,border-color] hover:border-primary/30 hover:shadow-md"
+      className="group/widget relative flex h-auto min-h-[8rem] shrink-0 flex-col overflow-hidden transition-[box-shadow,border-color] hover:border-primary/30 hover:shadow-md sm:h-[8rem]"
     >
       {card.segment === "anomaly" ? (
         <DropdownMenu>
@@ -447,8 +475,8 @@ export function ExplorePhase({
               </div>
             </div>
 
-            <div className={pageRootListScrollGutterClassName}>
-              <div className={exploreMainContentClassName}>
+            <div className="w-full min-w-0 px-8 pt-8">
+              <div ref={setExploreContentRef} className={exploreMainContentClassName}>
                 {!allAnomalyInsightsDismissed && (
                   <section className="mb-8 flex flex-col items-center">
                     <div className="mx-auto w-full">
@@ -461,7 +489,7 @@ export function ExplorePhase({
                           Active anomalies surfaced from your operations data, updated every 24 hours
                         </p>
                       </div>
-                      <div className="grid auto-rows-max grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      <div className={cn("grid auto-rows-max gap-4", topInsightGridColumnsClassName)}>
                         {anomalyInsights.length === 0 ? (
                           <Empty variant="solid" className="col-span-full min-h-[180px] bg-white">
                             <EmptyHeader>
@@ -493,7 +521,7 @@ export function ExplorePhase({
                         Priority opportunities with action-ready recommendations
                       </p>
                     </div>
-                    <div className="grid auto-rows-max grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    <div className={cn("grid auto-rows-max gap-4", topInsightGridColumnsClassName)}>
                       {recommendedActionInsights.length === 0 ? (
                         <Empty variant="solid" className="col-span-full min-h-[180px] bg-white">
                           <EmptyHeader>
@@ -526,7 +554,7 @@ export function ExplorePhase({
                       AI Agent Productivity
                     </h2>
                   </div>
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                  <div className={cn("grid gap-4", aiProductivityGridColumnsClassName)}>
                     {aiAgentProductivityMetrics.map((metric) => (
                       <Card
                         key={metric.label}

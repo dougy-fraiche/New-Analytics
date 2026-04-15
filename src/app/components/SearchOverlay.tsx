@@ -109,14 +109,14 @@ export function SearchOverlay({ open, onOpenChange }: SearchOverlayProps) {
     { value: "all", label: "All" },
     { value: "navigation", label: "Pages" },
     { value: "dashboards", label: "Dashboards" },
-    { value: "conversations", label: "Drafts" },
+    { value: "conversations", label: "Conversations" },
     { value: "folders", label: "Folders" },
   ];
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
       <CommandInput
-        placeholder="Search dashboards, drafts, pages..."
+        placeholder="Search dashboards, conversations, pages..."
         value={search}
         onValueChange={setSearch}
       />
@@ -200,9 +200,9 @@ export function SearchOverlay({ open, onOpenChange }: SearchOverlayProps) {
                 <Sparkles className="mr-2 h-4 w-4" />
                 <span>Recommended Actions</span>
               </CommandItem>
-              <CommandItem value="Drafts" onSelect={() => handleSelect(ROUTES.CONVERSATIONS, "Drafts")}>
+              <CommandItem value="Conversations" onSelect={() => handleSelect(ROUTES.CONVERSATIONS, "Conversations")}>
                 <MessageSquare className="mr-2 h-4 w-4" />
-                <span>Drafts</span>
+                <span>Conversations</span>
               </CommandItem>
               <CommandItem value="Settings" onSelect={() => handleSelect(ROUTES.SETTINGS, "Settings")}>
                 <Settings className="mr-2 h-4 w-4" />
@@ -312,7 +312,7 @@ export function SearchOverlay({ open, onOpenChange }: SearchOverlayProps) {
 
         {/* Recent Conversations (live from context) */}
         {show("conversations") && activeConversations.length > 0 && (
-          <CommandGroup heading="Drafts">
+          <CommandGroup heading="Conversations">
             {activeConversations.slice(0, 8).map((conversation) => (
               <CommandItem
                 key={conversation.id}

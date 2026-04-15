@@ -192,10 +192,10 @@ export function SidebarDialogs({
       >
         <DialogContent className="sm:max-w-[25rem]">
           <DialogHeader>
-            <DialogTitle>Rename Draft</DialogTitle>
+            <DialogTitle>Rename Conversation</DialogTitle>
           </DialogHeader>
           <div className="grid gap-2 py-4">
-            <Label className="sr-only" htmlFor="rename-conversation">Draft Name</Label>
+            <Label className="sr-only" htmlFor="rename-conversation">Conversation Name</Label>
             <Input
               id="rename-conversation"
               value={state.renameConversationDialog?.name || ""}

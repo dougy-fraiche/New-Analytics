@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import { MoreHorizontal, Pencil, Trash2, Archive, Search, MessageSquare, RotateCcw } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, Search, MessageSquare, RotateCcw } from "lucide-react";
 import { Button } from "./ui/button";
 import { Checkbox } from "./ui/checkbox";
 import { Badge } from "./ui/badge";
@@ -30,7 +30,8 @@ import {
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { useConversations } from "../contexts/ConversationContext";
-import { toast } from "sonner";
+import { useDashboardChat } from "../contexts/DashboardChatContext";
+import { getExploreConversationAssistantKey } from "../lib/ai-assistant-global";
 import { BulkActionBar } from "./BulkActionBar";
 import {
   Empty,
@@ -53,7 +54,8 @@ import { showDeletedObjectToast, showObjectDeletionToast } from "../lib/object-d
 // from "@tanstack/react-virtual" and wrap the TableBody accordingly.
 
 export function AllConversationsPage() {
-  const { conversations, renameConversation, archiveConversation, unarchiveConversation, deleteConversation, restoreConversation } = useConversations();
+  const { conversations, renameConversation, deleteConversation, restoreConversation } = useConversations();
+  const dashboardChat = useDashboardChat();
   const [renameDialog, setRenameDialog] = useState<{ conversationId: string; name: string } | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
@@ -88,22 +90,33 @@ export function AllConversationsPage() {
   const handleBulkDelete = () => {
     const ids = Array.from(selectedIds);
     const snapshots = currentList.filter((c) => ids.includes(c.id));
-    ids.forEach((id) => deleteConversation(id));
+    const assistantSnapshots = new Map(
+      ids.map((id) => [
+        id,
+        dashboardChat.getMessages(getExploreConversationAssistantKey(id)),
+      ]),
+    );
+    ids.forEach((id) => {
+      deleteConversation(id);
+      dashboardChat.clearMessages(getExploreConversationAssistantKey(id));
+    });
     clearSelection();
     showObjectDeletionToast({
-      title: `Deleted ${ids.length} draft${ids.length > 1 ? "s" : ""}`,
+      title: `Deleted ${ids.length} conversation${ids.length > 1 ? "s" : ""}`,
       onUndo: () => {
-        snapshots.forEach((s) => restoreConversation(s));
+        snapshots.forEach((s) => {
+          restoreConversation(s);
+          const assistantSnapshot = assistantSnapshots.get(s.id);
+          if (assistantSnapshot && assistantSnapshot.length > 0) {
+            dashboardChat.setMessages(
+              getExploreConversationAssistantKey(s.id),
+              assistantSnapshot,
+            );
+          }
+        });
       },
-      restoredTitle: "Drafts restored",
+      restoredTitle: "Conversations restored",
     });
-  };
-
-  const handleBulkArchive = () => {
-    const ids = Array.from(selectedIds);
-    ids.forEach((id) => archiveConversation(id));
-    clearSelection();
-    toast.success(`Archived ${ids.length} draft${ids.length > 1 ? "s" : ""}`);
   };
 
   const allChecked = filteredConversations.length > 0 && selectedIds.size === filteredConversations.length;
@@ -114,21 +127,21 @@ export function AllConversationsPage() {
       <PageHeader>
         <section>
           <section className="flex flex-wrap items-center gap-2">
-            <h1 className="text-3xl tracking-tight">Drafts</h1>
+            <h1 className="text-3xl tracking-tight">Conversations</h1>
             <Badge variant="secondary" className="shrink-0 text-xs font-normal">
               {activeConversations.length}{" "}
-              {activeConversations.length === 1 ? "draft" : "drafts"}
+              {activeConversations.length === 1 ? "conversation" : "conversations"}
             </Badge>
           </section>
           <p className="text-muted-foreground mt-2">
-            Browse and manage your drafts
+            Browse and manage your conversations
           </p>
           {currentList.length > 0 && (
             <div className="mt-4 flex w-full flex-wrap items-center gap-3">
               <div className="relative flex-1 min-w-[200px] max-w-sm">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search drafts..."
+                  placeholder="Search conversations..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9"
@@ -153,11 +166,11 @@ export function AllConversationsPage() {
         <div className={cn(pageRootListScrollGutterClassName, "pb-8")}>
         <PageTransition className={cn(pageMainColumnClassName, "space-y-6")}>
       <HeaderAIInsightsRow
-        dashboardId="draft-insights"
+        dashboardId="conversation-insights"
         dashboardData={{
-          id: "draft-insights",
-          title: "Drafts",
-          description: "Browse and manage your drafts",
+          id: "conversation-insights",
+          title: "Conversations",
+          description: "Browse and manage your conversations",
         }}
       />
       {currentList.length === 0 ? (
@@ -166,9 +179,9 @@ export function AllConversationsPage() {
             <EmptyMedia variant="icon">
               <MessageSquare />
             </EmptyMedia>
-            <EmptyTitle>No drafts yet</EmptyTitle>
+            <EmptyTitle>No conversations yet</EmptyTitle>
             <EmptyDescription>
-              Start a draft from the Explore page to get started
+              Start a conversation from the Explore page to get started
             </EmptyDescription>
           </EmptyHeader>
           <Link to="/">
@@ -186,15 +199,6 @@ export function AllConversationsPage() {
               totalCount={filteredConversations.length}
               onClearSelection={clearSelection}
             >
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={handleBulkArchive}
-              >
-                <Archive className="h-3.5 w-3.5 mr-1.5" />
-                Archive
-              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -279,31 +283,26 @@ export function AllConversationsPage() {
                               <Pencil className="h-4 w-4 mr-2" />
                               Rename
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => {
-                              archiveConversation(conversation.id);
-                              toast.success("Draft archived", {
-                                description: `"${conversation.name}" has been archived.`,
-                                action: {
-                                  label: "Undo",
-                                  onClick: () => {
-                                    unarchiveConversation(conversation.id);
-                                    toast.success("Draft restored");
-                                  },
-                                },
-                              });
-                            }}>
-                              <Archive className="h-4 w-4 mr-2" />
-                              Archive
-                            </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => {
                                 const snapshot = { ...conversation };
+                                const assistantKey = getExploreConversationAssistantKey(
+                                  conversation.id,
+                                );
+                                const assistantSnapshot = dashboardChat.getMessages(assistantKey);
                                 deleteConversation(conversation.id);
+                                dashboardChat.clearMessages(assistantKey);
                                 showDeletedObjectToast({
-                                  objectType: "Draft",
+                                  objectType: "Conversation",
                                   objectName: conversation.name,
                                   onUndo: () => {
                                     restoreConversation(snapshot);
+                                    if (assistantSnapshot.length > 0) {
+                                      dashboardChat.setMessages(
+                                        assistantKey,
+                                        assistantSnapshot,
+                                      );
+                                    }
                                   },
                                 });
                               }}
@@ -326,7 +325,7 @@ export function AllConversationsPage() {
               <EmptyMedia variant="icon">
                 <Search />
               </EmptyMedia>
-              <EmptyTitle>No drafts match your search</EmptyTitle>
+              <EmptyTitle>No conversations match your search</EmptyTitle>
               <EmptyDescription>
                 Try adjusting your search query
               </EmptyDescription>
@@ -340,10 +339,10 @@ export function AllConversationsPage() {
       <Dialog open={!!renameDialog} onOpenChange={() => setRenameDialog(null)}>
         <DialogContent className="sm:max-w-[25rem]">
           <DialogHeader>
-            <DialogTitle>Rename draft</DialogTitle>
+            <DialogTitle>Rename conversation</DialogTitle>
           </DialogHeader>
           <div className="grid gap-2 py-4">
-            <Label className="sr-only" htmlFor="rename-conv">Draft name</Label>
+            <Label className="sr-only" htmlFor="rename-conv">Conversation name</Label>
             <Input
               id="rename-conv"
               value={renameDialog?.name || ""}
