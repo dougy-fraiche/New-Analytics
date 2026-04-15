@@ -118,7 +118,8 @@ function TopOpportunitiesSectionHeading() {
   return (
     <h3 className="mt-8 flex items-center gap-2 text-lg font-medium tracking-tight">
       <Trophy className="size-4 shrink-0 text-primary" aria-hidden />
-      Top Opportunities
+      <span>Top Opportunities</span>
+      <span className="text-sm font-normal text-muted-foreground">Yearly Prediction</span>
     </h3>
   );
 }
@@ -137,7 +138,8 @@ function AnalyzedPeriodSection({
       <header>
         <h3 className="!mt-8 flex items-center gap-2 text-lg font-medium tracking-tight">
           <CalendarRange className="size-4 shrink-0 text-primary" aria-hidden />
-          Analyzed Period
+          <span>Analyzed Period</span>
+          <span className="text-sm font-normal text-muted-foreground">Previous 30 Days</span>
         </h3>
         {subtitle ? (
           <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
