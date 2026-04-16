@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
 import {
   DropdownMenu,
@@ -821,8 +821,10 @@ function EvaluationComboCard({
         <nav className="flex w-full justify-center px-4" aria-label={`${title} legend`}>
           <EvaluationTrendLegend items={trendLegendItems} />
         </nav>
-        <WidgetAIExplanation widgetTitle={title} chartType={chartType} />
-      </CardContent>
+        </CardContent>
+        <CardFooter className="mt-auto pt-4">
+          <WidgetAIExplanation widgetTitle={title} chartType={chartType} />
+        </CardFooter>
     </Card>
   );
 }
@@ -1028,8 +1030,10 @@ export function AIAgentsEvaluationTab({
                 <EvaluationTrendLegend items={COMPLIANCE_TREND_LEGEND} />
               </nav>
             </div>
-            <WidgetAIExplanation widgetTitle="Compliance" chartType="donut" />
-          </CardContent>
+            </CardContent>
+            <CardFooter className="mt-auto pt-4">
+              <WidgetAIExplanation widgetTitle="Compliance" chartType="donut" />
+            </CardFooter>
         </Card>
 
         <Card className="h-full group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
@@ -1059,8 +1063,10 @@ export function AIAgentsEvaluationTab({
             <div className="h-[280px] w-full">
               <EChartsCanvas option={handoverReasonOption} onDataSelect={handleChartDataSelect(handoverPanelIndex)} />
             </div>
-            <WidgetAIExplanation widgetTitle="Handover Reason" chartType="bar-horizontal" />
-          </CardContent>
+            </CardContent>
+            <CardFooter className="mt-auto pt-4">
+              <WidgetAIExplanation widgetTitle="Handover Reason" chartType="bar-horizontal" />
+            </CardFooter>
         </Card>
       </div>
 
@@ -1127,8 +1133,10 @@ export function AIAgentsEvaluationTab({
                 </TableBody>
               </Table>
             </div>
-            <WidgetAIExplanation widgetTitle="Topic" chartType="bar-vertical" />
-          </CardContent>
+            </CardContent>
+            <CardFooter className="mt-auto pt-4">
+              <WidgetAIExplanation widgetTitle="Topic" chartType="bar-vertical" />
+            </CardFooter>
         </Card>
 
         <Card className="group/widget min-w-0 transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
@@ -1180,8 +1188,10 @@ export function AIAgentsEvaluationTab({
             <nav className="flex w-full justify-center px-4" aria-label="Knowledge and tool gap legend">
               <EvaluationTrendLegend items={KNOWLEDGE_TOOL_GAP_LEGEND} />
             </nav>
-            <WidgetAIExplanation widgetTitle="Knowledge & Tool Gap" chartType="donut" />
-          </CardContent>
+            </CardContent>
+            <CardFooter className="mt-auto pt-4">
+              <WidgetAIExplanation widgetTitle="Knowledge & Tool Gap" chartType="donut" />
+            </CardFooter>
         </Card>
       </div>
 
@@ -1305,8 +1315,10 @@ export function AIAgentsEvaluationTab({
               </TableBody>
             </Table>
           </div>
-          <WidgetAIExplanation widgetTitle="Sessions to Investigate" chartType="metric" />
-        </CardContent>
+          </CardContent>
+          <CardFooter className="mt-auto pt-4">
+            <WidgetAIExplanation widgetTitle="Sessions to Investigate" chartType="metric" />
+          </CardFooter>
       </Card>
     </div>
   );

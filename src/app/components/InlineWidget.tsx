@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { ChartConfig, ChartContainer } from "./ui/chart";
 import { EChartsCanvas } from "./EChartsCanvas";
 import { buildInlineEChartsOption } from "./echartsChartOptions";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { WidgetAIExplanation } from "./WidgetAIExplanation";
 import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
@@ -81,11 +81,13 @@ export function InlineWidget({ widget }: InlineWidgetProps) {
         ) : (
           renderChart()
         )}
-        <WidgetAIExplanation
+        </CardContent>
+        <CardFooter className="mt-auto pt-4">
+          <WidgetAIExplanation
           widgetTitle={widget.title}
           chartType={widget.chartType}
         />
-      </CardContent>
+        </CardFooter>
     </Card>
   );
 }

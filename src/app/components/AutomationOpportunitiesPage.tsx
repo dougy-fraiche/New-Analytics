@@ -69,6 +69,7 @@ import {
 import { LabeledFilterInline, LabeledSelectValue } from "./HeaderFilters";
 import { SampleInteractionsDialog } from "./SampleInteractionsDialog";
 import { CreateAIAgentPopoverButton } from "./CreateAIAgentPopoverButton";
+import { KpiMetricValueTitle } from "./KpiMetricValueTitle";
 import { cn } from "./ui/utils";
 
 const DASHBOARD_ID = "automation-opportunities";
@@ -151,7 +152,7 @@ function AnalyzedPeriodSection({
             <Card key={stat.label} className={cn(AUTOMATION_CARD_HOVER)}>
               <CardContent className="space-y-1.5 p-4">
                 <p className="text-sm text-muted-foreground">{stat.label}</p>
-                <p className="text-xl font-semibold tracking-tight tabular-nums">{stat.value}</p>
+                <KpiMetricValueTitle value={stat.value} className="flex-none" />
               </CardContent>
             </Card>
           ))}

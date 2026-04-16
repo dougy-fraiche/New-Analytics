@@ -594,6 +594,7 @@ export function AppSidebar() {
                 location.pathname === ROUTES.AI_AGENTS ||
                 location.pathname.startsWith(`${ROUTES.AI_AGENTS}/`);
               const isCopilotRoute = location.pathname === ROUTES.COPILOT;
+              const isKnowledgePerformanceRoute = location.pathname === ROUTES.KNOWLEDGE_PERFORMANCE;
               const parentNavActive = onAiAgentsRoute && !isCopilotRoute;
 
               return (
@@ -609,6 +610,13 @@ export function AppSidebar() {
                     <SidebarMenuSubButton asChild isActive={isCopilotRoute}>
                       <Link to={ROUTES.COPILOT}>
                         <span className="truncate">Copilot</span>
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={isKnowledgePerformanceRoute}>
+                      <Link to={ROUTES.KNOWLEDGE_PERFORMANCE}>
+                        <span className="truncate">Knowledge Performance</span>
                       </Link>
                     </SidebarMenuSubButton>
                   </SidebarMenuSubItem>

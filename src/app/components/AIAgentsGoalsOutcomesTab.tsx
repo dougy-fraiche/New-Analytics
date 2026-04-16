@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { Input } from "./ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
@@ -610,8 +610,10 @@ export function AIAgentsGoalsOutcomesTab({
                 onDataSelect={handleChartDataSelect(PANEL.goalsPerformance)}
               />
             </div>
-            <WidgetAIExplanation widgetTitle="Goals Performance" chartType="bar-stacked" />
-          </CardContent>
+            </CardContent>
+            <CardFooter className="mt-auto pt-4">
+              <WidgetAIExplanation widgetTitle="Goals Performance" chartType="bar-stacked" />
+            </CardFooter>
         </Card>
 
         <Card className="group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
@@ -654,8 +656,10 @@ export function AIAgentsGoalsOutcomesTab({
                 ))}
               </TableBody>
             </Table>
-            <WidgetAIExplanation widgetTitle="Goal Inventory & Coverage" chartType="metric" />
-          </CardContent>
+            </CardContent>
+            <CardFooter className="mt-auto pt-4">
+              <WidgetAIExplanation widgetTitle="Goal Inventory & Coverage" chartType="metric" />
+            </CardFooter>
         </Card>
       </div>
 
@@ -705,8 +709,10 @@ export function AIAgentsGoalsOutcomesTab({
                 </div>
               </div>
             ))}
-            <WidgetAIExplanation widgetTitle="Goal Funnel" chartType="funnel" />
-          </CardContent>
+            </CardContent>
+            <CardFooter className="mt-auto pt-4">
+              <WidgetAIExplanation widgetTitle="Goal Funnel" chartType="funnel" />
+            </CardFooter>
         </Card>
 
         <Card className="group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
@@ -755,8 +761,10 @@ export function AIAgentsGoalsOutcomesTab({
                 {">2.0 (High friction)"}
               </span>
             </div>
-            <WidgetAIExplanation widgetTitle="Avg Cycles by Goal" chartType="bar-horizontal" />
-          </CardContent>
+            </CardContent>
+            <CardFooter className="mt-auto pt-4">
+              <WidgetAIExplanation widgetTitle="Avg Cycles by Goal" chartType="bar-horizontal" />
+            </CardFooter>
         </Card>
       </div>
 
@@ -805,8 +813,10 @@ export function AIAgentsGoalsOutcomesTab({
                 </div>
               </div>
             ))}
-            <WidgetAIExplanation widgetTitle="Top Tasks" chartType="bar-horizontal" />
-          </CardContent>
+            </CardContent>
+            <CardFooter className="mt-auto pt-4">
+              <WidgetAIExplanation widgetTitle="Top Tasks" chartType="bar-horizontal" />
+            </CardFooter>
         </Card>
 
         <Card className="group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
@@ -875,8 +885,10 @@ export function AIAgentsGoalsOutcomesTab({
                 onDataSelect={handleChartDataSelect(PANEL.financialOutcomes)}
               />
             </div>
-            <WidgetAIExplanation widgetTitle="Financial Outcomes" chartType="bar-grouped" />
-          </CardContent>
+            </CardContent>
+            <CardFooter className="mt-auto pt-4">
+              <WidgetAIExplanation widgetTitle="Financial Outcomes" chartType="bar-grouped" />
+            </CardFooter>
         </Card>
       </div>
 
@@ -935,8 +947,10 @@ export function AIAgentsGoalsOutcomesTab({
               ))}
             </TableBody>
           </Table>
-          <WidgetAIExplanation widgetTitle="Step Config Audit" chartType="metric" />
-        </CardContent>
+          </CardContent>
+          <CardFooter className="mt-auto pt-4">
+            <WidgetAIExplanation widgetTitle="Step Config Audit" chartType="metric" />
+          </CardFooter>
       </Card>
 
       <Card className="group/widget min-w-0 transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
@@ -1056,8 +1070,10 @@ export function AIAgentsGoalsOutcomesTab({
               </TableBody>
             </Table>
           </div>
-          <WidgetAIExplanation widgetTitle="Sessions to Investigate" chartType="metric" />
-        </CardContent>
+          </CardContent>
+          <CardFooter className="mt-auto pt-4">
+            <WidgetAIExplanation widgetTitle="Sessions to Investigate" chartType="metric" />
+          </CardFooter>
       </Card>
     </div>
   );

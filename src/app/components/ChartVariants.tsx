@@ -3,7 +3,7 @@ import { motion } from "motion/react";
 import { ChartConfig, ChartContainer } from "./ui/chart";
 import { EChartsCanvas } from "./EChartsCanvas";
 import { buildUniversalEChartsOption } from "./echartsChartOptions";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
 import { WidgetAIExplanation } from "./WidgetAIExplanation";
 import { cn } from "./ui/utils";
@@ -734,12 +734,13 @@ export function DashboardChartGrid({
                   onDataSelect={handleChartDataSelect(i)}
                 />
               </div>
-              <WidgetAIExplanation
+              </CardContent>
+              <CardFooter className="mt-auto pt-4">
+                <WidgetAIExplanation
                 widgetTitle={panel.title}
                 chartType={panel.chartType}
-                className="!mt-auto pt-3"
               />
-            </CardContent>
+              </CardFooter>
           </Card>
         );
 

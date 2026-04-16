@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
 import { Input } from "./ui/input";
 import {
@@ -505,8 +505,10 @@ function OverviewChartCard({
         <div className="h-[300px] w-full">
           <EChartsCanvas option={option} onDataSelect={onDataSelect} />
         </div>
-        <WidgetAIExplanation widgetTitle={title} chartType={chartType} />
-      </CardContent>
+        </CardContent>
+        <CardFooter className="mt-auto pt-4">
+          <WidgetAIExplanation widgetTitle={title} chartType={chartType} />
+        </CardFooter>
     </Card>
   );
 }
@@ -776,8 +778,10 @@ export function AIAgentsOverviewTab({
               </TableBody>
             </Table>
           </div>
-          <WidgetAIExplanation widgetTitle="Sessions to Investigate" chartType="metric" />
-        </CardContent>
+          </CardContent>
+          <CardFooter className="mt-auto pt-4">
+            <WidgetAIExplanation widgetTitle="Sessions to Investigate" chartType="metric" />
+          </CardFooter>
       </Card>
     </div>
   );

@@ -186,6 +186,13 @@ export function SearchOverlay({ open, onOpenChange }: SearchOverlayProps) {
                 <span>Copilot</span>
               </CommandItem>
               <CommandItem
+                value="Knowledge Performance"
+                onSelect={() => handleSelect(ROUTES.KNOWLEDGE_PERFORMANCE, "Knowledge Performance")}
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                <span>Knowledge Performance</span>
+              </CommandItem>
+              <CommandItem
                 value="Automation Opportunities"
                 onSelect={() => handleSelect(ROUTES.AUTOMATION_OPPORTUNITIES, "Automation Opportunities")}
               >

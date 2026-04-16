@@ -27,6 +27,7 @@ import {
   highPriorityRecommendedActions,
   type RecommendedAction,
 } from "../data/recommended-actions";
+import { copilotAiInsightsIds } from "../data/copilot-ai-insights";
 import { RecommendedActionSheet } from "./RecommendedActionSheet";
 import type { DashboardData } from "../contexts/ConversationContext";
 import { cn } from "./ui/utils";
@@ -172,7 +173,10 @@ function getPurposeTitle(action: RecommendedAction): string {
   return `Improve ${action.affectedIntent}`;
 }
 
-function buildActionCardParagraph(action: RecommendedAction): string {
+function buildActionCardParagraph(action: RecommendedAction & { cardDescription?: string }): string {
+  if (action.cardDescription?.trim()) {
+    return action.cardDescription.trim();
+  }
   const type = action.type.toLowerCase();
   const base = `${getPurposeTitle(action)} by implementing ${action.title.toLowerCase()}. ${action.description}`;
 
@@ -203,15 +207,354 @@ const GLOBAL_SUGGESTED_ACTION_POOL: RecommendedAction[] = (() => {
 
 // --- Per-dashboard AI summary data ---
 
+type AISuggestedAction = RecommendedAction & {
+  cardDescription?: string;
+};
+
 interface AISummaryData {
   summary: string;
+  summaryParagraphs?: string[];
   bullets: { label: string; detail: string }[];
   linkedActionId: number;
+  suggestedActions?: AISuggestedAction[];
   opportunity: string;
   actionText: string;
 }
 
+function createSuggestedAction(
+  baseActionId: number,
+  overrides: Partial<RecommendedAction> & { cardDescription?: string },
+): AISuggestedAction {
+  const baseAction = recommendedActionsData.find((action) => action.id === baseActionId) ?? recommendedActionsData[0];
+  if (!baseAction) {
+    return {
+      id: baseActionId,
+      title: overrides.title ?? "Recommended action unavailable",
+      description: overrides.description ?? "Action metadata is unavailable.",
+      note: overrides.note ?? "",
+      type: overrides.type ?? "Process Change",
+      priority: overrides.priority ?? "Low",
+      impactValue: overrides.impactValue ?? "",
+      impactLabel: overrides.impactLabel ?? "",
+      projectedROI: overrides.projectedROI ?? "",
+      handoffsPerDay: overrides.handoffsPerDay ?? 0,
+      affectedIntent: overrides.affectedIntent ?? "",
+      escalationsToday: overrides.escalationsToday ?? 0,
+      csatImpact: overrides.csatImpact ?? "",
+      estFixTime: overrides.estFixTime ?? "",
+      whatWillHappen: overrides.whatWillHappen ?? "",
+      cardDescription: overrides.cardDescription,
+    };
+  }
+  return {
+    ...baseAction,
+    ...overrides,
+  };
+}
+
 const dashboardSummaries: Record<string, AISummaryData> = {
+  "knowledge-performance-overview": {
+    summary:
+      "Knowledge performance remains strong overall, with retrieval quality and positive feedback trends continuing to improve while key content gaps are now clearly identified.",
+    bullets: [
+      {
+        label: "Retrieval success rate at 84.2%",
+        detail:
+          "342 active articles serving 12,400 queries/week. Average relevancy score of 0.76 exceeds the 0.70 quality threshold.",
+      },
+      {
+        label: "Positive feedback ratio 3.8:1",
+        detail:
+          "3.8 positive ratings for every negative one. Top articles on password reset and billing FAQ exceed 4.5:1 ratio.",
+      },
+      {
+        label: "Coverage score 78.5%",
+        detail:
+          "Up from 72% last quarter, driven by 18 new articles added to address identified gaps in product returns and technical setup topics.",
+      },
+      {
+        label: "5 articles below quality threshold",
+        detail:
+          "Loyalty Program Terms, Device Setup Guide, and 3 others score below 0.50 relevancy. These articles get retrieved but deliver poor answers, causing escalation.",
+      },
+      {
+        label: "Coverage gap in international topics",
+        detail:
+          "International shipping, roaming, and currency conversion queries have no matching articles — representing ~340 failed queries/week.",
+      },
+    ],
+    linkedActionId: 3,
+    opportunity:
+      "Coverage gaps in international topics and low-relevancy articles are driving preventable failed queries and escalations.",
+    actionText:
+      "Prioritize rewriting low-relevancy content and adding international topic coverage to reduce failed-query volume and improve containment.",
+  },
+  "knowledge-performance-improve-knowledge": {
+    summary:
+      "6 articles are currently flagged for improvement, 4 additional items are in the approval queue, and 3 high-confidence new article opportunities were identified this cycle.",
+    bullets: [
+      {
+        label: "6 flagged articles prioritized by impact",
+        detail:
+          "Automated quality checks identified outdated content, low relevancy scores, and high negative feedback patterns across frequently retrieved knowledge.",
+      },
+      {
+        label: "4 items in approval queue",
+        detail:
+          "New and updated articles are ready for review. Current average approval time is 2.1 days, within the 3-day SLA.",
+      },
+      {
+        label: "3 AI-suggested article opportunities",
+        detail:
+          "Suggested topics include international shipping FAQ, SAML SSO setup, and webhook debugging to reduce recurring failed query volume.",
+      },
+      {
+        label: "Confluence sync disconnected for 5 days",
+        detail:
+          "124 imported articles may become stale without source synchronization, increasing risk of outdated or inconsistent guidance.",
+      },
+    ],
+    linkedActionId: 3,
+    opportunity:
+      "Closing flagged content gaps, approving queued updates, and restoring source sync would reduce failed query volume and keep knowledge fresh.",
+    actionText:
+      "Prioritize article approvals, publish the 3 suggested topics, and reconnect Confluence sync to stabilize coverage and relevance.",
+  },
+  [copilotAiInsightsIds.overview]: {
+    summary:
+      "Agent adoption rate increased to 76% (+3pp WoW), with AutoSummary leading at 82% adoption among active agents. Time saved per agent averages 47 minutes/day, translating to roughly 11% capacity gain across the team. Quality score of 0.87 (V3 engine) represents a +0.04 improvement over V2 baseline.",
+    bullets: [
+      { label: "Task Assist adoption: 48%", detail: "Significantly behind other features; agents report unclear trigger conditions." },
+      { label: "Real-time Summary adoption: 39%", detail: "Lowest feature adoption, primarily due to latency concerns." },
+      { label: "Micro-training recommendation", detail: "Run 15-minute live-demo sessions to improve confidence and feature usage." },
+      { label: "Expected impact", detail: "Prior sessions have lifted adoption by 12–18pp within two weeks." },
+    ],
+    linkedActionId: 3,
+    suggestedActions: [
+      createSuggestedAction(3, {
+        title: "Run micro-training for Task Assist adoption",
+        impactValue: "+12–18pp Adoption",
+        cardDescription:
+          "Task Assist adoption is 48%, significantly behind AutoSummary at 82%. Short 15-minute live-demo sessions have historically lifted adoption by 12–18pp within two weeks.",
+      }),
+      createSuggestedAction(6, {
+        title: "Address Real-Time Summary latency concerns",
+        impactValue: "Improve RTS Adoption",
+        cardDescription:
+          "RT Summary adoption at 39% is the lowest feature. Agent feedback cites latency as the primary blocker; confirm P95 is within SLA and communicate improvements to boost confidence.",
+      }),
+      createSuggestedAction(2, {
+        title: "Expand Copilot to Retention skill group",
+        impactValue: "+4-6 Hours/Day",
+        cardDescription:
+          "Retention has the lowest time-saved contribution at 10.1 hrs (16%). Increasing Copilot coverage here could unlock an additional 4-6 hours/day in agent capacity.",
+      }),
+    ],
+    opportunity:
+      "Task Assist adoption at 48% is materially behind AutoSummary at 82%, creating a measurable productivity gap across active agents.",
+    actionText:
+      "Run focused 15-minute micro-training sessions with live demos to lift Task Assist adoption by an expected 12–18pp.",
+  },
+  [copilotAiInsightsIds.autoSummary]: {
+    summary:
+      "Your AutoSummary system is performing above target. Acceptance rate of 78.4% exceeds the 75% goal, with 3,842 summaries accepted out of 4,900 generated.",
+    summaryParagraphs: [
+      "Your AutoSummary system is performing above target. Acceptance rate of 78.4% exceeds the 75% goal, with 3,842 summaries accepted out of 4,900 generated. Billing skill leads at 84.2% acceptance with 0.91 similarity, the highest-quality summaries in the system. The V3 engine improved average similarity by +0.04 vs V2, reducing rejection-rewrite cycles by 23%.",
+      "Edit rate of 14.2% shows room for improvement. Most edits are tone adjustments (62%) rather than factual errors (18%). Retention skill has the lowest similarity score at 0.81, contributing disproportionately to the edit workload. Fine-tuning on Retention data could reduce the overall edit rate by about 2pp and save agents approximately 8 minutes per shift.",
+    ],
+    bullets: [
+      { label: "Acceptance rate: 78.4%", detail: "Above the 75% goal across 4,900 generated summaries." },
+      { label: "Best-performing skill: Billing", detail: "84.2% acceptance with 0.91 similarity." },
+      { label: "Largest gap: Retention", detail: "Lowest similarity at 0.81 and highest edit burden." },
+      { label: "Model opportunity", detail: "Retention-focused fine-tuning could reduce edit rate by ~2pp." },
+    ],
+    linkedActionId: 3,
+    suggestedActions: [
+      createSuggestedAction(3, {
+        title: "Fine-tune model on Retention skill data",
+        impactValue: "-2pp Edit Rate",
+        cardDescription:
+          "Retention has the lowest similarity score at 0.82 and 18.9% edit rate, the worst of all skills. Targeted fine-tuning could reduce overall edit rate by about 2pp and save agents 8 minutes per shift.",
+      }),
+      createSuggestedAction(6, {
+        title: "Shift tone adjustment edits to pre-processing",
+        impactValue: "~40% Touch-up Time",
+        cardDescription:
+          "Tone corrections make up 62% of all edits. Adding a tone-matching pre-processing step could eliminate most of these edits automatically, reducing agent touch-up time by ~40%.",
+      }),
+      createSuggestedAction(2, {
+        title: "Coach bottom-quartile agents on summary acceptance",
+        impactValue: "Raise Team Acceptance",
+        cardDescription:
+          "Lisa Thompson (68.9%) and Ahmed Hassan (65.3%) are well below the team average of 78.4%. Pairing them with top performers like Sarah Chen (92.1%) for peer coaching sessions could close the gap.",
+      }),
+    ],
+    opportunity:
+      "Retention has the lowest summary similarity and highest edit burden, creating avoidable rework for agents.",
+    actionText:
+      "Fine-tune the model on Retention skill interactions to reduce edits and improve summary trust.",
+  },
+  [copilotAiInsightsIds.taskAssist]: {
+    summary:
+      "Task Assist trigger volume is healthy, but timing and relevance issues are reducing completion rates on high-impact task cards.",
+    summaryParagraphs: [
+      "Billing Adjustment Offer is your top-performing rule with 876 fires and a 20.4% trigger rate - highest completion at 78%. Plan Upgrade Suggestion drives the highest revenue impact at $3.2K despite being the second most frequent rule. Overall trigger rate of 12.4% suggests task cards may be under-surfacing relevant opportunities.",
+      "Expired task cards account for 12% of outcomes - agents are seeing cards too late in the conversation flow. That's approximately 200 missed assists per period. Moving trigger points 30 seconds earlier for the top 3 rules could convert most expired cards to actionable assists. Technical Troubleshoot cards have an 18% dismissal rate, suggesting poor relevance matching.",
+    ],
+    bullets: [
+      { label: "Top performer: Billing Adjustment Offer", detail: "876 fires, 20.4% trigger rate, and 78% completion." },
+      { label: "Highest revenue impact", detail: "Plan Upgrade Suggestion contributes $3.2K impact." },
+      { label: "Expired card rate: 12%", detail: "About 200 assists are missed each period due to late surfacing." },
+      { label: "Relevance gap", detail: "Technical Troubleshoot cards show an 18% dismissal rate." },
+    ],
+    linkedActionId: 6,
+    suggestedActions: [
+      createSuggestedAction(6, {
+        title: "Move trigger points earlier for top 3 rules",
+        impactValue: "-12% Expired Tasks",
+        cardDescription:
+          "Expired task cards account for 12% of outcomes - roughly 200 missed assists per period. Triggering cards 30 seconds earlier for Billing Adjustment, Plan Upgrade, and Refund Process could convert most to actionable assists.",
+      }),
+      createSuggestedAction(5, {
+        title: "Investigate Technical Troubleshoot dismissals",
+        impactValue: "18% Dismissal Rate",
+        cardDescription:
+          "Technical Troubleshoot cards have an 18% dismissal rate, the highest of all rules. Review trigger conditions and card content relevance to improve completion rates.",
+      }),
+      createSuggestedAction(2, {
+        title: "Scale Fulfillment system reliability",
+        impactValue: "$1,845/Period Recovery",
+        cardDescription:
+          "Fulfillment has the lowest automation success at 78.3% with 890ms avg latency and 12.4% API errors. Addressing these reliability issues could recover $1,845/period in lost automation value.",
+      }),
+    ],
+    opportunity:
+      "Late task-card timing is causing missed assists and lower completion on high-value rule paths.",
+    actionText:
+      "Shift trigger points earlier for top rules to convert expired cards into completed assists.",
+  },
+  [copilotAiInsightsIds.rulesEngine]: {
+    summary:
+      "Intent-Based KB Lookup and Data Prefetch Order are currently the strongest-performing rules, while late-firing custom rules are dragging overall effectiveness.",
+    summaryParagraphs: [
+      "Intent-Based KB Lookup and Data Prefetch Order have the highest effectiveness scores at 4.8 and 4.6 respectively. Billing Inquiry Router fires reliably at 15.6% rate with early timing (8s), agents receive help before they need it. KB Answer Lookup actions account for 33.8% of all rule actions, followed by Task Assist Cards at 23.3%.",
+      "Custom Script Runner has the lowest effectiveness at 1.8/5 and latest timing (62 seconds), it fires too late to be useful. Coverage at 62.8% means 37.2% of interactions receive no rule-based assistance, with the largest gap in Retention skill. Recommend retiring Custom Script Runner and reallocating its compute to expand KB Lookup coverage.",
+    ],
+    bullets: [
+      { label: "Best performers", detail: "Intent-Based KB Lookup (4.8) and Data Prefetch Order (4.6)." },
+      { label: "Early-help signal", detail: "Billing Inquiry Router fires at 15.6% with ~8s timing." },
+      { label: "Largest weakness", detail: "Custom Script Runner scores 1.8/5 and fires too late (~62s)." },
+      { label: "Coverage gap", detail: "37.2% of interactions receive no rule-based assistance." },
+    ],
+    linkedActionId: 2,
+    suggestedActions: [
+      createSuggestedAction(2, {
+        title: "Retire Custom Script Runner rule",
+        impactValue: "+Coverage Efficiency",
+        cardDescription:
+          "Custom Script Runner has the lowest effectiveness at 1.8/5 and fires 62 seconds into conversations, too late to be useful. Reallocating its compute budget to expand KB Lookup coverage could improve overall rule utility.",
+      }),
+      createSuggestedAction(3, {
+        title: "Expand rule coverage to Retention skill",
+        impactValue: "5-8pp Coverage Lift",
+        cardDescription:
+          "Coverage at 62.8% means 37.2% of interactions receive no rule-based assistance, with the largest gap in Retention skill. Adding 2-3 Retention-specific rules could lift coverage by 5-8pp.",
+      }),
+      createSuggestedAction(6, {
+        title: "Address Sentiment Alert duplicate fires",
+        impactValue: "8.4% Duplicate Fire Rate",
+        cardDescription:
+          "Sentiment Alert Trigger has an 8.4% duplicate fire rate with 2.3x avg duplicates per interaction. Adding a cooldown window would reduce noise and save agent attention for genuine alerts.",
+      }),
+    ],
+    opportunity:
+      "Low-effectiveness rules are consuming compute while higher-value KB lookup coverage remains constrained.",
+    actionText:
+      "Retire low-performing rules and reallocate compute to earlier, higher-impact rule paths.",
+  },
+  [copilotAiInsightsIds.realTimeSummary]: {
+    summary:
+      "Real-time summary latency is within SLA and engagement is strong, but low-confidence outputs remain a quality risk for a subset of interactions.",
+    summaryParagraphs: [
+      "P95 latency at 9.8 seconds is 18% below the 12-second SLA threshold, providing consistent sub-10s refreshes. Agent view rate of 73.4% shows strong engagement - agents are actively consulting real-time summaries during conversations. Scroll interaction rate of 42.8% indicates agents read beyond the initial viewport.",
+      "287 interactions (5.9%) produced summaries below the 0.70 quality threshold-these may be actively misleading agents mid-conversation. Retention skill is the worst offender at 16.1% low-score rate with the lowest proxy accuracy of 0.812. Recommend implementing a confidence threshold that withholds display for summaries scoring under 0.65.",
+    ],
+    bullets: [
+      { label: "P95 latency: 9.8s", detail: "18% below the 12-second SLA threshold." },
+      { label: "Agent view rate: 73.4%", detail: "Strong in-flow usage during live conversations." },
+      { label: "Low-score volume: 287 interactions", detail: "5.9% fall below the 0.70 quality threshold." },
+      { label: "Highest-risk area: Retention", detail: "16.1% low-score rate and lowest proxy accuracy." },
+    ],
+    linkedActionId: 3,
+    suggestedActions: [
+      createSuggestedAction(3, {
+        title: "Implement confidence threshold for low-score summaries",
+        impactValue: "-5.9% Low-Quality Displays",
+        description:
+          "287 interactions (5.9%) produced summaries below the 0.70 quality threshold-these may actively mislead agents. Withholding display for scores under 0.65 would prevent low-quality guidance.",
+        cardDescription:
+          "287 interactions (5.9%) produced summaries below the 0.70 quality threshold-these may actively mislead agents. Withholding display for scores under 0.65 would prevent low-quality guidance.",
+      }),
+      createSuggestedAction(6, {
+        title: "Prioritize Retention skill model improvements",
+        impactValue: "16.1% Low-Score Rate",
+        description:
+          "Retention has the worst proxy accuracy at 0.812 with a 16.1% low-score rate-nearly double the next-worst skill. Targeted model improvements here would have the highest impact on overall quality.",
+        cardDescription:
+          "Retention has the worst proxy accuracy at 0.812 with a 16.1% low-score rate-nearly double the next-worst skill. Targeted model improvements here would have the highest impact on overall quality.",
+      }),
+      createSuggestedAction(2, {
+        title: "Investigate Voice channel latency",
+        impactValue: "3s SLA Buffer",
+        description:
+          "Voice P95 latency at 10.8s is approaching the 12s SLA threshold, while Digital runs at 7.6s. Optimizing the voice transcription pipeline could provide a 3s buffer before SLA breach.",
+        cardDescription:
+          "Voice P95 latency at 10.8s is approaching the 12s SLA threshold, while Digital runs at 7.6s. Optimizing the voice transcription pipeline could provide a 3s buffer before SLA breach.",
+      }),
+    ],
+    opportunity:
+      "Low-confidence summaries are still being shown in real time and can degrade decision quality for agents.",
+    actionText:
+      "Add a confidence gate to suppress low-quality summaries and protect in-conversation guidance quality.",
+  },
+  [copilotAiInsightsIds.generativeResponses]: {
+    summary:
+      "Generative response quality is trending stable, with minor revisions representing the dominant outcome and low ignored rates across categories.",
+    bullets: [
+      { label: "Total KB answers: 6,072", detail: "Sustained volume with consistent answer production." },
+      { label: "Minor revisions: 49.6%", detail: "Most responses require only light editing." },
+      { label: "As-is responses: 6.5%", detail: "A smaller set can be sent with no changes." },
+      { label: "Ignored rates remain low", detail: "Quality and adherence are generally stable across categories." },
+    ],
+    linkedActionId: 7,
+    suggestedActions: [
+      createSuggestedAction(7, {
+        id: 701,
+        title: "Reduce minor revisions for top KB categories",
+        impactValue: "+As-Is Response Rate",
+        cardDescription:
+          "Minor revisions account for nearly half of generated responses. Prioritize prompt and policy tuning for the highest-volume categories to increase as-is usage and reduce edit workload.",
+      }),
+      createSuggestedAction(6, {
+        id: 702,
+        title: "Add confidence routing for low-adherence generations",
+        impactValue: "-Ignored Outcomes",
+        cardDescription:
+          "Ignored rates are low but persistent. Route low-confidence generations to revision workflows before agent delivery to reduce avoidable ignored responses.",
+      }),
+      createSuggestedAction(3, {
+        id: 703,
+        title: "Launch category-level prompt calibration sprint",
+        impactValue: "-Minor Revision Volume",
+        cardDescription:
+          "Technical and Product categories drive the largest share of edits. A focused prompt calibration sprint by category can improve first-pass quality and reduce revision load.",
+      }),
+    ],
+    opportunity:
+      "Minor revision volume is still high enough to create unnecessary editing overhead in high-volume categories.",
+    actionText:
+      "Tune generation prompts and category guidance to shift more responses from minor-revision to as-is outcomes.",
+  },
   "ai-agents-copilot": {
     summary:
       "Agent adoption rate increased to 76% (+3pp WoW), with AutoSummary leading at 82% adoption among active agents. Time saved per agent averages 47 minutes/day, translating to roughly 11% capacity gain across the team. Quality score of 0.87 (V3 engine) represents a +0.04 improvement over V2 baseline.",
@@ -682,8 +1025,9 @@ export function DashboardAISummary({
 
   const handleCopyInsights = useCallback(() => {
     if (!data) return;
+    const summaryParagraphs = data.summaryParagraphs?.length ? data.summaryParagraphs : [data.summary];
     const lines = [
-      data.summary,
+      ...summaryParagraphs,
       "",
       ...data.bullets.map((b) => `• ${b.label} — ${b.detail}`),
     ];
@@ -710,12 +1054,17 @@ export function DashboardAISummary({
 
   const insightsPanelId = `ai-insights-panel-content-${dashboardId}`;
   const seed = hashStringToPositiveInt(dashboardId);
-  const pool = GLOBAL_SUGGESTED_ACTION_POOL.length ? GLOBAL_SUGGESTED_ACTION_POOL : recommendedActionsData.slice(0, 3);
+  const hasTabSpecificSuggestedActions = Array.isArray(data.suggestedActions) && data.suggestedActions.length > 0;
+  const pool = GLOBAL_SUGGESTED_ACTION_POOL.length
+    ? GLOBAL_SUGGESTED_ACTION_POOL
+    : recommendedActionsData.slice(0, 3);
   const optionCount = Math.max(1, Math.min(1 + (seed % 3), pool.length));
   const startIdx = pool.length ? seed % pool.length : 0;
-  const suggestedActions: RecommendedAction[] = pool.length
-    ? Array.from({ length: optionCount }, (_, i) => pool[(startIdx + i) % pool.length])
-    : [];
+  const suggestedActions: (RecommendedAction & { cardDescription?: string })[] = hasTabSpecificSuggestedActions
+    ? data.suggestedActions ?? []
+    : pool.length
+      ? Array.from({ length: optionCount }, (_, i) => pool[(startIdx + i) % pool.length])
+      : [];
   const visibleSuggestedActions = suggestedActions.filter((a) => !dismissedActionIds.has(a.id));
   const suggestedActionGridCount = visibleSuggestedActions.length;
   const recommendedActionsGridClass = cn(
@@ -876,7 +1225,13 @@ export function DashboardAISummary({
                       <Skeleton className="h-4 w-[76%]" />
                     </div>
                   ) : (
-                    <p className="text-sm leading-relaxed text-foreground">{data.summary}</p>
+                    <div className="space-y-3">
+                      {(data.summaryParagraphs?.length ? data.summaryParagraphs : [data.summary]).map((paragraph) => (
+                        <p key={paragraph} className="text-sm leading-relaxed text-foreground">
+                          {paragraph}
+                        </p>
+                      ))}
+                    </div>
                   )}
 
                   {isRefreshing ? (

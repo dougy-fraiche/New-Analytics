@@ -10,7 +10,7 @@ import {
 import { cn } from "./ui/utils";
 import { Input } from "./ui/input";
 import { Badge } from "./ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import {
   Empty,
   EmptyHeader,
@@ -481,8 +481,10 @@ function InsightWidgetCard({ widget }: { widget: InsightWidget }) {
           panelId={`insight-${widget.id}`}
           colSpan={2}
         />
-        <WidgetAIExplanation widgetTitle={widget.title} chartType={widget.chartType} />
-      </CardContent>
+        </CardContent>
+        <CardFooter className="mt-auto pt-4">
+          <WidgetAIExplanation widgetTitle={widget.title} chartType={widget.chartType} />
+        </CardFooter>
       {/* Dashboard sources */}
       <div className="border-t px-6 py-3">
         {!expanded ? (

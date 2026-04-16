@@ -7,6 +7,7 @@ import {
 import { ThemeProvider } from "next-themes";
 import { RootLayout } from "./components/RootLayout";
 import { ExplorePage } from "./components/ExplorePage";
+import { KnowledgePerformancePage } from "./components/KnowledgePerformancePage";
 import { AlertCircle } from "lucide-react";
 import { ROUTES } from "./routes";
 
@@ -36,6 +37,9 @@ function LegacyObservabilityRedirect() {
   }
   if (categoryId === "copilot") {
     return <Navigate to={ROUTES.COPILOT} replace />;
+  }
+  if (categoryId === "knowledge-performance") {
+    return <Navigate to={ROUTES.KNOWLEDGE_PERFORMANCE} replace />;
   }
   return <Navigate to={ROUTES.AI_AGENTS} replace />;
 }
@@ -104,6 +108,7 @@ const router = createBrowserRouter([
       { path: "ai-agents", ...lazyRoute(() => import("./components/ObservabilityCategoryPage"), "ObservabilityCategoryPage") },
       { path: "ai-agents/:dashboardId", ...lazyRoute(() => import("./components/ObservabilityCategoryPage"), "ObservabilityCategoryPage") },
       { path: "copilot", ...lazyRoute(() => import("./components/CopilotPage"), "CopilotPage") },
+      { path: "knowledge-performance", Component: KnowledgePerformancePage },
       { path: "saved", ...lazyRoute(() => import("./components/SavedFoldersPage"), "SavedFoldersPage") },
       { path: "saved/:folderId", ...lazyRoute(() => import("./components/SavedFoldersPage"), "SavedFoldersPage") },
       { path: "saved/:folderId/dashboard/:dashboardId", ...lazyRoute(() => import("./components/DashboardPage"), "DashboardPage") },

@@ -149,7 +149,12 @@ export function EChartsCanvas({
     if (!el) return;
 
     const chart = echarts.init(el, theme, { renderer: "canvas" });
-    chart.setOption(resolveCssVars(optionForThemeRef.current, el), { notMerge: true });
+    try {
+      chart.setOption(resolveCssVars(optionForThemeRef.current, el), { notMerge: true });
+    } catch (error) {
+      // Prevent a single malformed chart option from crashing the entire route.
+      console.error("[EChartsCanvas] Failed to initialize chart option", error);
+    }
 
     const handleClick = (params: ECElementEvent) => {
       const { clientX, clientY } = resolveChartClickClientXY(params, el);
@@ -180,7 +185,12 @@ export function EChartsCanvas({
     if (!el) return;
     const chart = echarts.getInstanceByDom(el);
     if (!chart) return;
-    chart.setOption(resolveCssVars(optionForTheme, el), { notMerge: true, lazyUpdate: true });
+    try {
+      chart.setOption(resolveCssVars(optionForTheme, el), { notMerge: true, lazyUpdate: true });
+    } catch (error) {
+      // Keep the page interactive even if a runtime option mutation is invalid.
+      console.error("[EChartsCanvas] Failed to update chart option", error);
+    }
   }, [optionForTheme]);
 
   return (

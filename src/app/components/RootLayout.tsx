@@ -189,6 +189,13 @@ function RootLayoutInner() {
       ];
     }
 
+    if (location.pathname === ROUTES.KNOWLEDGE_PERFORMANCE) {
+      return [
+        { label: "Observability", href: ROUTES.OBSERVABILITY },
+        { label: "Knowledge Performance" },
+      ];
+    }
+
     if (location.pathname === "/saved") {
       return [{ label: "Saved" }];
     }
@@ -329,6 +336,8 @@ function RootLayoutInner() {
       label = "AI Agents";
     } else if (location.pathname === ROUTES.COPILOT) {
       label = "Copilot";
+    } else if (location.pathname === ROUTES.KNOWLEDGE_PERFORMANCE) {
+      label = "Knowledge Performance";
     } else if (location.pathname === ROUTES.OBSERVABILITY) {
       label = "Observability";
     } else if (location.pathname === "/saved") {
@@ -368,6 +377,7 @@ function RootLayoutInner() {
     location.pathname === '/automation-opportunities' ||
     location.pathname.startsWith(`${ROUTES.AUTOMATION_OPPORTUNITIES}/agent/`) ||
     location.pathname === ROUTES.COPILOT ||
+    location.pathname === ROUTES.KNOWLEDGE_PERFORMANCE ||
     location.pathname === ROUTES.AI_AGENTS ||
     location.pathname.startsWith(`${ROUTES.AI_AGENTS}/`);
 

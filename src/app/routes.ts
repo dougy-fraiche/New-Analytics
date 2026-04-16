@@ -11,6 +11,7 @@ export const ROUTES = {
   AI_AGENTS: "/ai-agents",
   AI_AGENTS_DASHBOARD: (dashboardId: string) => `/ai-agents/${dashboardId}`,
   COPILOT: "/copilot",
+  KNOWLEDGE_PERFORMANCE: "/knowledge-performance",
   DASHBOARD: (dashboardId: string) => `/dashboard/${dashboardId}`,
   SAVED: "/saved",
   SAVED_FOLDER: (folderId: string) => `/saved/${folderId}`,

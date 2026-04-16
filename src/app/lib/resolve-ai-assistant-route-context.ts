@@ -52,6 +52,10 @@ export function resolveAiAssistantRouteContext(
     return { dashboardId: "ai-agents-copilot", sourceOotbId: "ai-agents-copilot" };
   }
 
+  if (pathname === ROUTES.KNOWLEDGE_PERFORMANCE) {
+    return { dashboardId: "knowledge-performance", sourceOotbId: "knowledge-performance" };
+  }
+
   if (pathname.startsWith(`${ROUTES.AUTOMATION_OPPORTUNITIES}/agent/`)) {
     return { dashboardId: AUTOMATION_OPPORTUNITIES_ID, sourceOotbId: AUTOMATION_OPPORTUNITIES_ID };
   }

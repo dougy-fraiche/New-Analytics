@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -883,8 +883,10 @@ export function AIAgentsIntentNluTab({
             <div className="h-[220px] w-full">
               <EChartsCanvas option={intentScoreTrend} onDataSelect={handleChartDataSelect(IX.intentScore)} />
             </div>
-            <WidgetAIExplanation widgetTitle="Intent Score" chartType="line-multi" />
-          </CardContent>
+            </CardContent>
+            <CardFooter className="mt-auto pt-4">
+              <WidgetAIExplanation widgetTitle="Intent Score" chartType="line-multi" />
+            </CardFooter>
         </Card>
 
         <Card className="group/widget h-full transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
@@ -940,8 +942,10 @@ export function AIAgentsIntentNluTab({
                 ))}
               </TableBody>
             </Table>
-            <WidgetAIExplanation widgetTitle="Slot Extraction Rate" chartType="bar-vertical" />
-          </CardContent>
+            </CardContent>
+            <CardFooter className="mt-auto pt-4">
+              <WidgetAIExplanation widgetTitle="Slot Extraction Rate" chartType="bar-vertical" />
+            </CardFooter>
         </Card>
       </div>
 
@@ -990,8 +994,10 @@ export function AIAgentsIntentNluTab({
               Poor
             </li>
           </ul>
-          <WidgetAIExplanation widgetTitle="Intent Confidence Distribution" chartType="bar-vertical" />
-        </CardContent>
+          </CardContent>
+          <CardFooter className="mt-auto pt-4">
+            <WidgetAIExplanation widgetTitle="Intent Confidence Distribution" chartType="bar-vertical" />
+          </CardFooter>
       </Card>
 
       <div className={`grid gap-4 ${isCompactDashboard ? "grid-cols-1" : "grid-cols-1 xl:grid-cols-2"}`}>
@@ -1096,8 +1102,10 @@ export function AIAgentsIntentNluTab({
                 </ul>
               </div>
             )}
-            <WidgetAIExplanation widgetTitle="Top Intents" chartType={topIntentView === "table" ? "metric" : "bar-horizontal"} />
-          </CardContent>
+            </CardContent>
+            <CardFooter className="mt-auto pt-4">
+              <WidgetAIExplanation widgetTitle="Top Intents" chartType={topIntentView === "table" ? "metric" : "bar-horizontal"} />
+            </CardFooter>
         </Card>
 
         <Card className="group/widget h-full transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
@@ -1177,11 +1185,13 @@ export function AIAgentsIntentNluTab({
                 </Table>
               </div>
             )}
-            <WidgetAIExplanation
+            </CardContent>
+            <CardFooter className="mt-auto pt-4">
+              <WidgetAIExplanation
               widgetTitle="Top Slots"
               chartType={slotGroupMode === "intent" ? "metric" : "bar-horizontal"}
             />
-          </CardContent>
+            </CardFooter>
         </Card>
       </div>
 
@@ -1209,8 +1219,10 @@ export function AIAgentsIntentNluTab({
               <EChartsCanvas option={usersLocaleDonut} onDataSelect={handleChartDataSelect(IX.usersLocale)} />
             </div>
           </div>
-          <WidgetAIExplanation widgetTitle="Users by Locale" chartType="area-stacked" />
-        </CardContent>
+          </CardContent>
+          <CardFooter className="mt-auto pt-4">
+            <WidgetAIExplanation widgetTitle="Users by Locale" chartType="area-stacked" />
+          </CardFooter>
       </Card>
 
       <div className={`grid gap-4 ${isCompactDashboard ? "grid-cols-1" : "grid-cols-1 xl:grid-cols-2"}`}>
@@ -1246,8 +1258,10 @@ export function AIAgentsIntentNluTab({
                 onDataSelect={handleChartDataSelect(IX.nluExecutionTime)}
               />
             </div>
-            <WidgetAIExplanation widgetTitle="NLU Execution Time" chartType="line-multi" />
-          </CardContent>
+            </CardContent>
+            <CardFooter className="mt-auto pt-4">
+              <WidgetAIExplanation widgetTitle="NLU Execution Time" chartType="line-multi" />
+            </CardFooter>
         </Card>
 
         <Card className="group/widget h-full transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
@@ -1294,8 +1308,10 @@ export function AIAgentsIntentNluTab({
                 </li>
               ))}
             </ul>
-            <WidgetAIExplanation widgetTitle="Exec Time by Endpoint" chartType="bar-horizontal" />
-          </CardContent>
+            </CardContent>
+            <CardFooter className="mt-auto pt-4">
+              <WidgetAIExplanation widgetTitle="Exec Time by Endpoint" chartType="bar-horizontal" />
+            </CardFooter>
         </Card>
       </div>
 
@@ -1415,8 +1431,10 @@ export function AIAgentsIntentNluTab({
               </TableBody>
             </Table>
           </div>
-          <WidgetAIExplanation widgetTitle="Sessions to Investigate" chartType="metric" />
-        </CardContent>
+          </CardContent>
+          <CardFooter className="mt-auto pt-4">
+            <WidgetAIExplanation widgetTitle="Sessions to Investigate" chartType="metric" />
+          </CardFooter>
       </Card>
     </div>
   );

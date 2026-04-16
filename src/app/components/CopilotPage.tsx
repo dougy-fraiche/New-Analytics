@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { RotateCcw } from "lucide-react";
 import {
   PageHeader,
+  pageHeaderTabsFooterClassName,
   pageMainColumnClassName,
   pageRootListScrollGutterClassName,
 } from "./PageChrome";
@@ -10,8 +11,12 @@ import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 import { ootbCategories } from "../data/ootb-dashboards";
 import { PageTransition } from "./PageTransition";
 import { cn } from "./ui/utils";
-import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
-import { AIAgentsOverviewTab } from "./AIAgentsOverviewTab";
+import { CopilotOverviewTab } from "./CopilotOverviewTab";
+import { CopilotTaskAssistTab } from "./CopilotTaskAssistTab";
+import { CopilotGenerativeResponsesTab } from "./CopilotGenerativeResponsesTab";
+import { CopilotRulesEngineTab } from "./CopilotRulesEngineTab";
+import { CopilotRealTimeSummaryTab } from "./CopilotRealTimeSummaryTab";
+import { CopilotAutoSummaryTab } from "./CopilotAutoSummaryTab";
 import { useContainerBreakpoint } from "../hooks/useContainerBreakpoint";
 import { Button } from "./ui/button";
 import {
@@ -34,6 +39,24 @@ import {
   type DashboardProductFilter,
   type DashboardTeamFilter,
 } from "../data/dashboard-filters";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+
+type CopilotHeaderTabValue =
+  | "overview"
+  | "auto-summary"
+  | "task-assist"
+  | "rules-engine"
+  | "real-time-summary"
+  | "generative-responses";
+
+const COPILOT_HEADER_TABS: { value: CopilotHeaderTabValue; label: string }[] = [
+  { value: "overview", label: "Overview" },
+  { value: "auto-summary", label: "Auto Summary" },
+  { value: "task-assist", label: "Task Assist" },
+  { value: "rules-engine", label: "Rules Engine" },
+  { value: "real-time-summary", label: "Real-Time Summary" },
+  { value: "generative-responses", label: "Generative Responses" },
+];
 
 export function CopilotPage() {
   const aiAgentsCategory = ootbCategories.find((c) => c.id === "ai-agents");
@@ -43,6 +66,7 @@ export function CopilotPage() {
   const [dateRange, setDateRange] = useState<DateRangeOption>(DEFAULT_FILTERS.dateRange);
   const [team, setTeam] = useState(DEFAULT_FILTERS.team);
   const [product, setProduct] = useState(DEFAULT_FILTERS.product);
+  const [activeTab, setActiveTab] = useState<CopilotHeaderTabValue>("overview");
   const hasFilterChanges = useMemo(() => {
     return (
       dateRange !== DEFAULT_FILTERS.dateRange ||
@@ -64,118 +88,139 @@ export function CopilotPage() {
 
   return (
     <WidgetAIProvider persistKey={GLOBAL_AI_ASSISTANT_KEY} ootbTypeId={copilotDashboard.id}>
-      <div className="flex flex-col h-full min-h-0">
-        <PageHeader>
-          <section>
-            <section className="flex items-center gap-2">
-              <h1 className="text-3xl tracking-tight">Copilot</h1>
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as CopilotHeaderTabValue)} className="flex flex-col h-full min-h-0">
+        <div className="flex flex-col h-full min-h-0">
+          <PageHeader className={pageHeaderTabsFooterClassName}>
+            <section>
+              <section className="flex items-center gap-2">
+                <h1 className="text-3xl tracking-tight">Copilot</h1>
+              </section>
+              <p className="text-muted-foreground mt-1">{copilotDashboard.description}</p>
             </section>
-            <p className="text-muted-foreground mt-1">{copilotDashboard.description}</p>
-          </section>
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRangeOption)}>
-              <SelectTrigger className="h-8 w-auto shrink-0">
-                <LabeledFilterInline label="Date range">{DATE_RANGE_LABELS[dateRange]}</LabeledFilterInline>
-              </SelectTrigger>
-              <SelectContent>
-                {DATE_RANGE_PRIMARY_OPTIONS.map((opt) => (
-                  <SelectItem key={opt} value={opt}>
-                    {DATE_RANGE_LABELS[opt]}
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRangeOption)}>
+                <SelectTrigger className="h-8 w-auto shrink-0">
+                  <LabeledFilterInline label="Date range">{DATE_RANGE_LABELS[dateRange]}</LabeledFilterInline>
+                </SelectTrigger>
+                <SelectContent>
+                  {DATE_RANGE_PRIMARY_OPTIONS.map((opt) => (
+                    <SelectItem key={opt} value={opt}>
+                      {DATE_RANGE_LABELS[opt]}
+                    </SelectItem>
+                  ))}
+                  <SelectSeparator />
+                  {DATE_RANGE_SECONDARY_OPTIONS.map((opt) => (
+                    <SelectItem key={opt} value={opt}>
+                      {DATE_RANGE_LABELS[opt]}
+                    </SelectItem>
+                  ))}
+                  <SelectSeparator />
+                  <SelectItem value={DATE_RANGE_CUSTOM_OPTION}>
+                    {DATE_RANGE_LABELS[DATE_RANGE_CUSTOM_OPTION]}
                   </SelectItem>
-                ))}
-                <SelectSeparator />
-                {DATE_RANGE_SECONDARY_OPTIONS.map((opt) => (
-                  <SelectItem key={opt} value={opt}>
-                    {DATE_RANGE_LABELS[opt]}
-                  </SelectItem>
-                ))}
-                <SelectSeparator />
-                <SelectItem value={DATE_RANGE_CUSTOM_OPTION}>
-                  {DATE_RANGE_LABELS[DATE_RANGE_CUSTOM_OPTION]}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+                </SelectContent>
+              </Select>
 
-            <Select value={team} onValueChange={(v) => setTeam(v as DashboardTeamFilter)}>
-              <SelectTrigger className="h-8 w-auto shrink-0">
-                <LabeledSelectValue label="Team" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all-teams">All Teams</SelectItem>
-                <SelectItem value="tier-1">Tier 1 Support</SelectItem>
-                <SelectItem value="tier-2">Tier 2 Support</SelectItem>
-                <SelectItem value="technical">Technical Team</SelectItem>
-              </SelectContent>
-            </Select>
+              <Select value={team} onValueChange={(v) => setTeam(v as DashboardTeamFilter)}>
+                <SelectTrigger className="h-8 w-auto shrink-0">
+                  <LabeledSelectValue label="Team" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all-teams">All Teams</SelectItem>
+                  <SelectItem value="tier-1">Tier 1 Support</SelectItem>
+                  <SelectItem value="tier-2">Tier 2 Support</SelectItem>
+                  <SelectItem value="technical">Technical Team</SelectItem>
+                </SelectContent>
+              </Select>
 
-            <Select value={product} onValueChange={(v) => setProduct(v as DashboardProductFilter)}>
-              <SelectTrigger className="h-8 w-auto shrink-0">
-                <LabeledSelectValue label="Product" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all-products">All Products</SelectItem>
-                <SelectItem value="product-a">Product A</SelectItem>
-                <SelectItem value="product-b">Product B</SelectItem>
-                <SelectItem value="product-c">Product C</SelectItem>
-              </SelectContent>
-            </Select>
+              <Select value={product} onValueChange={(v) => setProduct(v as DashboardProductFilter)}>
+                <SelectTrigger className="h-8 w-auto shrink-0">
+                  <LabeledSelectValue label="Product" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all-products">All Products</SelectItem>
+                  <SelectItem value="product-a">Product A</SelectItem>
+                  <SelectItem value="product-b">Product B</SelectItem>
+                  <SelectItem value="product-c">Product C</SelectItem>
+                </SelectContent>
+              </Select>
 
-            {hasFilterChanges && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 shrink-0"
-                onClick={() => {
-                  setDateRange(DEFAULT_FILTERS.dateRange);
-                  setTeam(DEFAULT_FILTERS.team);
-                  setProduct(DEFAULT_FILTERS.product);
-                }}
-              >
-                <RotateCcw className="mr-2 h-4 w-4" />
-                Reset Filters
-              </Button>
-            )}
-          </div>
-        </PageHeader>
-
-        <div className="flex-1 min-h-0 overflow-auto">
-          <div className={cn(pageRootListScrollGutterClassName, "pb-4 md:pb-8")}>
-            <PageTransition className={pageMainColumnClassName}>
-              <div ref={dashboardContentRef} className="space-y-4">
-                <HeaderAIInsightsRow
-                  dashboardId={copilotDashboard.id}
-                  dashboardData={{
-                    id: copilotDashboard.id,
-                    title: copilotDashboard.name,
-                    description: copilotDashboard.description,
+              {hasFilterChanges && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 shrink-0"
+                  onClick={() => {
+                    setDateRange(DEFAULT_FILTERS.dateRange);
+                    setTeam(DEFAULT_FILTERS.team);
+                    setProduct(DEFAULT_FILTERS.product);
                   }}
-                  hideDismissAll
-                  recommendedActionsContent={
-                    <div className="grid grid-cols-1 items-start gap-4">
-                      <div className="flex min-w-0 flex-col gap-2 rounded-xl border border-primary/40 bg-primary/[0.03] p-4 transition-[box-shadow,border-color,background-color] hover:border-primary/55 hover:bg-primary/[0.05] hover:shadow-md">
-                        <div className="flex min-w-0 flex-col gap-2.5">
-                          <p className="text-base font-medium leading-6 text-foreground">
-                            Run micro-training for Task Assist adoption
-                          </p>
-                          <p className="text-sm leading-snug text-foreground/80">
-                            Task Assist adoption is 48%, significantly behind AutoSummary at 82%.
-                            Short 15-minute live-demo sessions have historically lifted adoption by
-                            12–18pp within two weeks.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  }
-                />
-                <AIAgentsOverviewTab
-                  isCompactDashboard={isCompactDashboard}
-                  showWidgetOverflowMenu={false}
-                />
-              </div>
-            </PageTransition>
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Reset Filters
+                </Button>
+              )}
+            </div>
+            <TabsList variant="line" className="mt-4">
+              {COPILOT_HEADER_TABS.map((tab) => (
+                <TabsTrigger key={tab.value} value={tab.value}>
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </PageHeader>
+
+          <div className="flex-1 min-h-0 overflow-auto">
+            <div className={cn(pageRootListScrollGutterClassName, "pb-4 md:pb-8")}>
+              <PageTransition className={pageMainColumnClassName}>
+                <div ref={dashboardContentRef}>
+                  <TabsContent value="overview" className="mt-0 data-[state=inactive]:hidden">
+                    <CopilotOverviewTab
+                      isCompactDashboard={isCompactDashboard}
+                      showWidgetOverflowMenu={false}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="auto-summary" className="mt-0 data-[state=inactive]:hidden">
+                    <CopilotAutoSummaryTab
+                      isCompactDashboard={isCompactDashboard}
+                      showWidgetOverflowMenu={false}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="task-assist" className="mt-0 data-[state=inactive]:hidden">
+                    <CopilotTaskAssistTab
+                      isCompactDashboard={isCompactDashboard}
+                      showWidgetOverflowMenu={false}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="rules-engine" className="mt-0 data-[state=inactive]:hidden">
+                    <CopilotRulesEngineTab
+                      isCompactDashboard={isCompactDashboard}
+                      showWidgetOverflowMenu={false}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="real-time-summary" className="mt-0 data-[state=inactive]:hidden">
+                    <CopilotRealTimeSummaryTab
+                      isCompactDashboard={isCompactDashboard}
+                      showWidgetOverflowMenu={false}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="generative-responses" className="mt-0 data-[state=inactive]:hidden">
+                    <CopilotGenerativeResponsesTab
+                      isCompactDashboard={isCompactDashboard}
+                      showWidgetOverflowMenu={false}
+                    />
+                  </TabsContent>
+                </div>
+              </PageTransition>
+            </div>
           </div>
         </div>
-      </div>
+      </Tabs>
     </WidgetAIProvider>
   );
 }

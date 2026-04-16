@@ -72,7 +72,7 @@ export function WidgetAIExplanation({ widgetTitle, chartType, className }: Widge
   }, [widgetTitle, chartType]);
 
   return (
-    <div className={cn("widget-ai-explanation mt-3 flex items-center justify-start", className)}>
+    <div className={cn("widget-ai-explanation flex items-center justify-start", className)}>
       <Popover>
         <PopoverTrigger asChild>
           <Button

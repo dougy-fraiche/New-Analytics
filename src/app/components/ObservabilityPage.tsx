@@ -37,7 +37,7 @@ export function ObservabilityPage() {
   const aiAgentsCategory = ootbCategories.find((cat) => cat.id === "ai-agents");
   const copilotDashboard = aiAgentsCategory?.dashboards.find((d) => d.id === "ai-agents-copilot");
 
-  // Observability should list only top-level dashboards: AI Agents and Copilot.
+  // Observability should list only top-level dashboards: AI Agents, Copilot, and Knowledge Performance.
   const allItems = [
     aiAgentsCategory
       ? {
@@ -58,6 +58,17 @@ export function ObservabilityPage() {
           categoryName: aiAgentsCategory.name,
           categoryId: aiAgentsCategory.id,
           path: ROUTES.COPILOT,
+        }
+      : null,
+    aiAgentsCategory
+      ? {
+          id: "knowledge-performance",
+          name: "Knowledge Performance",
+          categoryName: aiAgentsCategory.name,
+          categoryId: aiAgentsCategory.id,
+          description: "Knowledge quality and retrieval performance dashboards with feedback and improvement workflows.",
+          lastUpdated: "Recently",
+          path: ROUTES.KNOWLEDGE_PERFORMANCE,
         }
       : null,
   ].filter((item): item is NonNullable<typeof item> => item !== null);
