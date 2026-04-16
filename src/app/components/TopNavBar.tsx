@@ -5,6 +5,7 @@ import {
   Search,
   Sparkles,
 } from "lucide-react";
+import { Fragment, useCallback, useLayoutEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
   DropdownMenu,
@@ -20,6 +21,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import {
   Breadcrumb,
   BreadcrumbItem,
+  BreadcrumbEllipsis,
   BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
@@ -44,9 +46,78 @@ export function TopNavBar({
   onAiAssistantOpenChange,
   aiAssistantDisabled = false,
 }: TopNavBarProps) {
-  const { state: sidebarState, toggleSidebar } = useSidebar();
-  const isCollapsed = sidebarState === "collapsed";
+  const { state: sidebarState, toggleSidebar, isMobile, openMobile } = useSidebar();
+  const isNavigationVisible = isMobile ? openMobile : sidebarState !== "collapsed";
+  const sidebarToggleLabel = isMobile
+    ? (isNavigationVisible ? "Hide navigation" : "Show navigation")
+    : (isNavigationVisible ? "Collapse sidebar" : "Expand sidebar");
   const hasBreadcrumbs = breadcrumbs.length > 0;
+  const canCollapseBreadcrumbs = breadcrumbs.length > 1;
+
+  const [breadcrumbViewportEl, setBreadcrumbViewportEl] = useState<HTMLDivElement | null>(null);
+  const [breadcrumbMeasureEl, setBreadcrumbMeasureEl] = useState<HTMLDivElement | null>(null);
+  const [breadcrumbsCollapsed, setBreadcrumbsCollapsed] = useState(false);
+
+  const breadcrumbViewportRef = useCallback((el: HTMLDivElement | null) => {
+    setBreadcrumbViewportEl(el);
+  }, []);
+
+  const breadcrumbMeasureRef = useCallback((el: HTMLDivElement | null) => {
+    setBreadcrumbMeasureEl(el);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!canCollapseBreadcrumbs || !breadcrumbViewportEl || !breadcrumbMeasureEl) {
+      setBreadcrumbsCollapsed(false);
+      return;
+    }
+
+    const update = () => {
+      const availableWidth = breadcrumbViewportEl.clientWidth;
+      const neededWidth = breadcrumbMeasureEl.scrollWidth;
+      setBreadcrumbsCollapsed(neededWidth - availableWidth > 1);
+    };
+
+    update();
+
+    const observer = new ResizeObserver(update);
+    observer.observe(breadcrumbViewportEl);
+    observer.observe(breadcrumbMeasureEl);
+
+    return () => observer.disconnect();
+  }, [breadcrumbMeasureEl, breadcrumbViewportEl, canCollapseBreadcrumbs, breadcrumbs]);
+
+  const currentBreadcrumb = breadcrumbs[breadcrumbs.length - 1];
+  const hiddenBreadcrumbs = useMemo(
+    () => (breadcrumbsCollapsed ? breadcrumbs.slice(0, -1) : []),
+    [breadcrumbs, breadcrumbsCollapsed],
+  );
+
+  const renderCrumbTrail = useCallback(
+    (items: Array<{ label: string; href?: string }>) =>
+      items.map((crumb, index) => {
+        const isLast = index === items.length - 1;
+        return (
+          <Fragment key={`${crumb.label}-${index}`}>
+            <BreadcrumbItem className="min-w-0">
+              {isLast ? (
+                <BreadcrumbPage className="truncate">{crumb.label}</BreadcrumbPage>
+              ) : crumb.href ? (
+                <BreadcrumbLink asChild className="truncate">
+                  <Link to={crumb.href} className="truncate">
+                    {crumb.label}
+                  </Link>
+                </BreadcrumbLink>
+              ) : (
+                <BreadcrumbPage className="truncate">{crumb.label}</BreadcrumbPage>
+              )}
+            </BreadcrumbItem>
+            {!isLast && <BreadcrumbSeparator />}
+          </Fragment>
+        );
+      }),
+    [],
+  );
 
   return (
     <header className="flex h-16 w-full items-center border-b border-border bg-background shrink-0 z-50 px-4">
@@ -60,54 +131,81 @@ export function TopNavBar({
               className="size-8"
               onClick={toggleSidebar}
             >
-              {isCollapsed ? (
-                <PanelLeftOpen className="size-4" />
-              ) : (
+              {isNavigationVisible ? (
                 <PanelLeftClose className="size-4" />
+              ) : (
+                <PanelLeftOpen className="size-4" />
               )}
-              <span className="sr-only">{isCollapsed ? "Expand sidebar" : "Collapse sidebar"}</span>
+              <span className="sr-only">{sidebarToggleLabel}</span>
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="bottom">
-            {isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          </TooltipContent>
+          <TooltipContent side="bottom">{sidebarToggleLabel}</TooltipContent>
         </Tooltip>
       </div>
 
       {/* Breadcrumbs */}
       {hasBreadcrumbs && (
-        <div className="flex items-center px-3">
-          <Breadcrumb>
-            <BreadcrumbList>
-              {breadcrumbs.flatMap((crumb, index) => {
-                const items = [];
-                items.push(
-                  <BreadcrumbItem key={`item-${index}`}>
-                    {index < breadcrumbs.length - 1 ? (
-                      crumb.href ? (
-                        <BreadcrumbLink asChild>
-                          <Link to={crumb.href}>{crumb.label}</Link>
-                        </BreadcrumbLink>
-                      ) : (
-                        <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
-                      )
-                    ) : (
-                      <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
-                    )}
-                  </BreadcrumbItem>
-                );
-                if (index < breadcrumbs.length - 1) {
-                  items.push(<BreadcrumbSeparator key={`sep-${index}`} />);
-                }
-                return items;
-              })}
-            </BreadcrumbList>
-          </Breadcrumb>
+        <div className="relative flex min-w-0 flex-1 items-center px-3">
+          <div ref={breadcrumbViewportRef} className="min-w-0 w-full">
+            <Breadcrumb>
+              <BreadcrumbList className="min-w-0 flex-nowrap overflow-hidden whitespace-nowrap">
+                {breadcrumbsCollapsed && currentBreadcrumb ? (
+                  <>
+                    <BreadcrumbItem>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            className="inline-flex items-center rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+                            aria-label="Show previous breadcrumb levels"
+                          >
+                            <BreadcrumbEllipsis className="size-4" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          {hiddenBreadcrumbs.map((crumb, index) =>
+                            crumb.href ? (
+                              <DropdownMenuItem key={`${crumb.label}-${index}`} asChild>
+                                <Link to={crumb.href}>{crumb.label}</Link>
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem key={`${crumb.label}-${index}`} disabled>
+                                {crumb.label}
+                              </DropdownMenuItem>
+                            ),
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem className="min-w-0">
+                      <BreadcrumbPage className="truncate">{currentBreadcrumb.label}</BreadcrumbPage>
+                    </BreadcrumbItem>
+                  </>
+                ) : (
+                  renderCrumbTrail(breadcrumbs)
+                )}
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+
+          {/* Hidden measurement row for overflow detection */}
+          {canCollapseBreadcrumbs && (
+            <div className="pointer-events-none absolute inset-y-0 left-0 -z-10 h-0 overflow-hidden opacity-0">
+              <div ref={breadcrumbMeasureRef} className="w-max">
+                <Breadcrumb aria-hidden="true">
+                  <BreadcrumbList className="flex-nowrap whitespace-nowrap overflow-visible">
+                    {renderCrumbTrail(breadcrumbs)}
+                  </BreadcrumbList>
+                </Breadcrumb>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {/* Page-level actions slot (portaled into by child pages) + global actions */}
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex shrink-0 items-center gap-2">
         {/* Page-level actions slot */}
         <div ref={onActionsSlotRef} className="flex items-center gap-1" />
 
@@ -130,14 +228,14 @@ export function TopNavBar({
         {/* Notifications */}
         <DropdownMenu>
           <Tooltip>
-            <TooltipTrigger asChild>
-              <DropdownMenuTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon" className="size-8">
                   <Bell className="h-4 w-4" />
                   <span className="sr-only">Notifications</span>
                 </Button>
-              </DropdownMenuTrigger>
-            </TooltipTrigger>
+              </TooltipTrigger>
+            </DropdownMenuTrigger>
             <TooltipContent side="bottom">Notifications</TooltipContent>
           </Tooltip>
           <DropdownMenuContent align="end" className="w-80">

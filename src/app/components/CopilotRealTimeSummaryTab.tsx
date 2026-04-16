@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { EChartsCanvas } from "./EChartsCanvas";
+import { InsetMetricTile } from "./InsetMetricTile";
 import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
 import { WidgetAIExplanation } from "./WidgetAIExplanation";
 import { CopilotSessionTranscriptDialog } from "./CopilotSessionTranscriptDialog";
@@ -159,24 +160,20 @@ export function CopilotRealTimeSummaryTab({
         <CardContent>
           <div className={cn("grid gap-4", isCompactDashboard ? "grid-cols-1" : "grid-cols-1 md:grid-cols-3")}>
             {copilotProxyMetricTiles.map((tile) => (
-              <div
+              <InsetMetricTile
                 key={tile.label}
-                className={cn("rounded-2xl border p-5 text-center", metricTileClassName(tile.tone))}
-              >
-                <p
-                  className={cn(
-                    "text-3xl font-semibold tracking-tight",
-                    tile.tone === "primary"
-                      ? "text-[#5d49b4]"
-                      : tile.tone === "warning"
-                        ? "text-[#a47d00]"
-                        : "text-foreground",
-                  )}
-                >
-                  {tile.value}
-                </p>
-                <p className="mt-2 text-base text-muted-foreground">{tile.label}</p>
-              </div>
+                value={tile.value}
+                label={tile.label}
+                className={cn("border", metricTileClassName(tile.tone))}
+                valueClassName={
+                  tile.tone === "primary"
+                    ? "text-[#5d49b4]"
+                    : tile.tone === "warning"
+                      ? "text-[#a47d00]"
+                      : "text-foreground"
+                }
+                labelClassName="text-sm text-muted-foreground"
+              />
             ))}
           </div>
 
@@ -237,14 +234,14 @@ export function CopilotRealTimeSummaryTab({
               <TableBody>
                 {copilotStreamingLatencySkillRows.map((row) => (
                   <TableRow key={row.skill}>
-                    <TableCell className="font-medium">
+                    <TableCell>
                       <span className="inline-flex items-center gap-2">
                         <span className="inline-block size-2.5 rounded-full" style={{ backgroundColor: row.dotColor }} aria-hidden />
                         {row.skill}
                       </span>
                     </TableCell>
                     <TableCell className="text-right tabular-nums">{row.p50Ms}ms</TableCell>
-                    <TableCell className="text-right tabular-nums font-semibold text-[#a47d00]">{row.p95Ms}ms</TableCell>
+                    <TableCell className="text-right tabular-nums text-[#a47d00]">{row.p95Ms}ms</TableCell>
                     <TableCell className="text-right tabular-nums text-muted-foreground">{row.avgMs}ms</TableCell>
                     <TableCell className="text-right tabular-nums text-muted-foreground">{row.count}</TableCell>
                   </TableRow>
@@ -349,17 +346,17 @@ export function CopilotRealTimeSummaryTab({
             <TableBody>
               {copilotRealTimeComparisonRows.map((row) => (
                 <TableRow key={row.skill}>
-                  <TableCell className="font-medium">
+                  <TableCell>
                     <span className="inline-flex items-center gap-2">
                       <span className="inline-block size-2.5 rounded-full" style={{ backgroundColor: row.dotColor }} aria-hidden />
                       {row.skill}
                     </span>
                   </TableCell>
-                  <TableCell className="text-right tabular-nums font-semibold text-[#5d49b4]">{row.rtSimilarity.toFixed(3)}</TableCell>
-                  <TableCell className="text-right tabular-nums font-semibold">{row.finalSimilarity.toFixed(3)}</TableCell>
-                  <TableCell className="text-right tabular-nums font-semibold text-[#5d49b4]">{row.rtWordCount}</TableCell>
+                  <TableCell className="text-right tabular-nums text-[#5d49b4]">{row.rtSimilarity.toFixed(3)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{row.finalSimilarity.toFixed(3)}</TableCell>
+                  <TableCell className="text-right tabular-nums text-[#5d49b4]">{row.rtWordCount}</TableCell>
                   <TableCell className="text-right tabular-nums">{row.finalWordCount}</TableCell>
-                  <TableCell className="text-right tabular-nums font-semibold text-emerald-700">{row.rtLatencyMs}</TableCell>
+                  <TableCell className="text-right tabular-nums text-emerald-700">{row.rtLatencyMs}</TableCell>
                   <TableCell className="text-right tabular-nums text-muted-foreground">{row.finalLatencyMs}</TableCell>
                   <TableCell className="text-right tabular-nums">{row.contacts}</TableCell>
                 </TableRow>
@@ -454,7 +451,7 @@ export function CopilotRealTimeSummaryTab({
                     <TableCell>
                       <Badge
                         variant="secondary"
-                        className="border-transparent bg-amber-100 font-semibold tabular-nums text-amber-700"
+                        className="border-transparent bg-amber-100 tabular-nums text-amber-700"
                       >
                         {row.similarity.toFixed(3)}
                       </Badge>

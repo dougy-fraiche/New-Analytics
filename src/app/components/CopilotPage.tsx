@@ -161,13 +161,15 @@ export function CopilotPage() {
                 </Button>
               )}
             </div>
-            <TabsList variant="line" className="mt-4">
-              {COPILOT_HEADER_TABS.map((tab) => (
-                <TabsTrigger key={tab.value} value={tab.value}>
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+            <div className="mt-4 overflow-x-auto">
+              <TabsList variant="line" className="w-max min-w-max flex-nowrap">
+                {COPILOT_HEADER_TABS.map((tab) => (
+                  <TabsTrigger key={tab.value} value={tab.value} className="shrink-0 whitespace-nowrap">
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
           </PageHeader>
 
           <div className="flex-1 min-h-0 overflow-auto">

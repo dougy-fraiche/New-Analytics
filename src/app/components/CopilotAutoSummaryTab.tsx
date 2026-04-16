@@ -14,6 +14,7 @@ import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { EChartsCanvas } from "./EChartsCanvas";
+import { InsetMetricTile } from "./InsetMetricTile";
 import { Input } from "./ui/input";
 import { KpiMetricValueTitle } from "./KpiMetricValueTitle";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "./ui/pagination";
@@ -464,18 +465,27 @@ export function CopilotAutoSummaryTab({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className={cn("grid gap-3", isCompactDashboard ? "grid-cols-1" : "grid-cols-1 md:grid-cols-3")}>
-            <div className="rounded-xl border bg-muted/30 p-4 text-center">
-              <p className="text-4xl font-semibold text-foreground">{editLengthDeltaStats.editedSummaries}</p>
-              <p className="text-sm text-muted-foreground">Edited Summaries</p>
-            </div>
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-center">
-              <p className="text-4xl font-semibold text-emerald-700">+{editLengthDeltaStats.avgCharDelta}</p>
-              <p className="text-sm text-muted-foreground">Avg Char Delta</p>
-            </div>
-            <div className="rounded-xl border bg-muted/30 p-4 text-center">
-              <p className="text-4xl font-semibold text-foreground">{editLengthDeltaStats.addedRemoved}</p>
-              <p className="text-sm text-muted-foreground">Added / Removed</p>
-            </div>
+            <InsetMetricTile
+              value={editLengthDeltaStats.editedSummaries}
+              label="Edited Summaries"
+              className="border bg-muted/30"
+              valueClassName="text-foreground"
+              labelClassName="text-sm text-muted-foreground"
+            />
+            <InsetMetricTile
+              value={`+${editLengthDeltaStats.avgCharDelta}`}
+              label="Avg Char Delta"
+              className="border border-emerald-200 bg-emerald-50"
+              valueClassName="text-emerald-700"
+              labelClassName="text-sm text-muted-foreground"
+            />
+            <InsetMetricTile
+              value={editLengthDeltaStats.addedRemoved}
+              label="Added / Removed"
+              className="border bg-muted/30"
+              valueClassName="text-foreground"
+              labelClassName="text-sm text-muted-foreground"
+            />
           </div>
 
           <div className="space-y-2">

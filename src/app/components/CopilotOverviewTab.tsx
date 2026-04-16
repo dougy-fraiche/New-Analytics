@@ -17,6 +17,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { EChartsCanvas } from "./EChartsCanvas";
 import { KpiMetricValueTitle } from "./KpiMetricValueTitle";
+import { InsetMetricTile } from "./InsetMetricTile";
 import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
 import { WidgetAIExplanation } from "./WidgetAIExplanation";
 import { CopilotSessionTranscriptDialog } from "./CopilotSessionTranscriptDialog";
@@ -217,16 +218,20 @@ export function CopilotOverviewTab({
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="rounded-xl border border-amber-200/60 bg-amber-50 p-4 text-center">
-                <p className="text-4xl font-semibold text-amber-700">{copilotTransferEscalation.transferRate}</p>
-                <p className="text-lg text-foreground">Transfer Rate</p>
-                <p className="text-sm text-muted-foreground">{copilotTransferEscalation.transferCountText}</p>
-              </div>
-              <div className="rounded-xl border border-red-200/60 bg-red-50 p-4 text-center">
-                <p className="text-4xl font-semibold text-red-600">{copilotTransferEscalation.escalationRate}</p>
-                <p className="text-lg text-foreground">Escalation Rate</p>
-                <p className="text-sm text-muted-foreground">{copilotTransferEscalation.escalationCountText}</p>
-              </div>
+              <InsetMetricTile
+                value={copilotTransferEscalation.transferRate}
+                label="Transfer Rate"
+                supportingText={copilotTransferEscalation.transferCountText}
+                className="border border-amber-200/60 bg-amber-50"
+                valueClassName="text-amber-700"
+              />
+              <InsetMetricTile
+                value={copilotTransferEscalation.escalationRate}
+                label="Escalation Rate"
+                supportingText={copilotTransferEscalation.escalationCountText}
+                className="border border-red-200/60 bg-red-50"
+                valueClassName="text-red-600"
+              />
             </div>
 
             <div className="mt-4 border-t pt-4">
@@ -301,12 +306,12 @@ export function CopilotOverviewTab({
               <TableBody>
                 {copilotTeamPerformanceRows.map((row) => (
                   <TableRow key={row.team}>
-                    <TableCell className="font-medium">{row.team}</TableCell>
+                    <TableCell>{row.team}</TableCell>
                     <TableCell className="text-right tabular-nums">{row.contacts}</TableCell>
                     <TableCell className="text-right tabular-nums text-emerald-700">{row.adoption}</TableCell>
                     <TableCell
                       className={cn(
-                        "text-right tabular-nums font-semibold",
+                        "text-right tabular-nums",
                         Number.parseFloat(row.quality) >= 0.85 ? "text-emerald-700" : "text-amber-700",
                       )}
                     >

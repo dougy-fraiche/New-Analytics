@@ -183,8 +183,8 @@ export function CopilotRulesEngineTab({
             <TableBody>
               {ruleTriggerFrequencyRows.map((row) => (
                 <TableRow key={row.ruleName}>
-                  <TableCell className="font-semibold tabular-nums text-muted-foreground">{row.rank}</TableCell>
-                  <TableCell className="font-medium">{row.ruleName}</TableCell>
+                  <TableCell className="tabular-nums text-muted-foreground">{row.rank}</TableCell>
+                  <TableCell>{row.ruleName}</TableCell>
                   <TableCell className="text-right tabular-nums">{row.fires}</TableCell>
                   <TableCell className="text-right tabular-nums">{row.percentTotal.toFixed(1)}%</TableCell>
                   <TableCell className="text-right tabular-nums">
@@ -305,7 +305,7 @@ export function CopilotRulesEngineTab({
                   {sessionColumnVisibility.channel ? <TableCell>{row.channel}</TableCell> : null}
                   {sessionColumnVisibility.agent ? <TableCell>{row.agent}</TableCell> : null}
                   {sessionColumnVisibility.ruleFires ? (
-                    <TableCell className="tabular-nums font-semibold text-[#6752be]">{row.ruleFires}</TableCell>
+                    <TableCell className="tabular-nums text-[#6752be]">{row.ruleFires}</TableCell>
                   ) : null}
                   {sessionColumnVisibility.skill ? <TableCell>{row.skill}</TableCell> : null}
                   {sessionColumnVisibility.duration ? <TableCell className="tabular-nums">{row.duration}</TableCell> : null}

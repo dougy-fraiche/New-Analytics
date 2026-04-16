@@ -20,6 +20,7 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { EChartsCanvas } from "./EChartsCanvas";
+import { InsetMetricTile } from "./InsetMetricTile";
 import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
 import { WidgetAIExplanation } from "./WidgetAIExplanation";
 import { CopilotSessionTranscriptDialog } from "./CopilotSessionTranscriptDialog";
@@ -563,10 +564,13 @@ export function CopilotTaskAssistTab({
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               {taskErrorSummary.map((item) => (
-                <div key={item.label} className={cn("rounded-2xl p-4 text-center", item.className)}>
-                  <p className="text-4xl font-semibold tracking-tight">{item.value}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{item.label}</p>
-                </div>
+                <InsetMetricTile
+                  key={item.label}
+                  value={item.value}
+                  label={item.label}
+                  className={item.className}
+                  labelClassName="text-sm text-muted-foreground"
+                />
               ))}
             </div>
 
@@ -637,10 +641,13 @@ export function CopilotTaskAssistTab({
         <CardContent className="grid gap-6 xl:grid-cols-2">
           <section className="space-y-4">
             <p className="text-sm font-medium text-muted-foreground">Actions per Task Distribution</p>
-            <div className="w-full rounded-xl border border-primary/20 bg-primary/[0.04] px-3 py-2 text-center">
-              <p className="text-2xl font-semibold text-primary">2.5</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">Avg Actions per Task</p>
-            </div>
+            <InsetMetricTile
+              value="2.5"
+              label="Avg Actions per Task"
+              className="w-full border border-primary/20 bg-primary/[0.04]"
+              valueClassName="text-primary"
+              labelClassName="text-sm text-muted-foreground"
+            />
             <div className="space-y-2">
               {actionComplexityDistributionRows.map((row) => (
                 <div
@@ -759,7 +766,7 @@ export function CopilotTaskAssistTab({
                     {sessionColumnVisibility.agent ? <TableCell>{row.agent}</TableCell> : null}
                     {sessionColumnVisibility.skill ? <TableCell>{row.skill}</TableCell> : null}
                     {sessionColumnVisibility.tasks ? (
-                      <TableCell className="font-semibold text-primary tabular-nums">{row.tasks}</TableCell>
+                      <TableCell className="text-primary tabular-nums">{row.tasks}</TableCell>
                     ) : null}
                     {sessionColumnVisibility.duration ? <TableCell className="tabular-nums">{row.duration}</TableCell> : null}
                     {sessionColumnVisibility.intent ? <TableCell>{row.intent}</TableCell> : null}

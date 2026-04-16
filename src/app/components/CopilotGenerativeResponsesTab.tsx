@@ -387,7 +387,7 @@ export function CopilotGenerativeResponsesTab({
               <TableBody>
                 {CATEGORY_ROWS.map((row) => (
                   <TableRow key={row.category}>
-                    <TableCell className="font-medium">{row.category}</TableCell>
+                    <TableCell>{row.category}</TableCell>
                     <TableCell className="text-right tabular-nums">{row.kbAnswers}</TableCell>
                     <TableCell className="text-right tabular-nums">{row.avgAdherence}</TableCell>
                     <TableCell className="text-right tabular-nums">{row.kbScore}</TableCell>

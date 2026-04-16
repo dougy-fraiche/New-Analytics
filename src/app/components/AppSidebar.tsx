@@ -38,7 +38,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router";
-import { type ReactNode, useEffect, useRef } from "react";
+import { type MouseEvent, type ReactNode, useCallback, useEffect, useRef } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import {
   Sidebar,
@@ -148,6 +148,7 @@ const APP_CATEGORIES: AppCategory[] = [
 ];
 
 const DASHBOARD_DND_TYPE = "SIDEBAR_DASHBOARD";
+const SHOW_KNOWLEDGE_PERFORMANCE_IN_SIDEBAR = false;
 
 interface DashboardDragItem {
   dashboardId: string;
@@ -293,8 +294,7 @@ function isConversationAssistantInFlight(conversation: Conversation): boolean {
 export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { state: sidebarState, toggleSidebar } = useSidebar();
-  const isCollapsed = sidebarState === "collapsed";
+  const { isMobile, openMobile, setOpenMobile } = useSidebar();
   const { conversations } = useConversations();
   const {
     projects,
@@ -398,6 +398,20 @@ export function AppSidebar() {
     });
   };
 
+  const closeMobileSidebarIfOpen = useCallback(() => {
+    if (isMobile && openMobile) {
+      setOpenMobile(false);
+    }
+  }, [isMobile, openMobile, setOpenMobile]);
+
+  const handleSidebarContentClickCapture = useCallback((event: MouseEvent<HTMLDivElement>) => {
+    if (!isMobile || !openMobile) return;
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    if (!target.closest("a[href]")) return;
+    setOpenMobile(false);
+  }, [isMobile, openMobile, setOpenMobile]);
+
   return (
     <>
       <Sidebar collapsible="icon">
@@ -418,7 +432,7 @@ export function AppSidebar() {
                       alt="Agentic Analytics"
                       className="size-8 shrink-0 object-contain"
                     />
-                    <span className="truncate flex-1 text-left text-sm font-semibold leading-tight group-data-[collapsible=icon]:hidden">
+                    <span className="truncate flex-1 text-left text-sm font-medium leading-tight group-data-[collapsible=icon]:hidden">
                       Agentic Analytics
                     </span>
                     <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 text-muted-foreground group-data-[collapsible=icon]:hidden" />
@@ -453,7 +467,10 @@ export function AppSidebar() {
           </SidebarMenu>
         </SidebarHeader>
 
-        <SidebarContent className="gap-1 pt-2 group-data-[collapsible=icon]:pt-4">
+        <SidebarContent
+          className="gap-1 pt-2 group-data-[collapsible=icon]:pt-4"
+          onClickCapture={handleSidebarContentClickCapture}
+        >
           {/* Explore — collapsible conversation threads (`E` still navigates to Explore via RootLayout) */}
           <CollapsibleSidebarSection
             icon={Compass}
@@ -613,13 +630,15 @@ export function AppSidebar() {
                       </Link>
                     </SidebarMenuSubButton>
                   </SidebarMenuSubItem>
-                  <SidebarMenuSubItem>
-                    <SidebarMenuSubButton asChild isActive={isKnowledgePerformanceRoute}>
-                      <Link to={ROUTES.KNOWLEDGE_PERFORMANCE}>
-                        <span className="truncate">Knowledge Performance</span>
-                      </Link>
-                    </SidebarMenuSubButton>
-                  </SidebarMenuSubItem>
+                  {SHOW_KNOWLEDGE_PERFORMANCE_IN_SIDEBAR && (
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild isActive={isKnowledgePerformanceRoute}>
+                        <Link to={ROUTES.KNOWLEDGE_PERFORMANCE}>
+                          <span className="truncate">Knowledge Performance</span>
+                        </Link>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  )}
                 </>
               );
             })()}
@@ -964,7 +983,12 @@ export function AppSidebar() {
                     <User className="mr-2 h-4 w-4" />
                     <span>Profile</span>
                   </UserDropdownMenuItem>
-                  <UserDropdownMenuItem onClick={() => navigate("/settings")}>
+                  <UserDropdownMenuItem
+                    onClick={() => {
+                      navigate("/settings");
+                      closeMobileSidebarIfOpen();
+                    }}
+                  >
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </UserDropdownMenuItem>
