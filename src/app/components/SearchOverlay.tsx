@@ -29,6 +29,11 @@ import { useProjects } from "../contexts/ProjectContext";
 import { useConversations } from "../contexts/ConversationContext";
 import { ootbCategories } from "../data/ootb-dashboards";
 import { ROUTES } from "../routes";
+import {
+  getSavedFolderDashboardPath,
+  getSavedFolderPath,
+  getSavedStandaloneDashboardPath,
+} from "../lib/saved-slugs";
 
 const AI_AGENTS_OVERVIEW_PATH = (() => {
   const first = ootbCategories
@@ -270,7 +275,7 @@ export function SearchOverlay({ open, onOpenChange }: SearchOverlayProps) {
                 <CommandItem
                   key={project.id}
                   value={project.name}
-                  onSelect={() => handleSelect(ROUTES.SAVED_FOLDER(project.id), project.name)}
+                  onSelect={() => handleSelect(getSavedFolderPath(project), project.name)}
                 >
                   <Folder className="mr-2 h-4 w-4" />
                   <span>{project.name}</span>
@@ -293,7 +298,12 @@ export function SearchOverlay({ open, onOpenChange }: SearchOverlayProps) {
                   <CommandItem
                     key={`${project.id}-${dashboard.id}`}
                     value={`${project.name} ${dashboard.name}`}
-                    onSelect={() => handleSelect(ROUTES.PROJECT_DASHBOARD(project.id, dashboard.id), dashboard.name)}
+                    onSelect={() =>
+                      handleSelect(
+                        getSavedFolderDashboardPath(project, dashboard),
+                        dashboard.name,
+                      )
+                    }
                   >
                     <FileText className="mr-2 h-4 w-4" />
                     <span>{dashboard.name}</span>
@@ -305,7 +315,9 @@ export function SearchOverlay({ open, onOpenChange }: SearchOverlayProps) {
                 <CommandItem
                   key={`standalone-${dashboard.id}`}
                   value={`Saved ${dashboard.name}`}
-                  onSelect={() => handleSelect(ROUTES.SAVED_DASHBOARD(dashboard.id), dashboard.name)}
+                  onSelect={() =>
+                    handleSelect(getSavedStandaloneDashboardPath(dashboard), dashboard.name)
+                  }
                 >
                   <FileText className="mr-2 h-4 w-4" />
                   <span>{dashboard.name}</span>

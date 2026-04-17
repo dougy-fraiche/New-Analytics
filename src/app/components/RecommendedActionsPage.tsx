@@ -55,6 +55,11 @@ import { PageTransition } from "./PageTransition";
 import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
 import { WidgetAIProvider } from "../contexts/WidgetAIContext";
 import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
+import { ROUTES } from "../routes";
+import {
+  getSavedFolderDashboardPath,
+  getSavedStandaloneDashboardPath,
+} from "../lib/saved-slugs";
 
 const LINKED_DASHBOARD_IDS_BY_ACTION_ID: Record<number, string[]> = {
   1: ["dash-2", "dash-13"],
@@ -82,14 +87,23 @@ export function RecommendedActionsPage() {
     const preferredDashboardId = linkedDashboardIds[0];
     if (!preferredDashboardId) return null;
 
-    const project = projects.find((p) => p.dashboards.some((d) => d.id === preferredDashboardId));
-    if (project) return `/project/${project.id}/dashboard/${preferredDashboardId}`;
+    const project = projects.find((p) =>
+      p.dashboards.some((dashboard) => dashboard.id === preferredDashboardId),
+    );
+    const folderDashboard = project?.dashboards.find(
+      (dashboard) => dashboard.id === preferredDashboardId,
+    );
+    if (project && folderDashboard) {
+      return getSavedFolderDashboardPath(project, folderDashboard);
+    }
 
-    const standaloneMatch = standaloneDashboards.some((d) => d.id === preferredDashboardId);
-    if (standaloneMatch) return `/saved/dashboard/${preferredDashboardId}`;
+    const standaloneMatch = standaloneDashboards.find(
+      (dashboard) => dashboard.id === preferredDashboardId,
+    );
+    if (standaloneMatch) return getSavedStandaloneDashboardPath(standaloneMatch);
 
     // Fallback: still navigate somewhere usable.
-    return `/dashboard/${preferredDashboardId}`;
+    return ROUTES.DASHBOARD(preferredDashboardId);
   };
 
   // Filter and sort

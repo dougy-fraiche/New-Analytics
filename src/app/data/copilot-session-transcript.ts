@@ -53,6 +53,8 @@ export type CopilotTranscriptMessageCategory =
   | "generative-suggestions"
   | "summaries";
 
+type AgentTranscriptMessageCategory = Exclude<CopilotTranscriptMessageCategory, "tasks">;
+
 export type CopilotTranscriptSentiment =
   | "positive"
   | "neutral"
@@ -143,6 +145,24 @@ const ISSUE_LABELS = [
   "Service Follow-up",
 ] as const;
 
+const TRANSCRIPT_MIN_MESSAGES = 14;
+const TRANSCRIPT_MAX_MESSAGES = 21;
+const TRANSCRIPT_MIN_DURATION_SECONDS = 4 * 60;
+const TRANSCRIPT_MAX_DURATION_SECONDS = 14 * 60;
+const AGENT_CATEGORY_BLUEPRINT: AgentTranscriptMessageCategory[] = [
+  "generative-suggestions",
+  "generative-suggestions",
+  "rules-notifications",
+  "generative-suggestions",
+  "summaries",
+  "rules-notifications",
+  "generative-suggestions",
+  "summaries",
+  "rules-notifications",
+  "generative-suggestions",
+  "summaries",
+] as const;
+
 function hashString(value: string): number {
   let hash = 0;
   for (let i = 0; i < value.length; i++) {
@@ -181,6 +201,32 @@ function parseDurationToSeconds(value: string): number {
   const seconds = Number(match[2] ?? 0);
   const total = minutes * 60 + seconds;
   return total > 0 ? total : 8 * 60;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function transcriptMessageCount(totalSeconds: number): number {
+  const ratio = clamp(
+    (totalSeconds - TRANSCRIPT_MIN_DURATION_SECONDS) /
+      (TRANSCRIPT_MAX_DURATION_SECONDS - TRANSCRIPT_MIN_DURATION_SECONDS),
+    0,
+    1,
+  );
+  return Math.round(TRANSCRIPT_MIN_MESSAGES + ratio * (TRANSCRIPT_MAX_MESSAGES - TRANSCRIPT_MIN_MESSAGES));
+}
+
+function transcriptCheckpoints(totalSeconds: number, messageCount: number): number[] {
+  if (messageCount <= 1) return [0];
+
+  const checkpoints: number[] = [0];
+  for (let index = 1; index < messageCount; index++) {
+    const evenlySpaced = Math.round((index / (messageCount - 1)) * totalSeconds);
+    checkpoints.push(Math.max((checkpoints[index - 1] ?? 0) + 1, evenlySpaced));
+  }
+
+  return checkpoints;
 }
 
 function formatClock(totalSeconds: number): string {
@@ -477,6 +523,7 @@ export function buildCopilotTranscriptPayload(session: CopilotTranscriptSessionC
   const seedText = `${session.contact}|${session.agent}|${session.issueLabel}|${session.skill}`;
   const rng = mulberry32(hashString(seedText));
   const similarityValue = parseFirstNumber(metricValue(session, "similarity"));
+  const customerFirstName = session.customerName.split(" ")[0] ?? session.customerName;
 
   const customerStatements = [
     `Hi, I noticed an issue related to ${session.issueLabel.toLowerCase()} and want to make sure my account is correct.`,
@@ -496,10 +543,40 @@ export function buildCopilotTranscriptPayload(session: CopilotTranscriptSessionC
     `I can share what I saw step-by-step if that helps confirm the root cause quickly.`,
   ] as const;
 
+  const customerFollowUps = [
+    `I checked the latest status and still noticed a gap, so I want to confirm we're fixing the right thing.`,
+    `I can confirm the issue path if you want me to walk through the exact sequence one more time.`,
+    `That context helps. I mainly want to make sure this doesn't repeat in the next interaction.`,
+  ] as const;
+
   const agentResolutions = [
     `I found the source and applied an update. I'll send a quick recap and keep this tagged for follow-up if needed.`,
     `I've documented the issue and completed the required changes. You should see the update reflected shortly.`,
     `Everything is now aligned with policy for ${session.skill.toLowerCase()}. I'll attach the resolution summary.`,
+  ] as const;
+
+  const agentInvestigations = [
+    `I traced the event timeline and can see where the behavior diverged. I'll validate each step and confirm the correction.`,
+    `I'm reviewing the full interaction log now and will call out exactly what changed versus expected behavior.`,
+    `I'm cross-checking this with the ${session.skill.toLowerCase()} workflow so we can close the root cause, not just the symptom.`,
+  ] as const;
+
+  const agentLateGuidance = [
+    `Next, I'll confirm the final account state and share a clear recap so you have the exact resolution details.`,
+    `I'll run one final verification pass and then post the final notes with actions completed and follow-up owner.`,
+    `I'll complete a final quality check before closing so the transcript shows every update in order.`,
+  ] as const;
+
+  const agentRulesUpdates = [
+    `Policy check complete: this interaction now matches ${session.status} handling requirements for ${session.skill.toLowerCase()}.`,
+    `Rules notification: compliance checks passed, and I've documented the control points applied during this update.`,
+    `I logged the required rule notifications and linked the relevant policy references in the session notes.`,
+  ] as const;
+
+  const agentSummaryCheckpoints = [
+    `Quick summary so far: we confirmed the issue pattern, applied corrections, and validated the expected behavior path.`,
+    `Progress summary: account updates are in place, rule checks are complete, and we're on track to close this cleanly.`,
+    `Current summary: the core issue has been addressed, and I'm finalizing the action log for your reference.`,
   ] as const;
 
   const customerClosers = [
@@ -515,74 +592,53 @@ export function buildCopilotTranscriptPayload(session: CopilotTranscriptSessionC
   ] as const;
 
   const totalSeconds = parseDurationToSeconds(session.duration);
-  const checkpoints = [
-    0,
-    Math.max(5, Math.round(totalSeconds * 0.08)),
-    Math.max(12, Math.round(totalSeconds * 0.2)),
-    Math.max(18, Math.round(totalSeconds * 0.42)),
-    Math.max(26, Math.round(totalSeconds * 0.63)),
-    Math.max(34, Math.round(totalSeconds * 0.78)),
-    Math.max(42, Math.round(totalSeconds * 0.92)),
-  ];
+  const messageCount = transcriptMessageCount(totalSeconds);
+  const checkpoints = transcriptCheckpoints(totalSeconds, messageCount);
 
-  const messages: CopilotTranscriptMessage[] = [
-    {
-      id: "m-1",
-      speaker: "agent",
-      speakerLabel: "Bot Agent",
-      time: formatClock(checkpoints[0] ?? 0),
-      text: `Hello ${session.customerName.split(" ")[0]}, I'm assisting with ${session.issueLabel.toLowerCase()}. How can I help today?`,
-      category: "generative-suggestions",
-    },
-    {
-      id: "m-2",
-      speaker: "customer",
-      speakerLabel: session.customerName,
-      time: formatClock(checkpoints[1] ?? 5),
-      text: pick(rng, customerStatements),
-      category: "tasks",
-    },
-    {
-      id: "m-3",
-      speaker: "agent",
-      speakerLabel: session.agent,
-      time: formatClock(checkpoints[2] ?? 12),
-      text: pick(rng, agentAcknowledgements),
-      category: "generative-suggestions",
-    },
-    {
-      id: "m-4",
-      speaker: "customer",
-      speakerLabel: session.customerName,
-      time: formatClock(checkpoints[3] ?? 18),
-      text: pick(rng, customerDetails),
-      category: "tasks",
-    },
-    {
-      id: "m-5",
-      speaker: "agent",
-      speakerLabel: session.agent,
-      time: formatClock(checkpoints[4] ?? 26),
-      text: pick(rng, agentResolutions),
-      category: "rules-notifications",
-    },
-    {
-      id: "m-6",
-      speaker: "customer",
-      speakerLabel: session.customerName,
-      time: formatClock(checkpoints[5] ?? 34),
-      text: pick(rng, customerClosers),
-      category: "tasks",
-    },
-    {
-      id: "m-7",
-      speaker: "agent",
-      speakerLabel: session.agent,
-      time: formatClock(checkpoints[6] ?? 42),
-      text: pick(rng, agentCloser),
-      category: "summaries",
-    },
-  ];
+  const messages: CopilotTranscriptMessage[] = Array.from({ length: messageCount }, (_, index) => {
+    const isAgent = index % 2 === 0;
+    const agentTurnIndex = Math.floor(index / 2);
+    const progress = messageCount > 1 ? index / (messageCount - 1) : 1;
+    const category: CopilotTranscriptMessageCategory = isAgent
+      ? (AGENT_CATEGORY_BLUEPRINT[agentTurnIndex] ?? "summaries")
+      : "tasks";
+
+    let text = "";
+    if (isAgent && index === 0) {
+      text = `Hello ${customerFirstName}, I'm assisting with ${session.issueLabel.toLowerCase()}. How can I help today?`;
+    } else if (!isAgent) {
+      if (progress < 0.25) {
+        text = pick(rng, customerStatements);
+      } else if (progress < 0.55) {
+        text = pick(rng, customerDetails);
+      } else if (progress < 0.82) {
+        text = pick(rng, customerFollowUps);
+      } else {
+        text = pick(rng, customerClosers);
+      }
+    } else if (category === "generative-suggestions") {
+      if (progress < 0.35) {
+        text = pick(rng, agentAcknowledgements);
+      } else if (progress < 0.75) {
+        text = pick(rng, agentInvestigations);
+      } else {
+        text = pick(rng, agentLateGuidance);
+      }
+    } else if (category === "rules-notifications") {
+      text = progress < 0.7 ? pick(rng, agentResolutions) : pick(rng, agentRulesUpdates);
+    } else {
+      text = progress < 0.85 ? pick(rng, agentSummaryCheckpoints) : pick(rng, agentCloser);
+    }
+
+    return {
+      id: `m-${index + 1}`,
+      speaker: isAgent ? "agent" : "customer",
+      speakerLabel: isAgent ? (index === 0 ? "Bot Agent" : session.agent) : session.customerName,
+      time: formatClock(checkpoints[index] ?? 0),
+      text,
+      category,
+    };
+  });
 
   const summary = `${session.customerName} contacted support on ${session.channel.toLowerCase()} for ${session.issueLabel.toLowerCase()}. ${session.agent} managed the ${session.duration.toLowerCase()} interaction for ${session.skill.toLowerCase()} and closed it as ${session.status}.`;
   const callSummary: CopilotTranscriptCallSummary = {

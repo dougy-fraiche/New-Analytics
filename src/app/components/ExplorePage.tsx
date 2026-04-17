@@ -11,6 +11,7 @@ import {
 } from "../lib/ai-assistant-global";
 import { conversationMessageToGlobalChat } from "../lib/conversation-message-to-global-chat";
 import { runPhasedExploreAssistantReply } from "../lib/run-phased-explore-assistant-reply";
+import { runPhasedAssistantReply } from "../lib/run-phased-assistant-reply";
 import { useVoiceInput } from "../hooks/useVoiceInput";
 import {
   generateConversationName,
@@ -19,7 +20,7 @@ import {
   topInsightsCards,
   type TopInsightCard,
 } from "../data/explore-data";
-import type { AnomalyInvestigationMeta } from "../types/conversation-types";
+import type { AnomalyInvestigationMeta, WidgetMessageMeta } from "../types/conversation-types";
 import { ROUTES } from "../routes";
 import { useOptionalAiAssistantPanelControl } from "../contexts/AiAssistantPanelControlContext";
 import {
@@ -48,6 +49,11 @@ type ExploreFirstMessageOptions = {
   anomalyInvestigation?: AnomalyInvestigationMeta;
   conversationNameOverride?: string;
   promptSource?: ExplorePromptSource;
+};
+
+type ExploreGlobalAssistantMessageOptions = {
+  promptSource?: "investigation" | "widget";
+  widgetMeta?: WidgetMessageMeta;
 };
 
 function buildTopInsightInvestigationPrompt(
@@ -198,6 +204,8 @@ export function ExplorePage() {
   const lastSyncedIdRef = useRef<string | null>(null);
   /** Shared with ConversationPhase — cancels / finishes phased replies across hero + thread sends. */
   const exploreAssistantPhaseGenRef = useRef(0);
+  /** Cancels / supersedes Explore-originated global assistant replies. */
+  const exploreGlobalAssistantPhaseGenRef = useRef(0);
 
   useEffect(() => {
     const conversationId = params.conversationId ?? null;
@@ -234,8 +242,8 @@ export function ExplorePage() {
     navigate(ROUTES.EXPLORE, { replace: true });
   }, [currentAnomalyInsightId, navigate, previewAnomalyInsight]);
 
-  /** First user message — same path as sending from the hero {@link ChatInputBar} (new thread + navigate). */
-  const sendExploreFirstMessage = useCallback(
+  /** First user message from Explore chat input / OOTB chips — creates a sidebar Explore conversation. */
+  const sendExploreConversationFirstMessage = useCallback(
     (rawMessage: string, options?: ExploreFirstMessageOptions) => {
       const messageToSend = rawMessage.trim();
       if (!messageToSend) return;
@@ -324,30 +332,97 @@ export function ExplorePage() {
     ],
   );
 
+  /** Explore non-chatinput actions (anomalies/widgets) — global AI panel only, no sidebar conversation. */
+  const sendExploreGlobalAssistantMessage = useCallback(
+    (rawMessage: string, options?: ExploreGlobalAssistantMessageOptions) => {
+      const messageToSend = rawMessage.trim();
+      if (!messageToSend) return;
+
+      setShowTypeahead(false);
+      setForcedSuggestions([]);
+
+      voice.stop();
+      window.dispatchEvent(new Event(EXPLORE_THREAD_USER_TURN_EVENT));
+
+      const widgetKpiLabel = options?.widgetMeta?.widgetKpiLabel?.trim();
+      appendMessage(GLOBAL_AI_ASSISTANT_KEY, {
+        id: crypto.randomUUID(),
+        role: "user",
+        content: messageToSend,
+        timestamp: new Date(),
+        ...options?.widgetMeta,
+        ...(widgetKpiLabel ? { widgetKpiLabel } : {}),
+      });
+
+      const assistantId = crypto.randomUUID();
+      appendMessage(GLOBAL_AI_ASSISTANT_KEY, {
+        id: assistantId,
+        role: "assistant",
+        content: "",
+        timestamp: new Date(),
+      });
+
+      const gen = ++exploreGlobalAssistantPhaseGenRef.current;
+      const aiResponse = generateAIResponse(messageToSend, { seedDashboard: false });
+      void runPhasedAssistantReply({
+        final: {
+          content: aiResponse.content,
+          reasoning: aiResponse.reasoning,
+          sources: aiResponse.sources,
+          toolSteps: aiResponse.toolSteps,
+        },
+        isCancelled: () => gen !== exploreGlobalAssistantPhaseGenRef.current,
+        patch: (partial) => patchMessage(GLOBAL_AI_ASSISTANT_KEY, assistantId, partial),
+      });
+    },
+    [voice.stop, appendMessage, patchMessage],
+  );
+
   // ── Explore phase handlers ────────────────────────────────────────
   const handleActionClick = useCallback((prompt: string) => {
-    sendExploreFirstMessage(prompt, { promptSource: "footer-chip" });
-  }, [sendExploreFirstMessage]);
+    sendExploreConversationFirstMessage(prompt, { promptSource: "footer-chip" });
+  }, [sendExploreConversationFirstMessage]);
 
   const handleSend = useCallback(() => {
-    sendExploreFirstMessage(query);
-  }, [query, sendExploreFirstMessage]);
+    sendExploreConversationFirstMessage(query);
+  }, [query, sendExploreConversationFirstMessage]);
 
   /** Top Insights “Ask AI” popover — same widget prompt UI as dashboards; sends start an Explore thread. */
   const handleExploreWidgetPrompt = useCallback(
-    (widgetTitle: string, message: string) => {
+    (
+      widgetTitle: string,
+      message: string,
+      chartType?: string,
+      widgetAnchorId?: string,
+      selectedKpiLabel?: string | null,
+      widgetSourcePath?: string,
+    ) => {
       const trimmed = message.trim();
       if (!trimmed) return;
       const normalizedTitle = normalizeAskAiWidgetTitle(widgetTitle);
-      sendExploreFirstMessage(`Regarding “${normalizedTitle}”: ${trimmed}`);
+      aiAssistantPanelControl?.openPanel();
+      sendExploreGlobalAssistantMessage(`Regarding “${normalizedTitle}”: ${trimmed}`, {
+        promptSource: "widget",
+        widgetMeta: {
+          widgetRef: normalizedTitle,
+          widgetIconType: chartType,
+          widgetAnchorId,
+          widgetSourcePath,
+          ...(selectedKpiLabel?.trim() ? { widgetKpiLabel: selectedKpiLabel.trim() } : {}),
+        },
+      });
     },
-    [sendExploreFirstMessage],
+    [aiAssistantPanelControl, sendExploreGlobalAssistantMessage],
   );
 
   const handleTopInsightInvestigate = useCallback(
     (insight: TopInsightCard) => {
       if (insight.segment === "anomaly") {
         navigate(ROUTES.ANOMALY_INVESTIGATION(insight.id));
+        aiAssistantPanelControl?.openPanel();
+        sendExploreGlobalAssistantMessage(buildTopInsightInvestigationPrompt(insight), {
+          promptSource: "investigation",
+        });
         return;
       }
 
@@ -384,7 +459,7 @@ export function ExplorePage() {
       }
       aiAssistantPanelControl?.openPanel();
     },
-    [aiAssistantPanelControl, navigate, sendExploreFirstMessage],
+    [aiAssistantPanelControl, navigate, sendExploreGlobalAssistantMessage],
   );
 
   const anomalyPreviewPrimaryFindingModel = useMemo(() => {
@@ -404,12 +479,11 @@ export function ExplorePage() {
 
   const handleAnomalyPreviewInvestigateFurther = useCallback(() => {
     if (!previewAnomalyInsight) return;
-    sendExploreFirstMessage(buildTopInsightInvestigationPrompt(previewAnomalyInsight), {
-      conversationNameOverride: previewAnomalyInsight.title,
+    aiAssistantPanelControl?.openPanel();
+    sendExploreGlobalAssistantMessage(buildTopInsightInvestigationPrompt(previewAnomalyInsight), {
       promptSource: "investigation",
-      anomalyInvestigation: toAnomalyInvestigationMeta(previewAnomalyInsight),
     });
-  }, [previewAnomalyInsight, sendExploreFirstMessage]);
+  }, [aiAssistantPanelControl, previewAnomalyInsight, sendExploreGlobalAssistantMessage]);
 
   // ── Render ────────────────────────────────────────────────────────
   return (

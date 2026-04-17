@@ -1,6 +1,11 @@
 import type { Dashboard, Project } from "../contexts/ProjectContext";
 import { ootbCategories } from "../data/ootb-dashboards";
 import { ROUTES, ROUTE_PREFIXES } from "../routes";
+import {
+  findProjectBySlug,
+  findProjectDashboardBySlugs,
+  findStandaloneDashboardBySlug,
+} from "./saved-slugs";
 
 const AUTOMATION_OPPORTUNITIES_ID = "automation-opportunities";
 
@@ -48,11 +53,14 @@ export function resolveAiAssistantRouteContext(
     return { dashboardId: "observability", sourceOotbId: "observability" };
   }
 
-  if (pathname === ROUTES.COPILOT) {
+  if (pathname === ROUTES.COPILOT || pathname.startsWith(ROUTE_PREFIXES.copilotNested)) {
     return { dashboardId: "ai-agents-copilot", sourceOotbId: "ai-agents-copilot" };
   }
 
-  if (pathname === ROUTES.KNOWLEDGE_PERFORMANCE) {
+  if (
+    pathname === ROUTES.KNOWLEDGE_PERFORMANCE ||
+    pathname.startsWith(ROUTE_PREFIXES.knowledgePerformanceNested)
+  ) {
     return { dashboardId: "knowledge-performance", sourceOotbId: "knowledge-performance" };
   }
 
@@ -83,41 +91,47 @@ export function resolveAiAssistantRouteContext(
     return { dashboardId: activeId, sourceOotbId: activeId };
   }
 
-  // Standalone saved dashboard
-  if (pathname.startsWith(ROUTE_PREFIXES.savedDashboard) && params.dashboardId) {
-    const d = standaloneDashboards.find((x) => x.id === params.dashboardId);
-    if (!d) return { dashboardId: params.dashboardId };
-    return {
-      dashboardId: d.id,
-      sourceOotbId: d.sourceOotbId ?? d.id,
-    };
-  }
+  if (pathname.startsWith(ROUTE_PREFIXES.saved)) {
+    const savedRemainder = pathname.slice(ROUTE_PREFIXES.saved.length);
+    const savedSegments = savedRemainder.split("/").filter(Boolean);
 
-  // Saved folder dashboard: /saved/:folderId/dashboard/:dashboardId
-  if (
-    pathname.includes("/dashboard/") &&
-    pathname.startsWith(ROUTE_PREFIXES.saved) &&
-    params.folderId &&
-    params.dashboardId
-  ) {
-    const folder = projects.find((p) => p.id === params.folderId);
-    const d = folder?.dashboards.find((x) => x.id === params.dashboardId);
-    if (!d) return { dashboardId: params.dashboardId };
-    return {
-      dashboardId: d.id,
-      sourceOotbId: d.sourceOotbId ?? d.id,
-    };
-  }
+    if (savedSegments.length >= 2) {
+      const [folderSlug, dashboardSlug] = savedSegments;
+      if (folderSlug && dashboardSlug) {
+        const match = findProjectDashboardBySlugs(projects, folderSlug, dashboardSlug);
+        if (!match) {
+          return {};
+        }
+        return {
+          dashboardId: match.dashboard.id,
+          sourceOotbId: match.dashboard.sourceOotbId ?? match.dashboard.id,
+        };
+      }
+    }
 
-  // Project dashboard: /project/:projectId/dashboard/:dashboardId
-  if (pathname.startsWith(ROUTE_PREFIXES.project) && params.projectId && params.dashboardId) {
-    const project = projects.find((p) => p.id === params.projectId);
-    const d = project?.dashboards.find((x) => x.id === params.dashboardId);
-    if (!d) return { dashboardId: params.dashboardId };
-    return {
-      dashboardId: d.id,
-      sourceOotbId: d.sourceOotbId ?? d.id,
-    };
+    if (savedSegments.length === 1) {
+      const [savedSlug] = savedSegments;
+      if (!savedSlug) return {};
+
+      const folder = findProjectBySlug(projects, savedSlug);
+      if (folder) {
+        return {
+          dashboardId: `saved-folder-${folder.id}`,
+          sourceOotbId: `saved-folder-${folder.id}`,
+        };
+      }
+
+      const standaloneDashboard = findStandaloneDashboardBySlug(
+        standaloneDashboards,
+        savedSlug,
+      );
+      if (standaloneDashboard) {
+        return {
+          dashboardId: standaloneDashboard.id,
+          sourceOotbId: standaloneDashboard.sourceOotbId ?? standaloneDashboard.id,
+        };
+      }
+    }
   }
 
   return {};

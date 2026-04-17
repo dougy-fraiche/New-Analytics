@@ -1,4 +1,25 @@
 /** Centralized route path constants — prevents hardcoded path strings throughout the app. */
+export const COPILOT_TABS = [
+  "overview",
+  "auto-summary",
+  "task-assist",
+  "rules-engine",
+  "real-time-summary",
+  "generative-responses",
+] as const;
+
+export type CopilotTabRoute = (typeof COPILOT_TABS)[number];
+
+export const KNOWLEDGE_PERFORMANCE_TABS = [
+  "overview",
+  "agent-user-feedback",
+  "rag-evals",
+  "failed-query-patterns",
+  "improve-knowledge",
+] as const;
+
+export type KnowledgePerformanceTabRoute = (typeof KNOWLEDGE_PERFORMANCE_TABS)[number];
+
 export const ROUTES = {
   EXPLORE: "/",
   CONVERSATION: (id: string) => `/conversation/${id}`,
@@ -8,16 +29,19 @@ export const ROUTES = {
   /** Stable agent id (UUID) as the path segment. */
   AUTOMATION_OPPORTUNITIES_AGENT: (agentId: string) => `/automation-opportunities/agent/${agentId}`,
   OBSERVABILITY: "/observability",
-  AI_AGENTS: "/ai-agents",
-  AI_AGENTS_DASHBOARD: (dashboardId: string) => `/ai-agents/${dashboardId}`,
-  COPILOT: "/copilot",
-  KNOWLEDGE_PERFORMANCE: "/knowledge-performance",
+  AI_AGENTS: "/observability/ai-agents",
+  AI_AGENTS_DASHBOARD: (dashboardId: string) => `/observability/ai-agents/${dashboardId}`,
+  COPILOT: "/observability/copilot",
+  COPILOT_TAB: (tab: CopilotTabRoute) => `/observability/copilot/${tab}`,
+  KNOWLEDGE_PERFORMANCE: "/observability/knowledge-performance",
+  KNOWLEDGE_PERFORMANCE_TAB: (tab: KnowledgePerformanceTabRoute) =>
+    `/observability/knowledge-performance/${tab}`,
   DASHBOARD: (dashboardId: string) => `/dashboard/${dashboardId}`,
   SAVED: "/saved",
-  SAVED_FOLDER: (folderId: string) => `/saved/${folderId}`,
-  SAVED_DASHBOARD: (dashboardId: string) => `/saved/dashboard/${dashboardId}`,
-  PROJECT_DASHBOARD: (projectId: string, dashboardId: string) =>
-    `/project/${projectId}/dashboard/${dashboardId}`,
+  SAVED_FOLDER: (folderSlug: string) => `/saved/${folderSlug}`,
+  SAVED_FOLDER_DASHBOARD: (folderSlug: string, dashboardSlug: string) =>
+    `/saved/${folderSlug}/${dashboardSlug}`,
+  SAVED_STANDALONE_DASHBOARD: (dashboardSlug: string) => `/saved/${dashboardSlug}`,
   RECOMMENDED_ACTIONS: "/recommended-actions",
   ACTIONS_HISTORY: "/actions/history",
   INSIGHTS: "/insights",
@@ -34,8 +58,7 @@ export const ROUTE_PREFIXES = {
   conversation: "/conversation/",
   dashboard: "/dashboard/",
   aiAgentsNested: `${ROUTES.AI_AGENTS}/`,
-  copilot: ROUTES.COPILOT,
-  savedDashboard: "/saved/dashboard/",
+  copilotNested: `${ROUTES.COPILOT}/`,
+  knowledgePerformanceNested: `${ROUTES.KNOWLEDGE_PERFORMANCE}/`,
   saved: "/saved/",
-  project: "/project/",
 } as const;

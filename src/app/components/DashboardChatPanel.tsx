@@ -952,12 +952,9 @@ export function DashboardChatPanel({
       phaseGenerationRef.current += 1;
       const gen = phaseGenerationRef.current;
 
-      if (!detail.appendToCurrentConversation) {
-        if (isGlobalAssistantThread) {
-          dashboardChat.startNewGlobalAiDraft();
-        } else {
-          dashboardChat.clearMessages(assistantPersistKey);
-        }
+      // Global assistant is append-only until explicit reset.
+      if (!detail.appendToCurrentConversation && !isGlobalAssistantThread) {
+        dashboardChat.clearMessages(assistantPersistKey);
       }
 
       const scope = detail.scopeTitle.trim();
@@ -1052,12 +1049,7 @@ export function DashboardChatPanel({
       const gen = phaseGenerationRef.current;
       setInternalIsThinking(true);
 
-      if (isGlobalAssistantThread) {
-        dashboardChat.startNewGlobalAiDraft();
-        dashboardChat.setGlobalAiDraftDisplayName(detail.conversationTitle, {
-          userSet: true,
-        });
-      } else {
+      if (!isGlobalAssistantThread) {
         dashboardChat.clearMessages(assistantPersistKey);
       }
 

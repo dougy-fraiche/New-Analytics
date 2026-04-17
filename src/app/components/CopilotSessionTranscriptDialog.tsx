@@ -256,8 +256,8 @@ export function CopilotSessionTranscriptDialog({
               </div>
             </div>
 
-            <TabsContent value="transcript" className="mt-0 min-h-0 flex-1">
-              <ScrollArea className="h-full">
+            <TabsContent value="transcript" className="mt-0 min-h-0 flex-1 overflow-hidden">
+              <div className="h-full overflow-y-auto overscroll-contain">
                 <div className="space-y-0 px-6 py-5">
                   {filteredMessages.map((message, index) => (
                     <div key={message.id} className="grid grid-cols-[72px_minmax(0,1fr)] gap-6 pb-5">
@@ -299,7 +299,7 @@ export function CopilotSessionTranscriptDialog({
                     </div>
                   ) : null}
                 </div>
-              </ScrollArea>
+              </div>
             </TabsContent>
 
             <TabsContent value="summary" className="mt-0 min-h-0 flex-1">

@@ -88,6 +88,12 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { cn } from "./ui/utils";
 import { currentUserProfile, getInitials } from "../data/user-profile";
+import {
+  getDashboardSlug,
+  getProjectSlug,
+  validateSavedFolderDashboardName,
+  validateSavedStandaloneDashboardName,
+} from "../lib/saved-slugs";
 
 interface AppItem {
   name: string;
@@ -332,6 +338,15 @@ export function AppSidebar() {
   const activeConversationId =
     location.pathname.startsWith("/conversation/") ? location.pathname.replace("/conversation/", "") : null;
 
+  const folderPath = (projectName: string) => ROUTES.SAVED_FOLDER(getProjectSlug({ name: projectName }));
+  const folderDashboardPath = (projectName: string, dashboardName: string) =>
+    ROUTES.SAVED_FOLDER_DASHBOARD(
+      getProjectSlug({ name: projectName }),
+      getDashboardSlug({ name: dashboardName }),
+    );
+  const standaloneDashboardPath = (dashboardName: string) =>
+    ROUTES.SAVED_STANDALONE_DASHBOARD(getDashboardSlug({ name: dashboardName }));
+
   useEffect(() => {
     const nextConversationInFlight = new Map<string, boolean>();
 
@@ -379,6 +394,15 @@ export function AppSidebar() {
 
   // ── DnD handler ───────────────────────────────────────────────────────
   const handleDndDrop = (item: DashboardDragItem, toProjectId: string) => {
+    const validationError = validateSavedFolderDashboardName(
+      toProjectId,
+      item.dashboardName,
+      projects,
+    );
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
     if (item.fromProjectId) {
       moveDashboardToProject(item.fromProjectId, item.dashboardId, toProjectId);
     } else {
@@ -392,6 +416,15 @@ export function AppSidebar() {
 
   const handleSavedRootDndDrop = (item: DashboardDragItem) => {
     if (!item.fromProjectId) return;
+    const validationError = validateSavedStandaloneDashboardName(
+      item.dashboardName,
+      projects,
+      standaloneDashboards,
+    );
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
     moveDashboardToStandalone(item.fromProjectId, item.dashboardId);
     toast.success("Dashboard moved", {
       description: `"${item.dashboardName}" has been moved to "Saved".`,
@@ -599,7 +632,10 @@ export function AppSidebar() {
             path="/observability"
             open={observabilityOpen}
             onToggle={setObservabilityOpen}
-            headerIsActive={location.pathname === ROUTES.OBSERVABILITY}
+            headerIsActive={
+              location.pathname === ROUTES.OBSERVABILITY ||
+              location.pathname.startsWith(`${ROUTES.OBSERVABILITY}/`)
+            }
           >
             {(() => {
               const aiAgentsCategory = ootbCategories.find((c) => c.id === "ai-agents");
@@ -610,8 +646,12 @@ export function AppSidebar() {
               const onAiAgentsRoute =
                 location.pathname === ROUTES.AI_AGENTS ||
                 location.pathname.startsWith(`${ROUTES.AI_AGENTS}/`);
-              const isCopilotRoute = location.pathname === ROUTES.COPILOT;
-              const isKnowledgePerformanceRoute = location.pathname === ROUTES.KNOWLEDGE_PERFORMANCE;
+              const isCopilotRoute =
+                location.pathname === ROUTES.COPILOT ||
+                location.pathname.startsWith(`${ROUTES.COPILOT}/`);
+              const isKnowledgePerformanceRoute =
+                location.pathname === ROUTES.KNOWLEDGE_PERFORMANCE ||
+                location.pathname.startsWith(`${ROUTES.KNOWLEDGE_PERFORMANCE}/`);
               const parentNavActive = onAiAgentsRoute && !isCopilotRoute;
 
               return (
@@ -652,6 +692,10 @@ export function AppSidebar() {
               path="/saved"
               open={savedOpen}
               onToggle={setSavedOpen}
+              headerIsActive={
+                location.pathname === ROUTES.SAVED ||
+                location.pathname.startsWith(`${ROUTES.SAVED}/`)
+              }
               itemAction={
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -703,12 +747,12 @@ export function AppSidebar() {
                     <div className={SUB_ITEM_ROW_WRAPPER_CLASS}>
                       <SidebarMenuSubButton
                         asChild
-                        isActive={location.pathname === `/saved/${project.id}`}
+                        isActive={location.pathname === folderPath(project.name)}
                         className="group-hover/subitem:pr-8 group-focus-within/subitem:pr-8 p-0"
                       >
                         <div className="group/folder-row relative flex h-7 w-full min-w-0 items-center gap-2 px-2 has-[button:focus-visible]:[&_[data-folder-row-icon]>svg]:opacity-0">
                           <Link
-                            to={`/saved/${project.id}`}
+                            to={folderPath(project.name)}
                             className="flex min-w-0 flex-1 items-center gap-2 rounded-sm outline-hidden ring-sidebar-ring focus-visible:ring-2"
                           >
                             <span
@@ -794,7 +838,8 @@ export function AppSidebar() {
                         ) : (
                           project.dashboards.map((dashboard) => {
                             const isActive =
-                              location.pathname === `/project/${project.id}/dashboard/${dashboard.id}`;
+                              location.pathname ===
+                              folderDashboardPath(project.name, dashboard.name);
                             return (
                               <DraggableDashboardItem key={dashboard.id} dashboard={dashboard} projectId={project.id}>
                                 <SidebarMenuSubItem>
@@ -804,7 +849,7 @@ export function AppSidebar() {
                                       isActive={isActive}
                                       className="group-hover/subitem:pr-8 group-focus-within/subitem:pr-8"
                                     >
-                                      <Link to={`/project/${project.id}/dashboard/${dashboard.id}`}>
+                                      <Link to={folderDashboardPath(project.name, dashboard.name)}>
                                         <span className="truncate">{dashboard.name}</span>
                                       </Link>
                                     </SidebarMenuSubButton>
@@ -872,7 +917,7 @@ export function AppSidebar() {
 
             {/* Standalone dashboards (not inside any folder) */}
             {standaloneDashboards.map((dashboard) => {
-              const isActive = location.pathname === `/saved/dashboard/${dashboard.id}`;
+              const isActive = location.pathname === standaloneDashboardPath(dashboard.name);
               return (
                 <DraggableDashboardItem key={dashboard.id} dashboard={dashboard} projectId={null}>
                   <SidebarMenuSubItem>
@@ -882,7 +927,7 @@ export function AppSidebar() {
                         isActive={isActive}
                         className="group-hover/subitem:pr-8 group-focus-within/subitem:pr-8"
                       >
-                        <Link to={`/saved/dashboard/${dashboard.id}`}>
+                        <Link to={standaloneDashboardPath(dashboard.name)}>
                           <span className="truncate">{dashboard.name}</span>
                         </Link>
                       </SidebarMenuSubButton>

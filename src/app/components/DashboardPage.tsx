@@ -76,6 +76,15 @@ import { useContainerBreakpoint } from "../hooks/useContainerBreakpoint";
 import { cn } from "./ui/utils";
 import { showDeletedObjectToast } from "../lib/object-deletion-toast";
 import { EditDashboardDialog } from "./EditDashboardDialog";
+import { ROUTES } from "../routes";
+import {
+  findProjectDashboardBySlugs,
+  getSavedFolderDashboardPath,
+  getSavedStandaloneDashboardPath,
+  validateSavedFolderDashboardName,
+  validateSavedFolderName,
+  validateSavedStandaloneDashboardName,
+} from "../lib/saved-slugs";
 
 // Build OOTB meta lookup
 const dashboardMeta: Record<string, { title: string; description: string }> = {};
@@ -159,8 +168,16 @@ const tableData = [
   },
 ];
 
-export function DashboardPage() {
-  const { dashboardId, projectId } = useParams();
+interface DashboardPageProps {
+  resolvedStandaloneDashboardId?: string;
+}
+
+export function DashboardPage({ resolvedStandaloneDashboardId }: DashboardPageProps = {}) {
+  const { dashboardId, folderSlug, dashboardSlug } = useParams<{
+    dashboardId?: string;
+    folderSlug?: string;
+    dashboardSlug?: string;
+  }>();
   const {
     projects,
     addProject,
@@ -184,10 +201,29 @@ export function DashboardPage() {
   const [team, setTeam] = useState(DEFAULT_FILTERS.team);
   const [product, setProduct] = useState(DEFAULT_FILTERS.product);
 
+  const folderDashboardMatch =
+    folderSlug && dashboardSlug
+      ? findProjectDashboardBySlugs(projects, folderSlug, dashboardSlug)
+      : undefined;
+  const folderDashboardProject = folderDashboardMatch?.project;
+  const folderDashboard = folderDashboardMatch?.dashboard;
+
+  const standaloneMatch = resolvedStandaloneDashboardId
+    ? standaloneDashboards.find((dashboard) => dashboard.id === resolvedStandaloneDashboardId)
+    : undefined;
+
+  const isFolderDashboard = Boolean(folderDashboardProject && folderDashboard);
+  const isStandaloneDashboard = Boolean(standaloneMatch);
+  const isSavedDashboard = isFolderDashboard || isStandaloneDashboard;
+  const savedDashboard = folderDashboard ?? standaloneMatch ?? null;
+  const sourceProjectId = folderDashboardProject?.id ?? null;
+  const activeDashboardId = savedDashboard?.id ?? dashboardId;
+
   // Deterministic chart layout seeded by dashboard ID
-  const chartLayoutId = projectId
-    ? `${projectId}-${dashboardId}`
-    : dashboardId || "default";
+  const chartLayoutId =
+    isFolderDashboard && sourceProjectId && activeDashboardId
+      ? `${sourceProjectId}-${activeDashboardId}`
+      : activeDashboardId || "default";
 
   // Highlight 1–2 KPI widgets per dashboard to suggest anomalies (stable per dashboard)
   const {
@@ -200,38 +236,17 @@ export function DashboardPage() {
   const { ref: dashboardContentRef, isBelowBreakpoint: isCompactDashboard } =
     useContainerBreakpoint<HTMLDivElement>(768);
 
-  // Find the custom dashboard name if this is a saved dashboard
-  let customDashboardName: string | null = null;
-  let customDashboardDescription: string | undefined;
-  let savedDashboardSourceOotbId: string | undefined;
-  const isFolderDashboard = !!(projectId && dashboardId);
-  // Check standalone dashboards (route: /saved/dashboard/:dashboardId)
-  const standaloneMatch = !projectId ? standaloneDashboards.find((d) => d.id === dashboardId) : undefined;
-  const isStandaloneDashboard = !!standaloneMatch;
-  const isSavedDashboard = isFolderDashboard || isStandaloneDashboard;
-  if (isFolderDashboard) {
-    const project = projects.find((p) => p.id === projectId);
-    if (project) {
-      const dashboard = project.dashboards.find((d) => d.id === dashboardId);
-      if (dashboard) {
-        customDashboardName = dashboard.name;
-        customDashboardDescription = dashboard.description;
-        savedDashboardSourceOotbId = dashboard.sourceOotbId;
-      }
-    }
-  } else if (standaloneMatch) {
-    customDashboardName = standaloneMatch.name;
-    customDashboardDescription = standaloneMatch.description;
-    savedDashboardSourceOotbId = standaloneMatch.sourceOotbId;
-  }
+  const customDashboardName = savedDashboard?.name ?? null;
+  const customDashboardDescription = savedDashboard?.description;
+  const savedDashboardSourceOotbId = savedDashboard?.sourceOotbId;
 
   const meta = customDashboardName
     ? {
         title: customDashboardName,
         description: customDashboardDescription || "User-generated analytics dashboard",
       }
-    : dashboardId
-    ? dashboardMeta[dashboardId as keyof typeof dashboardMeta] || {
+    : activeDashboardId
+    ? dashboardMeta[activeDashboardId as keyof typeof dashboardMeta] || {
         title: "Custom Dashboard",
         description: "User-generated analytics dashboard",
       }
@@ -245,7 +260,7 @@ export function DashboardPage() {
   // For saved dashboards, use the explicit sourceOotbId if available.
   const chatSourceOotbId = isSavedDashboard
     ? savedDashboardSourceOotbId
-    : dashboardId;
+    : activeDashboardId;
 
   const navigate = useNavigate();
 
@@ -262,24 +277,24 @@ export function DashboardPage() {
   }, [dateRange, team, product]);
 
   const confirmDelete = () => {
-    if (isFolderDashboard && projectId && dashboardId) {
-      const project = projects.find((p) => p.id === projectId);
-      const dashboardSnapshot = project?.dashboards.find((d) => d.id === dashboardId);
-      deleteDashboardFromProject(projectId, dashboardId);
-      navigate("/saved");
+    if (isFolderDashboard && sourceProjectId && activeDashboardId) {
+      const project = projects.find((p) => p.id === sourceProjectId);
+      const dashboardSnapshot = project?.dashboards.find((d) => d.id === activeDashboardId);
+      deleteDashboardFromProject(sourceProjectId, activeDashboardId);
+      navigate(ROUTES.SAVED);
       showDeletedObjectToast({
         objectType: "Dashboard",
         objectName: meta.title,
         onUndo: dashboardSnapshot
           ? () => {
-              restoreDashboardToProject(projectId, dashboardSnapshot);
+              restoreDashboardToProject(sourceProjectId, dashboardSnapshot);
             }
           : undefined,
       });
-    } else if (isStandaloneDashboard && standaloneMatch && dashboardId) {
+    } else if (isStandaloneDashboard && standaloneMatch && activeDashboardId) {
       const snapshot = { ...standaloneMatch };
-      deleteStandaloneDashboard(dashboardId);
-      navigate("/saved");
+      deleteStandaloneDashboard(activeDashboardId);
+      navigate(ROUTES.SAVED);
       showDeletedObjectToast({
         objectType: "Dashboard",
         objectName: meta.title,
@@ -296,53 +311,109 @@ export function DashboardPage() {
     description: string;
     locationProjectId: string | null;
   }) => {
-    if (!dashboardId || !isSavedDashboard) return;
+    if (!activeDashboardId || !isSavedDashboard) return;
+    const trimmedName = values.name.trim();
+    if (!trimmedName) return;
 
-    const sourceProjectId = projectId ?? null;
+    const currentSourceProjectId = sourceProjectId;
+    const destinationProjectId = values.locationProjectId;
     const nextDescription = values.description || undefined;
 
-    if (sourceProjectId) {
-      updateDashboardInProject(sourceProjectId, dashboardId, {
-        name: values.name,
+    const validationError =
+      destinationProjectId === null
+        ? validateSavedStandaloneDashboardName(
+            trimmedName,
+            projects,
+            standaloneDashboards,
+            currentSourceProjectId ? undefined : activeDashboardId,
+          )
+        : validateSavedFolderDashboardName(
+            destinationProjectId,
+            trimmedName,
+            projects,
+            currentSourceProjectId === destinationProjectId ? activeDashboardId : undefined,
+          );
+
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+
+    if (currentSourceProjectId) {
+      updateDashboardInProject(currentSourceProjectId, activeDashboardId, {
+        name: trimmedName,
         description: nextDescription,
       });
     } else {
-      updateStandaloneDashboard(dashboardId, {
-        name: values.name,
+      updateStandaloneDashboard(activeDashboardId, {
+        name: trimmedName,
         description: nextDescription,
       });
     }
 
-    let destinationProjectId = sourceProjectId;
+    let nextSourceProjectId = currentSourceProjectId;
 
-    if (sourceProjectId && values.locationProjectId === null) {
-      moveDashboardToStandalone(sourceProjectId, dashboardId);
-      destinationProjectId = null;
+    if (currentSourceProjectId && destinationProjectId === null) {
+      moveDashboardToStandalone(currentSourceProjectId, activeDashboardId);
+      nextSourceProjectId = null;
     } else if (
-      sourceProjectId &&
-      values.locationProjectId &&
-      values.locationProjectId !== sourceProjectId
+      currentSourceProjectId &&
+      destinationProjectId &&
+      destinationProjectId !== currentSourceProjectId
     ) {
-      moveDashboardToProject(sourceProjectId, dashboardId, values.locationProjectId);
-      destinationProjectId = values.locationProjectId;
-    } else if (!sourceProjectId && values.locationProjectId) {
-      moveStandaloneToFolder(dashboardId, values.locationProjectId);
-      destinationProjectId = values.locationProjectId;
+      moveDashboardToProject(currentSourceProjectId, activeDashboardId, destinationProjectId);
+      nextSourceProjectId = destinationProjectId;
+    } else if (!currentSourceProjectId && destinationProjectId) {
+      moveStandaloneToFolder(activeDashboardId, destinationProjectId);
+      nextSourceProjectId = destinationProjectId;
     }
 
     toast.success("Dashboard updated", {
-      description: `"${values.name}" has been updated.`,
+      description: `"${trimmedName}" has been updated.`,
     });
     setShowEditDialog(false);
 
-    if (destinationProjectId !== sourceProjectId) {
+    if (nextSourceProjectId) {
+      const nextProject = projects.find((project) => project.id === nextSourceProjectId);
+      if (nextProject) {
+        navigate(
+          getSavedFolderDashboardPath(nextProject, {
+            name: trimmedName,
+          }),
+        );
+      } else {
+        navigate(ROUTES.SAVED);
+      }
+    } else {
       navigate(
-        destinationProjectId
-          ? `/project/${destinationProjectId}/dashboard/${dashboardId}`
-          : `/saved/dashboard/${dashboardId}`,
+        getSavedStandaloneDashboardPath({
+          name: trimmedName,
+        }),
       );
     }
   };
+
+  if ((folderSlug || dashboardSlug) && !isFolderDashboard) {
+    return (
+      <div className="flex items-center justify-center h-full p-8">
+        <div className="text-center">
+          <h1 className="text-4xl mb-2">404</h1>
+          <p className="text-muted-foreground">Saved dashboard not found</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (resolvedStandaloneDashboardId && !isStandaloneDashboard) {
+    return (
+      <div className="flex items-center justify-center h-full p-8">
+        <div className="text-center">
+          <h1 className="text-4xl mb-2">404</h1>
+          <p className="text-muted-foreground">Saved dashboard not found</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <WidgetAIProvider persistKey={GLOBAL_AI_ASSISTANT_KEY} ootbTypeId={chatSourceOotbId}>
@@ -477,11 +548,11 @@ export function DashboardPage() {
           <div className={cn(pageRootListScrollGutterClassName, "pb-4 md:pb-8")}>
           <PageTransition className={pageMainColumnClassName}>
           <div ref={dashboardContentRef} className="space-y-4">
-          {dashboardId ? (
+          {activeDashboardId ? (
             <HeaderAIInsightsRow
-              dashboardId={dashboardId}
+              dashboardId={activeDashboardId}
               dashboardData={{
-                id: dashboardId,
+                id: activeDashboardId,
                 title: meta.title,
                 description: meta.description,
               }}
@@ -491,7 +562,7 @@ export function DashboardPage() {
           <div
             className={cn(
               "flex flex-wrap items-center gap-4",
-              dashboardId ? "!mt-8" : undefined,
+              activeDashboardId ? "!mt-8" : undefined,
             )}
           >
             <h3 className="flex items-center gap-2 tracking-tight">
@@ -689,11 +760,16 @@ export function DashboardPage() {
           onOpenChange={setShowEditDialog}
           initialName={meta.title}
           initialDescription={customDashboardDescription || ""}
-          initialLocationProjectId={projectId ?? null}
+          initialLocationProjectId={sourceProjectId}
           projects={projects.map((project) => ({ id: project.id, name: project.name }))}
           onCreateFolder={(folderName) => {
             const trimmed = folderName.trim();
             if (!trimmed) return null;
+            const validationError = validateSavedFolderName(trimmed, projects, standaloneDashboards);
+            if (validationError) {
+              toast.error(validationError);
+              return null;
+            }
             return addProject(trimmed);
           }}
           onSubmit={handleConfirmEdit}
@@ -714,8 +790,10 @@ export function DashboardPage() {
         onOpenChange={(open) => { if (!open) setShowDuplicateDialog(false); }}
         dashboardName={meta.title}
         dashboardDescription={isSavedDashboard ? customDashboardDescription : meta.description}
-        initialLocationProjectId={isSavedDashboard ? projectId ?? null : null}
-        sourceOotbId={isSavedDashboard ? savedDashboardSourceOotbId : dashboardId}
+        initialLocationProjectId={isSavedDashboard ? sourceProjectId : null}
+        sourceOotbId={
+          isSavedDashboard ? savedDashboardSourceOotbId ?? activeDashboardId : activeDashboardId
+        }
       />
     </WidgetAIProvider>
   );

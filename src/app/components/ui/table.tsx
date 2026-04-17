@@ -1,8 +1,10 @@
 "use client";
 
 import * as React from "react";
+import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
 import { ChevronsUpDown } from "lucide-react";
 
+import { ScrollBar } from "./scroll-area";
 import { cn } from "./utils";
 
 /** 56px at 16px root — default width for table columns that only contain a kebab/overflow control. */
@@ -88,30 +90,38 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
 
   return (
     <TableContext.Provider value={contextValue}>
-      <div
+      <ScrollAreaPrimitive.Root
         data-slot="table-container"
-        className="relative w-full overflow-x-hidden rounded-xl border bg-card"
+        type="auto"
+        className="relative w-full rounded-xl border bg-card"
       >
-        <table
-          data-slot="table"
-          className={cn("w-full table-fixed caption-bottom text-sm", className)}
-          {...props}
+        <ScrollAreaPrimitive.Viewport
+          data-slot="table-viewport"
+          className="size-full rounded-[inherit]"
         >
-          {columnCount > 0 ? (
-            <colgroup>
-              {Array.from({ length: columnCount }).map((_, index) => (
-                <col
-                  key={index}
-                  style={
-                    columnWidths[index] ? { width: `${columnWidths[index]}px` } : undefined
-                  }
-                />
-              ))}
-            </colgroup>
-          ) : null}
-          {props.children}
-        </table>
-      </div>
+          <table
+            data-slot="table"
+            className={cn("w-full table-fixed caption-bottom text-sm", className)}
+            {...props}
+          >
+            {columnCount > 0 ? (
+              <colgroup>
+                {Array.from({ length: columnCount }).map((_, index) => (
+                  <col
+                    key={index}
+                    style={
+                      columnWidths[index] ? { width: `${columnWidths[index]}px` } : undefined
+                    }
+                  />
+                ))}
+              </colgroup>
+            ) : null}
+            {props.children}
+          </table>
+        </ScrollAreaPrimitive.Viewport>
+        <ScrollBar orientation="horizontal" className="mx-2" />
+        <ScrollAreaPrimitive.Corner />
+      </ScrollAreaPrimitive.Root>
     </TableContext.Provider>
   );
 }

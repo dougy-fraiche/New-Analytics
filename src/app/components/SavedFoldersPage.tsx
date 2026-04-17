@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { useParams, Link } from "react-router";
+import { useParams, Link, useNavigate } from "react-router";
 import { FileText, Plus, MoreHorizontal, MoreVertical, Trash2, Search, FolderInput, Folder, LayoutDashboard, ChevronRight, Pencil, GripVertical, FolderOutput, Copy, RotateCcw } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
@@ -46,6 +46,14 @@ import {
 import { cn } from "./ui/utils";
 import { PageTransition } from "./PageTransition";
 import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
+import { ROUTES } from "../routes";
+import {
+  getDashboardSlug,
+  getProjectSlug,
+  validateSavedFolderDashboardName,
+  validateSavedFolderName,
+  validateSavedStandaloneDashboardName,
+} from "../lib/saved-slugs";
 
 const DRAG_TYPE_DASHBOARD = "CUSTOM_DASHBOARD";
 
@@ -116,8 +124,9 @@ function DroppableFolderCard({
   );
 }
 
-export function SavedFoldersPage() {
-  const { folderId } = useParams();
+export function SavedFoldersPage({ resolvedFolderId }: { resolvedFolderId?: string }) {
+  const navigate = useNavigate();
+  const { folderSlug } = useParams<{ folderSlug?: string }>();
   const {
     projects, addProject, renameProject, deleteProject,
     deleteDashboardFromProject, restoreProject, restoreDashboardToProject,
@@ -152,15 +161,42 @@ export function SavedFoldersPage() {
     sourceOotbId?: string;
   } | null>(null);
 
-  // If folderId is provided, show dashboards in that folder
-  const selectedFolder = folderId ? projects.find(p => p.id === folderId) : null;
+  const selectedFolder = resolvedFolderId
+    ? projects.find((project) => project.id === resolvedFolderId) ?? null
+    : folderSlug
+    ? projects.find((project) => getProjectSlug(project) === folderSlug) ?? null
+    : null;
+
+  const folderPath = (projectId: string) => {
+    const project = projects.find((item) => item.id === projectId);
+    return project ? ROUTES.SAVED_FOLDER(getProjectSlug(project)) : ROUTES.SAVED;
+  };
+
+  const folderDashboardPath = (projectId: string, dashboardId: string) => {
+    const project = projects.find((item) => item.id === projectId);
+    const dashboard = project?.dashboards.find((item) => item.id === dashboardId);
+    if (!project || !dashboard) return ROUTES.SAVED;
+    return ROUTES.SAVED_FOLDER_DASHBOARD(getProjectSlug(project), getDashboardSlug(dashboard));
+  };
+
+  const standaloneDashboardPath = (dashboardId: string) => {
+    const dashboard = standaloneDashboards.find((item) => item.id === dashboardId);
+    return dashboard
+      ? ROUTES.SAVED_STANDALONE_DASHBOARD(getDashboardSlug(dashboard))
+      : ROUTES.SAVED;
+  };
 
   const handleCreateFolder = () => {
-    if (newFolderName.trim()) {
-      addProject(newFolderName);
-      setNewFolderName("");
-      setNewFolderDialog(false);
+    const trimmed = newFolderName.trim();
+    if (!trimmed) return;
+    const validationError = validateSavedFolderName(trimmed, projects, standaloneDashboards);
+    if (validationError) {
+      toast.error(validationError);
+      return;
     }
+    addProject(trimmed);
+    setNewFolderName("");
+    setNewFolderDialog(false);
   };
 
   const handleDeleteFolder = (projectId: string) => {
@@ -181,10 +217,24 @@ export function SavedFoldersPage() {
   };
 
   const handleRenameFolder = () => {
-    if (renameDialog && renameDialog.name.trim()) {
-      renameProject(renameDialog.projectId, renameDialog.name);
-      setRenameDialog(null);
+    if (!renameDialog) return;
+    const trimmed = renameDialog.name.trim();
+    if (!trimmed) return;
+    const validationError = validateSavedFolderName(
+      trimmed,
+      projects,
+      standaloneDashboards,
+      renameDialog.projectId,
+    );
+    if (validationError) {
+      toast.error(validationError);
+      return;
     }
+    renameProject(renameDialog.projectId, trimmed);
+    if (selectedFolder?.id === renameDialog.projectId) {
+      navigate(ROUTES.SAVED_FOLDER(getProjectSlug({ name: trimmed })), { replace: true });
+    }
+    setRenameDialog(null);
   };
 
   const confirmDeleteFolder = () => {
@@ -318,6 +368,15 @@ export function SavedFoldersPage() {
   // --- Drag and drop handler for folder card targets ---
   const handleDropOnFolder = useCallback((targetFolderId: string, dragItem: DragItem) => {
     if (dragItem.fromProjectId === targetFolderId) return;
+    const validationError = validateSavedFolderDashboardName(
+      targetFolderId,
+      dragItem.dashboardName,
+      projects,
+    );
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
     if (dragItem.fromProjectId) {
       moveDashboardToProject(dragItem.fromProjectId, dragItem.dashboardId, targetFolderId);
     } else {
@@ -332,6 +391,15 @@ export function SavedFoldersPage() {
     accept: DRAG_TYPE_DASHBOARD,
     drop: (item: DragItem) => {
       if (!item.fromProjectId) return; // already standalone
+      const validationError = validateSavedStandaloneDashboardName(
+        item.dashboardName,
+        projects,
+        standaloneDashboards,
+      );
+      if (validationError) {
+        toast.error(validationError);
+        return;
+      }
       moveDashboardToStandalone(item.fromProjectId, item.dashboardId);
       toast.success(`Moved "${item.dashboardName}" to standalone`);
     },
@@ -339,7 +407,7 @@ export function SavedFoldersPage() {
     collect: (monitor) => ({
       isOverStandalone: monitor.isOver() && monitor.canDrop(),
     }),
-  }), [moveDashboardToStandalone]);
+  }), [moveDashboardToStandalone, projects, standaloneDashboards]);
 
   // --- Handle move via dialog ---
   const handleMoveConfirm = () => {
@@ -347,10 +415,28 @@ export function SavedFoldersPage() {
     if (moveTargetFolderId === "__standalone__") {
       // Move to standalone
       if (moveDashboardDialog.fromProjectId) {
+        const validationError = validateSavedStandaloneDashboardName(
+          moveDashboardDialog.dashboardName,
+          projects,
+          standaloneDashboards,
+        );
+        if (validationError) {
+          toast.error(validationError);
+          return;
+        }
         moveDashboardToStandalone(moveDashboardDialog.fromProjectId, moveDashboardDialog.dashboardId);
         toast.success(`Moved "${moveDashboardDialog.dashboardName}" to standalone`);
       }
     } else {
+      const validationError = validateSavedFolderDashboardName(
+        moveTargetFolderId,
+        moveDashboardDialog.dashboardName,
+        projects,
+      );
+      if (validationError) {
+        toast.error(validationError);
+        return;
+      }
       if (moveDashboardDialog.fromProjectId) {
         moveDashboardToProject(moveDashboardDialog.fromProjectId, moveDashboardDialog.dashboardId, moveTargetFolderId);
       } else {
@@ -369,43 +455,77 @@ export function SavedFoldersPage() {
     locationProjectId: string | null;
   }) => {
     if (!editDashboardDialog) return;
+    const trimmedName = values.name.trim();
+    if (!trimmedName) return;
 
     const sourceProjectId = editDashboardDialog.projectId;
     const nextDescription = values.description || undefined;
+    const destinationProjectId = values.locationProjectId;
+
+    const validationError =
+      destinationProjectId === null
+        ? validateSavedStandaloneDashboardName(
+            trimmedName,
+            projects,
+            standaloneDashboards,
+            sourceProjectId ? undefined : editDashboardDialog.dashboardId,
+          )
+        : validateSavedFolderDashboardName(
+            destinationProjectId,
+            trimmedName,
+            projects,
+            sourceProjectId === destinationProjectId ? editDashboardDialog.dashboardId : undefined,
+          );
+
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
 
     if (sourceProjectId) {
       updateDashboardInProject(sourceProjectId, editDashboardDialog.dashboardId, {
-        name: values.name,
+        name: trimmedName,
         description: nextDescription,
       });
     } else {
       updateStandaloneDashboard(editDashboardDialog.dashboardId, {
-        name: values.name,
+        name: trimmedName,
         description: nextDescription,
       });
     }
 
-    if (sourceProjectId && values.locationProjectId === null) {
+    if (sourceProjectId && destinationProjectId === null) {
       moveDashboardToStandalone(sourceProjectId, editDashboardDialog.dashboardId);
     } else if (
       sourceProjectId &&
-      values.locationProjectId &&
-      values.locationProjectId !== sourceProjectId
+      destinationProjectId &&
+      destinationProjectId !== sourceProjectId
     ) {
       moveDashboardToProject(
         sourceProjectId,
         editDashboardDialog.dashboardId,
-        values.locationProjectId,
+        destinationProjectId,
       );
-    } else if (!sourceProjectId && values.locationProjectId) {
-      moveStandaloneToFolder(editDashboardDialog.dashboardId, values.locationProjectId);
+    } else if (!sourceProjectId && destinationProjectId) {
+      moveStandaloneToFolder(editDashboardDialog.dashboardId, destinationProjectId);
     }
 
     toast.success("Dashboard updated", {
-      description: `"${values.name}" has been updated.`,
+      description: `"${trimmedName}" has been updated.`,
     });
     setEditDashboardDialog(null);
   };
+
+  if (folderSlug && !selectedFolder && !resolvedFolderId) {
+    return (
+      <div className="flex items-center justify-center h-full p-8">
+        <div className="text-center">
+          <h1 className="text-4xl mb-2">404</h1>
+          <p className="text-muted-foreground">Folder not found</p>
+        </div>
+      </div>
+    );
+  }
 
   // Show folder contents if drilling down
   if (selectedFolder) {
@@ -540,7 +660,7 @@ export function SavedFoldersPage() {
                         </TableCell>
                         <TableCell>
                           <Link
-                            to={`/project/${selectedFolder.id}/dashboard/${dashboard.id}`}
+                            to={folderDashboardPath(selectedFolder.id, dashboard.id)}
                             className="flex items-center gap-3 hover:underline"
                           >
                             <span className="font-normal">{dashboard.name}</span>
@@ -690,6 +810,11 @@ export function SavedFoldersPage() {
           onCreateFolder={(folderName) => {
             const trimmed = folderName.trim();
             if (!trimmed) return null;
+            const validationError = validateSavedFolderName(trimmed, projects, standaloneDashboards);
+            if (validationError) {
+              toast.error(validationError);
+              return null;
+            }
             return addProject(trimmed);
           }}
           onSubmit={handleConfirmEditDashboard}
@@ -793,7 +918,28 @@ export function SavedFoldersPage() {
   const allFoldersChecked = filteredProjects.length > 0 && selectedFolderIds.size === filteredProjects.length;
   const someFoldersChecked = selectedFolderIds.size > 0 && selectedFolderIds.size < filteredProjects.length;
 
-  const allCustomDashboards = projects.flatMap((p) => p.dashboards.map((d) => ({ key: `${p.id}-${d.id}`, dashboard: d, projectId: p.id as string | null, folderName: p.name as string | null, linkPath: `/project/${p.id}/dashboard/${d.id}` }))).concat(standaloneDashboards.map((d) => ({ key: `standalone-${d.id}`, dashboard: d, projectId: null, folderName: null, linkPath: `/saved/dashboard/${d.id}` })));
+  const allCustomDashboards = projects
+    .flatMap((project) =>
+      project.dashboards.map((dashboard) => ({
+        key: `${project.id}-${dashboard.id}`,
+        dashboard,
+        projectId: project.id as string | null,
+        folderName: project.name as string | null,
+        linkPath: ROUTES.SAVED_FOLDER_DASHBOARD(
+          getProjectSlug(project),
+          getDashboardSlug(dashboard),
+        ),
+      })),
+    )
+    .concat(
+      standaloneDashboards.map((dashboard) => ({
+        key: `standalone-${dashboard.id}`,
+        dashboard,
+        projectId: null,
+        folderName: null,
+        linkPath: ROUTES.SAVED_STANDALONE_DASHBOARD(getDashboardSlug(dashboard)),
+      })),
+    );
   const filteredCustomDashboards = allCustomDashboards.filter((item) => {
     // Folder filter
     if (folderFilter === "standalone" && item.projectId !== null) return false;
@@ -945,13 +1091,13 @@ export function SavedFoldersPage() {
                       <div className="flex items-start gap-3">
                         <div className="flex-1 min-w-0 space-y-4">
                           <CardTitle className="text-base">
-                            <Link to={`/saved/${project.id}`} className="hover:underline">
+                            <Link to={folderPath(project.id)} className="hover:underline">
                               {project.name}
                             </Link>
                           </CardTitle>
                           <CardDescription className="flex items-center gap-2">
                             <Badge asChild variant="secondary" className="text-xs">
-                              <Link to={`/saved/${project.id}`}>
+                              <Link to={folderPath(project.id)}>
                                 {project.dashboards.length} {project.dashboards.length === 1 ? "dashboard" : "dashboards"}
                               </Link>
                             </Badge>
@@ -1054,7 +1200,7 @@ export function SavedFoldersPage() {
                       <TableCell>
                         {item.folderName ? (
                           <Badge asChild variant="secondary">
-                            <Link to={`/saved/${item.projectId!}`}>{item.folderName}</Link>
+                            <Link to={folderPath(item.projectId!)}>{item.folderName}</Link>
                           </Badge>
                         ) : (
                           <span className="text-muted-foreground text-sm">--</span>
@@ -1109,6 +1255,15 @@ export function SavedFoldersPage() {
                             {item.projectId && (
                               <DropdownMenuItem
                                 onClick={() => {
+                                  const validationError = validateSavedStandaloneDashboardName(
+                                    item.dashboard.name,
+                                    projects,
+                                    standaloneDashboards,
+                                  );
+                                  if (validationError) {
+                                    toast.error(validationError);
+                                    return;
+                                  }
                                   moveDashboardToStandalone(item.projectId!, item.dashboard.id);
                                   toast.success(`Moved "${item.dashboard.name}" to standalone`);
                                 }}
@@ -1345,6 +1500,11 @@ export function SavedFoldersPage() {
         onCreateFolder={(folderName) => {
           const trimmed = folderName.trim();
           if (!trimmed) return null;
+          const validationError = validateSavedFolderName(trimmed, projects, standaloneDashboards);
+          if (validationError) {
+            toast.error(validationError);
+            return null;
+          }
           return addProject(trimmed);
         }}
         onSubmit={handleConfirmEditDashboard}

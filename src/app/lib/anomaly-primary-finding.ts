@@ -26,6 +26,12 @@ export interface SummaryStat {
   sublabel?: string;
 }
 
+export interface AnomalyKpiCard {
+  label: "Peak Time" | "Duration" | "Financial Impact" | "Anomalies" | "CSAT Score" | "Confidence";
+  value: string;
+  sublabel?: string;
+}
+
 export interface RelatedAnomalyItem {
   label: string;
   detail: string;
@@ -33,8 +39,12 @@ export interface RelatedAnomalyItem {
 }
 
 export interface PrimaryFindingViewModel {
+  aiInsightsDashboardId: string;
   headingSubtitle: string;
   summaryStats: SummaryStat[];
+  kpiCards: AnomalyKpiCard[];
+  qualitativeEvidence: string;
+  quantitativeEvidence: string;
   confidenceScorePct: number;
   relatedAnomalies: RelatedAnomalyItem[];
   recommendedActions: string[];
@@ -92,6 +102,23 @@ const DEFAULT_RECOMMENDED_ACTIONS = [
 
 function normalizeWhitespace(value: string): string {
   return value.replace(/\s+/g, " ").trim();
+}
+
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+}
+
+function buildAnomalyInsightsDashboardId(snapshot: AnomalyInsightSnapshot | null): string {
+  if (typeof snapshot?.id === "number" && Number.isFinite(snapshot.id)) {
+    return `anomaly-${snapshot.id}`;
+  }
+  const titleSlug = snapshot?.title ? slugify(snapshot.title) : "";
+  if (titleSlug) return `anomaly-${titleSlug}`;
+  return "anomaly-investigation";
 }
 
 function latestAnomalyInsightSnapshot(messages: Message[]): AnomalyInsightSnapshot | null {
@@ -380,6 +407,98 @@ function buildSummaryStats(
   ];
 }
 
+function parsePercent(value: string): number | null {
+  const match = value.match(/(\d{1,3}(?:\.\d+)?)/);
+  if (!match?.[1]) return null;
+  const parsed = Number.parseFloat(match[1]);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function buildAnomalyKpiCards(
+  summaryStats: SummaryStat[],
+  confidenceScorePct: number,
+  corpus: string,
+): AnomalyKpiCard[] {
+  const peakTime = summaryStats.find((stat) => stat.label === "Peak Time");
+  const duration = summaryStats.find((stat) => stat.label === "Duration");
+  const financialImpact = summaryStats.find((stat) => stat.label === "Financial Impact");
+  const anomalies = summaryStats.find((stat) => stat.label === "Anomalies");
+
+  const percentages = corpus.match(/\b\d{1,3}(?:\.\d+)?%/g) ?? [];
+  const csatValue = percentages[0] ?? "Pending";
+  const csatBaseline = percentages[1];
+  const current = parsePercent(csatValue);
+  const baseline = csatBaseline ? parsePercent(csatBaseline) : null;
+  const csatDelta =
+    current !== null && baseline !== null
+      ? `${current >= baseline ? "Up" : "Down"} ${Math.abs(current - baseline).toFixed(1)}% vs baseline`
+      : undefined;
+
+  return [
+    {
+      label: "Peak Time",
+      value: peakTime?.value ?? "Pending",
+      sublabel: peakTime?.sublabel ?? "Detected window",
+    },
+    {
+      label: "Duration",
+      value: duration?.value ?? "Pending",
+      sublabel: duration?.sublabel ?? "Estimated incident duration",
+    },
+    {
+      label: "Financial Impact",
+      value: financialImpact?.value ?? DEFAULT_FINANCIAL_IMPACT.perEvent,
+      sublabel: financialImpact?.sublabel ?? "Annualized projection pending",
+    },
+    {
+      label: "Anomalies",
+      value: anomalies?.value ?? "1",
+      sublabel: anomalies?.sublabel ?? "Correlated metrics",
+    },
+    {
+      label: "CSAT Score",
+      value: csatValue,
+      sublabel: csatDelta ?? (csatBaseline ? `Usually ${csatBaseline}` : "Baseline pending"),
+    },
+    {
+      label: "Confidence",
+      value: `${confidenceScorePct}%`,
+      sublabel: "Analysis confidence",
+    },
+  ];
+}
+
+function buildQualitativeEvidence(rootCauses: RootCauseItem[]): string {
+  const topThemes = rootCauses.slice(0, 3).map((cause) => cause.heading.toLowerCase());
+  const themesText = topThemes.length > 0 ? topThemes.join(", ") : "operational disruption signals";
+  const primaryEvidence =
+    rootCauses[0]?.detail ?? "Source evidence is still being assembled from conversation context.";
+  return normalizeWhitespace(
+    `We reviewed qualitative incident signals and found recurring themes across ${themesText}. ${primaryEvidence}`,
+  );
+}
+
+function buildQuantitativeEvidence(corpus: string, kpiCards: AnomalyKpiCard[], confidenceScorePct: number): string {
+  const sessionsMatch = corpus.match(
+    /\b(\d[\d,]*)\s+(?:evaluated\s+)?(?:sessions|interactions|conversations|transcripts)\b/i,
+  );
+  const sessionsWindow = sessionsMatch?.[1]
+    ? `${sessionsMatch[1]} evaluated sessions`
+    : "the evaluated anomaly window";
+
+  const csat = kpiCards.find((card) => card.label === "CSAT Score");
+  const anomalies = kpiCards.find((card) => card.label === "Anomalies");
+  const duration = kpiCards.find((card) => card.label === "Duration");
+
+  return normalizeWhitespace(
+    `Across ${sessionsWindow}, overall CSAT shifted to ${csat?.value ?? "pending"} (${
+      csat?.sublabel ?? "baseline pending"
+    }) with ${anomalies?.value ?? "1"} correlated anomalies over ${
+      duration?.value ?? "the observed interval"
+    }. Model confidence is ${confidenceScorePct}%.`,
+  );
+}
+
 function extractSignalSnippet(
   corpus: string,
   pattern: RegExp,
@@ -564,8 +683,13 @@ export function buildAnomalyPrimaryFindingModel(
   const rootCauses = buildRootCauseItems(messages, snapshot);
   const relatedAnomalies = buildRelatedAnomalies(messages, snapshot);
   const summaryStats = buildSummaryStats(corpus, snapshot, financialImpactStats, relatedAnomalies);
+  const kpiCards = buildAnomalyKpiCards(summaryStats, confidenceScorePct, corpus);
   const headingSubtitle = buildHeadingSubtitle(messages, snapshot);
   const recommendedActions = buildRecommendedActions(rootCauses);
+  const primaryFinding = buildPrimaryFinding(messages, snapshot);
+  const qualitativeEvidence = buildQualitativeEvidence(rootCauses);
+  const quantitativeEvidence = buildQuantitativeEvidence(corpus, kpiCards, confidenceScorePct);
+  const aiInsightsDashboardId = buildAnomalyInsightsDashboardId(snapshot);
 
   const riskDetail =
     riskLevel === "High"
@@ -582,12 +706,16 @@ export function buildAnomalyPrimaryFindingModel(
         : "Preliminary signals are directionally consistent, with some assumptions still unverified.";
 
   return {
+    aiInsightsDashboardId,
     headingSubtitle,
     summaryStats,
+    kpiCards,
+    qualitativeEvidence,
+    quantitativeEvidence,
     confidenceScorePct,
     relatedAnomalies,
     recommendedActions,
-    primaryFinding: buildPrimaryFinding(messages, snapshot),
+    primaryFinding,
     financialImpactStats,
     financialImpactAssumption,
     riskLevel,

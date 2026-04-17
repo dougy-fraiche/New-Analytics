@@ -211,6 +211,8 @@ type AISuggestedAction = RecommendedAction & {
   cardDescription?: string;
 };
 
+export type DashboardSuggestedAction = AISuggestedAction;
+
 interface AISummaryData {
   summary: string;
   summaryParagraphs?: string[];
@@ -901,6 +903,8 @@ interface DashboardAISummaryProps {
   hideDismissAll?: boolean;
   /** Optional custom content to render in place of suggested action cards */
   recommendedActionsContent?: ReactNode;
+  /** Optional override for suggested actions while preserving default AI Insights card layout/styling */
+  suggestedActionsOverride?: DashboardSuggestedAction[];
 }
 
 export function DashboardAISummary({
@@ -912,6 +916,7 @@ export function DashboardAISummary({
   recommendedActionsTitle = "Recommended actions",
   hideDismissAll = false,
   recommendedActionsContent,
+  suggestedActionsOverride,
 }: DashboardAISummaryProps) {
   const insightsCollapsible = insightsCollapsibleProp ?? hideSectionHeader;
   const [insightsOpen, setInsightsOpen] = useState(() =>
@@ -1055,16 +1060,20 @@ export function DashboardAISummary({
   const insightsPanelId = `ai-insights-panel-content-${dashboardId}`;
   const seed = hashStringToPositiveInt(dashboardId);
   const hasTabSpecificSuggestedActions = Array.isArray(data.suggestedActions) && data.suggestedActions.length > 0;
+  const hasSuggestedActionsOverride =
+    Array.isArray(suggestedActionsOverride) && suggestedActionsOverride.length > 0;
   const pool = GLOBAL_SUGGESTED_ACTION_POOL.length
     ? GLOBAL_SUGGESTED_ACTION_POOL
     : recommendedActionsData.slice(0, 3);
   const optionCount = Math.max(1, Math.min(1 + (seed % 3), pool.length));
   const startIdx = pool.length ? seed % pool.length : 0;
-  const suggestedActions: (RecommendedAction & { cardDescription?: string })[] = hasTabSpecificSuggestedActions
-    ? data.suggestedActions ?? []
-    : pool.length
-      ? Array.from({ length: optionCount }, (_, i) => pool[(startIdx + i) % pool.length])
-      : [];
+  const suggestedActions: (RecommendedAction & { cardDescription?: string })[] = hasSuggestedActionsOverride
+    ? suggestedActionsOverride
+    : hasTabSpecificSuggestedActions
+      ? data.suggestedActions ?? []
+      : pool.length
+        ? Array.from({ length: optionCount }, (_, i) => pool[(startIdx + i) % pool.length])
+        : [];
   const visibleSuggestedActions = suggestedActions.filter((a) => !dismissedActionIds.has(a.id));
   const suggestedActionGridCount = visibleSuggestedActions.length;
   const recommendedActionsGridClass = cn(

@@ -1,6 +1,6 @@
 import type { LegacyRef, RefObject } from "react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { BellOff, Bot, CircleAlert, MoreVertical, Sparkles, Zap } from "lucide-react";
+import { Activity, BellOff, Bot, CircleAlert, MoreVertical, Sparkles, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
@@ -482,7 +482,7 @@ export function ExplorePhase({
                     <div className="mx-auto w-full">
                       <div className="mb-4">
                         <h2 className="flex items-center gap-2 text-xl">
-                          <CircleAlert className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+                          <Activity className="h-5 w-5 shrink-0 text-primary" aria-hidden />
                           Anomalies
                         </h2>
                         <p className="mt-1 text-sm text-muted-foreground">

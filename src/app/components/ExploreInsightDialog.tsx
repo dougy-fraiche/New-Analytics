@@ -30,6 +30,7 @@ export function ExploreInsightDialog({
 
   if (insight.segment === "anomaly") {
     const isCritical = insight.severity === "Critical";
+    const hideLastUpdated = /csat/i.test(insight.title);
     const severityBadgeVariant = isCritical ? "destructive" : "secondary";
     const severityBadgeClassName = isCritical
       ? undefined
@@ -80,12 +81,14 @@ export function ExploreInsightDialog({
                   {insight.severity}
                 </Badge>
               </div>
-              <div className="rounded-lg border p-3">
-                <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                  Last Updated
-                </p>
-                <p className="mt-1 text-sm">{insight.timestamp}</p>
-              </div>
+              {!hideLastUpdated ? (
+                <div className="rounded-lg border p-3">
+                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                    Last Updated
+                  </p>
+                  <p className="mt-1 text-sm">{insight.timestamp}</p>
+                </div>
+              ) : null}
               <div className="rounded-lg border p-3">
                 <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
                   Suggested Track

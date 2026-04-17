@@ -70,6 +70,13 @@ import {
   useAiAssistantExploreBridge,
   type ExploreWidgetPromptMeta,
 } from "../contexts/AiAssistantExploreBridgeContext";
+import {
+  getSavedFolderDashboardPath,
+  getSavedStandaloneDashboardPath,
+  validateSavedFolderName,
+  validateSavedFolderDashboardName,
+  validateSavedStandaloneDashboardName,
+} from "../lib/saved-slugs";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -133,7 +140,13 @@ export function ConversationPhase({
     deleteConversation,
     restoreConversation,
   } = useConversations();
-  const { projects, addDashboardToProject, addProject, addStandaloneDashboard } = useProjects();
+  const {
+    projects,
+    standaloneDashboards,
+    addDashboardToProject,
+    addProject,
+    addStandaloneDashboard,
+  } = useProjects();
   const navigate = useNavigate();
   const headerActionsSlot = useHeaderActionsSlot();
   const dashboardChat = useDashboardChat();
@@ -332,19 +345,43 @@ export function ConversationPhase({
   const handleSaveDashboard = () => {
     if (!latestDashboard || !dashboardName.trim()) return;
 
+    const trimmedName = dashboardName.trim();
     let savedPath: string;
     const desc = dashboardDescription.trim() || undefined;
     if (selectedProjectId === "__root__") {
-      const newDb = addStandaloneDashboard(dashboardName.trim(), undefined, desc);
-      savedPath = `/saved/dashboard/${newDb.id}`;
+      const validationError = validateSavedStandaloneDashboardName(
+        trimmedName,
+        projects,
+        standaloneDashboards,
+      );
+      if (validationError) {
+        toast.error(validationError);
+        return;
+      }
+      const newDb = addStandaloneDashboard(trimmedName, undefined, desc);
+      savedPath = getSavedStandaloneDashboardPath(newDb);
     } else {
-      const newDb = addDashboardToProject(selectedProjectId, dashboardName.trim(), undefined, desc);
-      savedPath = `/project/${selectedProjectId}/dashboard/${newDb.id}`;
+      const validationError = validateSavedFolderDashboardName(
+        selectedProjectId,
+        trimmedName,
+        projects,
+      );
+      if (validationError) {
+        toast.error(validationError);
+        return;
+      }
+      const targetProject = projects.find((project) => project.id === selectedProjectId);
+      if (!targetProject) {
+        toast.error("Destination folder not found.");
+        return;
+      }
+      const newDb = addDashboardToProject(selectedProjectId, trimmedName, undefined, desc);
+      savedPath = getSavedFolderDashboardPath(targetProject, newDb);
     }
 
     setSavedDashboards((prev) => ({
       ...prev,
-      [latestDashboard.id]: { name: dashboardName.trim(), path: savedPath },
+      [latestDashboard.id]: { name: trimmedName, path: savedPath },
     }));
 
     setSaveDialogOpen(false);
@@ -368,7 +405,17 @@ export function ConversationPhase({
 
   const handleCreateFolderAndSelect = () => {
     if (!newFolderName.trim()) return;
-    const newProject = addProject(newFolderName.trim());
+    const trimmedFolderName = newFolderName.trim();
+    const validationError = validateSavedFolderName(
+      trimmedFolderName,
+      projects,
+      standaloneDashboards,
+    );
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+    const newProject = addProject(trimmedFolderName);
     setSelectedProjectId(newProject.id);
     setIsCreatingFolder(false);
     setNewFolderName("");

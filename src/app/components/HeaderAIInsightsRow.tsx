@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 import type { DashboardData } from "../contexts/ConversationContext";
-import { DashboardAISummary } from "./DashboardAISummary";
+import { DashboardAISummary, type DashboardSuggestedAction } from "./DashboardAISummary";
 import { cn } from "./ui/utils";
 
 interface HeaderAIInsightsRowProps {
@@ -13,6 +13,7 @@ interface HeaderAIInsightsRowProps {
   recommendedActionsTitle?: string;
   hideDismissAll?: boolean;
   recommendedActionsContent?: ReactNode;
+  suggestedActionsOverride?: DashboardSuggestedAction[];
 }
 
 export function HeaderAIInsightsRow({
@@ -24,6 +25,7 @@ export function HeaderAIInsightsRow({
   recommendedActionsTitle,
   hideDismissAll,
   recommendedActionsContent,
+  suggestedActionsOverride,
 }: HeaderAIInsightsRowProps) {
   return (
     <section aria-label="AI Insights" className={cn("w-full", className)}>
@@ -36,6 +38,7 @@ export function HeaderAIInsightsRow({
           recommendedActionsTitle={recommendedActionsTitle}
           hideDismissAll={hideDismissAll}
           recommendedActionsContent={recommendedActionsContent}
+          suggestedActionsOverride={suggestedActionsOverride}
         />
       )}
     </section>

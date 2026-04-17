@@ -14,7 +14,10 @@ export type CreateAIAgentInChatDetail = {
   /** Stable id for this creation run (persisted when the flow completes). */
   agentId: string;
   ootbTypeId?: string;
-  /** When true, append to the active global thread instead of starting a new draft. */
+  /**
+   * Hint for thread behavior in non-global contexts.
+   * Global assistant threads always append until the user explicitly resets chat.
+   */
   appendToCurrentConversation?: boolean;
 };
 

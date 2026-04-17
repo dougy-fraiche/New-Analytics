@@ -47,6 +47,10 @@ import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
 import { WidgetAIExplanation } from "./WidgetAIExplanation";
 import { PageTransition } from "./PageTransition";
 import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
+import {
+  getSavedFolderDashboardPath,
+  getSavedStandaloneDashboardPath,
+} from "../lib/saved-slugs";
 
 // ─── Shared data sets (same as DashboardPage) ──────────────────────────────
 
@@ -224,7 +228,7 @@ export function AllInsightsPage() {
         items.push({
           id: dashboard.id,
           name: dashboard.name,
-          path: `/project/${project.id}/dashboard/${dashboard.id}`,
+          path: getSavedFolderDashboardPath(project, dashboard),
         });
       }
     }
@@ -232,7 +236,7 @@ export function AllInsightsPage() {
       items.push({
         id: sd.id,
         name: sd.name,
-        path: `/saved/dashboard/${sd.id}`,
+        path: getSavedStandaloneDashboardPath(sd),
       });
     }
     return items;

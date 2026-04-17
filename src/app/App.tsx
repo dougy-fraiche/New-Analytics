@@ -2,12 +2,10 @@ import {
   createBrowserRouter,
   Navigate,
   RouterProvider,
-  useParams,
 } from "react-router";
 import { ThemeProvider } from "next-themes";
 import { RootLayout } from "./components/RootLayout";
 import { ExplorePage } from "./components/ExplorePage";
-import { KnowledgePerformancePage } from "./components/KnowledgePerformancePage";
 import { AlertCircle } from "lucide-react";
 import { ROUTES } from "./routes";
 
@@ -24,24 +22,6 @@ function NotFound() {
 
 function HydrateFallback() {
   return null;
-}
-
-/** Legacy nested `/observability/*` bookmarks → `/ai-agents` routes. */
-function LegacyObservabilityRedirect() {
-  const { categoryId, dashboardId } = useParams<{ categoryId?: string; dashboardId?: string }>();
-  if (categoryId === "ai-agents" && dashboardId === "ai-agents-copilot") {
-    return <Navigate to={ROUTES.COPILOT} replace />;
-  }
-  if (categoryId === "ai-agents" && dashboardId) {
-    return <Navigate to={ROUTES.AI_AGENTS_DASHBOARD(dashboardId)} replace />;
-  }
-  if (categoryId === "copilot") {
-    return <Navigate to={ROUTES.COPILOT} replace />;
-  }
-  if (categoryId === "knowledge-performance") {
-    return <Navigate to={ROUTES.KNOWLEDGE_PERFORMANCE} replace />;
-  }
-  return <Navigate to={ROUTES.AI_AGENTS} replace />;
 }
 
 function ErrorBoundary() {
@@ -102,23 +82,67 @@ const router = createBrowserRouter([
       },
       { path: "automation-opportunities", ...lazyRoute(() => import("./components/AutomationOpportunitiesPage"), "AutomationOpportunitiesPage") },
       { path: "observability", ...lazyRoute(() => import("./components/ObservabilityPage"), "ObservabilityPage") },
-      { path: "observability/:categoryId", element: <LegacyObservabilityRedirect /> },
-      { path: "observability/:categoryId/:dashboardId", element: <LegacyObservabilityRedirect /> },
-      { path: "ai-agents/ai-agents-copilot", element: <Navigate to={ROUTES.COPILOT} replace /> },
-      { path: "ai-agents", ...lazyRoute(() => import("./components/ObservabilityCategoryPage"), "ObservabilityCategoryPage") },
-      { path: "ai-agents/:dashboardId", ...lazyRoute(() => import("./components/ObservabilityCategoryPage"), "ObservabilityCategoryPage") },
-      { path: "copilot", ...lazyRoute(() => import("./components/CopilotPage"), "CopilotPage") },
-      { path: "knowledge-performance", Component: KnowledgePerformancePage },
+      { path: "observability/ai-agents", ...lazyRoute(() => import("./components/ObservabilityCategoryPage"), "ObservabilityCategoryPage") },
+      { path: "observability/ai-agents/:dashboardId", ...lazyRoute(() => import("./components/ObservabilityCategoryPage"), "ObservabilityCategoryPage") },
+      { path: "observability/copilot", element: <Navigate to={ROUTES.COPILOT_TAB("overview")} replace /> },
+      { path: "observability/copilot/overview", ...lazyRoute(() => import("./components/CopilotOverviewPage"), "CopilotOverviewPage") },
+      { path: "observability/copilot/auto-summary", ...lazyRoute(() => import("./components/CopilotAutoSummaryPage"), "CopilotAutoSummaryPage") },
+      { path: "observability/copilot/task-assist", ...lazyRoute(() => import("./components/CopilotTaskAssistPage"), "CopilotTaskAssistPage") },
+      { path: "observability/copilot/rules-engine", ...lazyRoute(() => import("./components/CopilotRulesEnginePage"), "CopilotRulesEnginePage") },
+      { path: "observability/copilot/real-time-summary", ...lazyRoute(() => import("./components/CopilotRealTimeSummaryPage"), "CopilotRealTimeSummaryPage") },
+      {
+        path: "observability/copilot/generative-responses",
+        ...lazyRoute(() => import("./components/CopilotGenerativeResponsesPage"), "CopilotGenerativeResponsesPage"),
+      },
+      { path: "observability/copilot/*", element: <Navigate to={ROUTES.COPILOT_TAB("overview")} replace /> },
+      { path: "observability/knowledge-performance", element: <Navigate to={ROUTES.KNOWLEDGE_PERFORMANCE_TAB("overview")} replace /> },
+      {
+        path: "observability/knowledge-performance/overview",
+        ...lazyRoute(
+          () => import("./components/KnowledgePerformanceOverviewPage"),
+          "KnowledgePerformanceOverviewPage",
+        ),
+      },
+      {
+        path: "observability/knowledge-performance/agent-user-feedback",
+        ...lazyRoute(
+          () => import("./components/KnowledgePerformanceAgentUserFeedbackPage"),
+          "KnowledgePerformanceAgentUserFeedbackPage",
+        ),
+      },
+      {
+        path: "observability/knowledge-performance/rag-evals",
+        ...lazyRoute(
+          () => import("./components/KnowledgePerformanceRagEvalsPage"),
+          "KnowledgePerformanceRagEvalsPage",
+        ),
+      },
+      {
+        path: "observability/knowledge-performance/failed-query-patterns",
+        ...lazyRoute(
+          () => import("./components/KnowledgePerformanceFailedQueryPatternsPage"),
+          "KnowledgePerformanceFailedQueryPatternsPage",
+        ),
+      },
+      {
+        path: "observability/knowledge-performance/improve-knowledge",
+        ...lazyRoute(
+          () => import("./components/KnowledgePerformanceImproveKnowledgePage"),
+          "KnowledgePerformanceImproveKnowledgePage",
+        ),
+      },
+      {
+        path: "observability/knowledge-performance/*",
+        element: <Navigate to={ROUTES.KNOWLEDGE_PERFORMANCE_TAB("overview")} replace />,
+      },
       { path: "saved", ...lazyRoute(() => import("./components/SavedFoldersPage"), "SavedFoldersPage") },
-      { path: "saved/:folderId", ...lazyRoute(() => import("./components/SavedFoldersPage"), "SavedFoldersPage") },
-      { path: "saved/:folderId/dashboard/:dashboardId", ...lazyRoute(() => import("./components/DashboardPage"), "DashboardPage") },
+      { path: "saved/:folderSlug/:dashboardSlug", ...lazyRoute(() => import("./components/DashboardPage"), "DashboardPage") },
+      { path: "saved/:savedSlug", ...lazyRoute(() => import("./components/SavedSlugResolverPage"), "SavedSlugResolverPage") },
       { path: "recommended-actions", ...lazyRoute(() => import("./components/RecommendedActionsPage"), "RecommendedActionsPage") },
       { path: "actions/history", ...lazyRoute(() => import("./components/ActionsHistoryPage"), "ActionsHistoryPage") },
       { path: "insights", ...lazyRoute(() => import("./components/AllInsightsPage"), "AllInsightsPage") },
       { path: "settings", ...lazyRoute(() => import("./components/SettingsPage"), "SettingsPage") },
       { path: "dashboard/:dashboardId", ...lazyRoute(() => import("./components/DashboardPage"), "DashboardPage") },
-      { path: "project/:projectId/dashboard/:dashboardId", ...lazyRoute(() => import("./components/DashboardPage"), "DashboardPage") },
-      { path: "saved/dashboard/:dashboardId", ...lazyRoute(() => import("./components/DashboardPage"), "DashboardPage") },
       { path: "*", Component: NotFound },
     ],
   },

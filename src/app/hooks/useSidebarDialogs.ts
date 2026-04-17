@@ -5,6 +5,11 @@ import { useDashboardChat } from "../contexts/DashboardChatContext";
 import { getExploreConversationAssistantKey } from "../lib/ai-assistant-global";
 import { toast } from "sonner";
 import { showDeletedObjectToast } from "../lib/object-deletion-toast";
+import {
+  validateSavedFolderDashboardName,
+  validateSavedFolderName,
+  validateSavedStandaloneDashboardName,
+} from "../lib/saved-slugs";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -199,6 +204,11 @@ export function useSidebarDialogs(options?: UseSidebarDialogsOptions) {
   const handleCreateProject = () => {
     const name = state.newProjectName.trim();
     if (name) {
+      const validationError = validateSavedFolderName(name, projects, standaloneDashboards);
+      if (validationError) {
+        toast.error(validationError);
+        return;
+      }
       const project = addProject(name);
       options?.onFolderCreated?.(project);
       toast.success("Folder created", {
@@ -210,9 +220,20 @@ export function useSidebarDialogs(options?: UseSidebarDialogsOptions) {
 
   const handleRenameProject = () => {
     if (state.renameDialog && state.renameDialog.name.trim()) {
-      renameProject(state.renameDialog.projectId, state.renameDialog.name);
+      const trimmed = state.renameDialog.name.trim();
+      const validationError = validateSavedFolderName(
+        trimmed,
+        projects,
+        standaloneDashboards,
+        state.renameDialog.projectId,
+      );
+      if (validationError) {
+        toast.error(validationError);
+        return;
+      }
+      renameProject(state.renameDialog.projectId, trimmed);
       toast.success("Folder renamed", {
-        description: `Renamed to "${state.renameDialog.name.trim()}".`,
+        description: `Renamed to "${trimmed}".`,
       });
       dispatch({ type: "CLOSE_RENAME_PROJECT" });
     }
@@ -339,39 +360,61 @@ export function useSidebarDialogs(options?: UseSidebarDialogsOptions) {
   }) => {
     if (!state.editDashboardDialog || !values.name.trim()) return;
 
+    const trimmedName = values.name.trim();
     const sourceProjectId = state.editDashboardDialog.projectId;
     const description = values.description || undefined;
+    const destinationProjectId = values.locationProjectId;
+    const validationError =
+      destinationProjectId === null
+        ? validateSavedStandaloneDashboardName(
+            trimmedName,
+            projects,
+            standaloneDashboards,
+            sourceProjectId ? undefined : state.editDashboardDialog.dashboardId,
+          )
+        : validateSavedFolderDashboardName(
+            destinationProjectId,
+            trimmedName,
+            projects,
+            sourceProjectId === destinationProjectId
+              ? state.editDashboardDialog.dashboardId
+              : undefined,
+          );
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
 
     if (sourceProjectId) {
       updateDashboardInProject(sourceProjectId, state.editDashboardDialog.dashboardId, {
-        name: values.name,
+        name: trimmedName,
         description,
       });
     } else {
       updateStandaloneDashboard(state.editDashboardDialog.dashboardId, {
-        name: values.name,
+        name: trimmedName,
         description,
       });
     }
 
-    if (sourceProjectId && values.locationProjectId === null) {
+    if (sourceProjectId && destinationProjectId === null) {
       moveDashboardToStandalone(sourceProjectId, state.editDashboardDialog.dashboardId);
     } else if (
       sourceProjectId &&
-      values.locationProjectId &&
-      values.locationProjectId !== sourceProjectId
+      destinationProjectId &&
+      destinationProjectId !== sourceProjectId
     ) {
       moveDashboardToProject(
         sourceProjectId,
         state.editDashboardDialog.dashboardId,
-        values.locationProjectId,
+        destinationProjectId,
       );
-    } else if (!sourceProjectId && values.locationProjectId) {
-      moveStandaloneToFolder(state.editDashboardDialog.dashboardId, values.locationProjectId);
+    } else if (!sourceProjectId && destinationProjectId) {
+      moveStandaloneToFolder(state.editDashboardDialog.dashboardId, destinationProjectId);
     }
 
     toast.success("Dashboard updated", {
-      description: `"${values.name}" has been updated.`,
+      description: `"${trimmedName}" has been updated.`,
     });
     dispatch({ type: "CLOSE_EDIT_DASHBOARD" });
   };
@@ -379,6 +422,11 @@ export function useSidebarDialogs(options?: UseSidebarDialogsOptions) {
   const handleCreateFolderFromEdit = (folderName: string) => {
     const name = folderName.trim();
     if (!name) return null;
+    const validationError = validateSavedFolderName(name, projects, standaloneDashboards);
+    if (validationError) {
+      toast.error(validationError);
+      return null;
+    }
     const project = addProject(name);
     options?.onFolderCreated?.(project);
     toast.success("Folder created", {
@@ -389,9 +437,19 @@ export function useSidebarDialogs(options?: UseSidebarDialogsOptions) {
 
   const handleAddDashboard = () => {
     if (state.newDashboardDialog && state.newDashboardName.trim()) {
-      addDashboardToProject(state.newDashboardDialog, state.newDashboardName);
+      const trimmedName = state.newDashboardName.trim();
+      const validationError = validateSavedFolderDashboardName(
+        state.newDashboardDialog,
+        trimmedName,
+        projects,
+      );
+      if (validationError) {
+        toast.error(validationError);
+        return;
+      }
+      addDashboardToProject(state.newDashboardDialog, trimmedName);
       toast.success("Dashboard added", {
-        description: `"${state.newDashboardName.trim()}" has been added.`,
+        description: `"${trimmedName}" has been added.`,
       });
       dispatch({ type: "CLOSE_NEW_DASHBOARD" });
     }
@@ -399,6 +457,15 @@ export function useSidebarDialogs(options?: UseSidebarDialogsOptions) {
 
   const handleMoveDashboard = () => {
     if (state.moveDashboardDialog && state.moveTargetProjectId) {
+      const validationError = validateSavedFolderDashboardName(
+        state.moveTargetProjectId,
+        state.moveDashboardDialog.dashboardName,
+        projects,
+      );
+      if (validationError) {
+        toast.error(validationError);
+        return;
+      }
       if (state.moveDashboardDialog.fromProjectId) {
         moveDashboardToProject(
           state.moveDashboardDialog.fromProjectId,

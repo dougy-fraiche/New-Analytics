@@ -108,24 +108,15 @@ const tableData = [
 ];
 
 export function ObservabilityCategoryPage() {
-  const params = useParams<{ categoryId?: string; dashboardId?: string }>();
+  const params = useParams<{ dashboardId?: string }>();
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const isAiAgentsRoute = pathname === ROUTES.AI_AGENTS || pathname.startsWith(`${ROUTES.AI_AGENTS}/`);
   const isCopilotLegacyRoute = pathname === ROUTES.AI_AGENTS_DASHBOARD("ai-agents-copilot");
-
-  const categoryId =
-    params.categoryId ??
-    (pathname === ROUTES.AI_AGENTS || pathname.startsWith(`${ROUTES.AI_AGENTS}/`)
-      ? "ai-agents"
-      : undefined);
   const urlDashboardId = params.dashboardId;
 
-  const category = ootbCategories.find((c) => c.id === categoryId);
-  const visibleDashboards =
-    category?.id === "ai-agents"
-      ? category.dashboards.filter((d) => d.id !== "ai-agents-copilot")
-      : category?.dashboards ?? [];
+  const category = ootbCategories.find((c) => c.id === "ai-agents");
+  const visibleDashboards = category?.dashboards.filter((d) => d.id !== "ai-agents-copilot") ?? [];
 
   const { ref: dashboardContentRef, isBelowBreakpoint: isCompactDashboard } =
     useContainerBreakpoint<HTMLDivElement>(768);

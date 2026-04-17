@@ -27,6 +27,12 @@ import { AiAssistantPanelControlProvider } from "../contexts/AiAssistantPanelCon
 import { ROUTES } from "../routes";
 import { cn } from "./ui/utils";
 import { topInsightsCards } from "../data/explore-data";
+import {
+  findProjectBySlug,
+  findProjectDashboardBySlugs,
+  findStandaloneDashboardBySlug,
+  getSavedFolderPath,
+} from "../lib/saved-slugs";
 
 const AI_ASSISTANT_OPEN_STORAGE_KEY = "ai-assistant-panel-open";
 const WIDGET_AI_MESSAGE_SENT_EVENT = "widget-ai-message-sent";
@@ -54,6 +60,12 @@ function RootLayoutInner() {
 
   /** Explore home (`/`) only — hero gradient sits on the page canvas; conversation + all other routes use white `main`. */
   const isExploreRoute = location.pathname === "/";
+  const isCopilotRoute =
+    location.pathname === ROUTES.COPILOT ||
+    location.pathname.startsWith(`${ROUTES.COPILOT}/`);
+  const isKnowledgePerformanceRoute =
+    location.pathname === ROUTES.KNOWLEDGE_PERFORMANCE ||
+    location.pathname.startsWith(`${ROUTES.KNOWLEDGE_PERFORMANCE}/`);
 
   const [aiAssistantPreferredOpen, setAiAssistantPreferredOpen] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -182,14 +194,14 @@ function RootLayoutInner() {
       ];
     }
 
-    if (location.pathname === ROUTES.COPILOT) {
+    if (isCopilotRoute) {
       return [
         { label: "Observability", href: ROUTES.OBSERVABILITY },
         { label: "Copilot" },
       ];
     }
 
-    if (location.pathname === ROUTES.KNOWLEDGE_PERFORMANCE) {
+    if (isKnowledgePerformanceRoute) {
       return [
         { label: "Observability", href: ROUTES.OBSERVABILITY },
         { label: "Knowledge Performance" },
@@ -267,51 +279,53 @@ function RootLayoutInner() {
       return [{ label: "Observability", href: ROUTES.OBSERVABILITY }, { label: dashboardName }];
     }
 
-    // Standalone custom dashboard (not in a folder)
-    if (location.pathname.startsWith("/saved/dashboard/") && params.dashboardId) {
-      const standaloneDb = standaloneDashboards.find(d => d.id === params.dashboardId);
-      return [
-        { label: "Saved", href: "/saved" },
-        { label: standaloneDb?.name || "Dashboard" },
-      ];
-    }
-
-    // Saved folder view
-    if (location.pathname.startsWith("/saved/") && params.folderId) {
-      const folder = projects.find(p => p.id === params.folderId);
-      if (folder) {
-        // Check if we're viewing a dashboard within the folder
-        if (location.pathname.includes("/dashboard/")) {
-          const dashboard = folder.dashboards.find(d => d.id === params.dashboardId);
-          return [
-            { label: "Saved", href: "/saved" },
-            { label: folder.name, href: `/saved/${folder.id}` },
-            { label: dashboard?.name || "Dashboard" },
-          ];
-        }
-        // Just viewing the folder
+    if (location.pathname.startsWith("/saved/") && params.folderSlug && params.dashboardSlug) {
+      const savedMatch = findProjectDashboardBySlugs(
+        projects,
+        params.folderSlug,
+        params.dashboardSlug,
+      );
+      if (savedMatch) {
         return [
-          { label: "Saved", href: "/saved" },
-          { label: folder.name },
+          { label: "Saved", href: ROUTES.SAVED },
+          { label: savedMatch.project.name, href: getSavedFolderPath(savedMatch.project) },
+          { label: savedMatch.dashboard.name },
         ];
       }
     }
 
-    // Project dashboard (saved dashboard)
-    if (location.pathname.startsWith("/project/") && params.projectId && params.dashboardId) {
-      const project = projects.find(p => p.id === params.projectId);
-      const dashboard = project?.dashboards.find(d => d.id === params.dashboardId);
-      if (project && dashboard) {
+    if (location.pathname.startsWith("/saved/") && params.savedSlug) {
+      const folder = findProjectBySlug(projects, params.savedSlug);
+      if (folder) {
         return [
-          { label: "Saved", href: "/saved" },
-          { label: project.name, href: `/saved/${project.id}` },
-          { label: dashboard.name },
+          { label: "Saved", href: ROUTES.SAVED },
+          { label: folder.name },
+        ];
+      }
+
+      const standaloneDashboard = findStandaloneDashboardBySlug(
+        standaloneDashboards,
+        params.savedSlug,
+      );
+      if (standaloneDashboard) {
+        return [
+          { label: "Saved", href: ROUTES.SAVED },
+          { label: standaloneDashboard.name },
         ];
       }
     }
 
     return [];
-  }, [location.pathname, params, conversations, projects, standaloneDashboards, getAgentById]);
+  }, [
+    location.pathname,
+    params,
+    conversations,
+    projects,
+    standaloneDashboards,
+    getAgentById,
+    isCopilotRoute,
+    isKnowledgePerformanceRoute,
+  ]);
 
   /** Short label for the AI Assistant input context pill (last breadcrumb, else route fallbacks). */
   const aiPageContextLabel = useMemo(() => {
@@ -334,9 +348,9 @@ function RootLayoutInner() {
       location.pathname.startsWith(`${ROUTES.AI_AGENTS}/`)
     ) {
       label = "AI Agents";
-    } else if (location.pathname === ROUTES.COPILOT) {
+    } else if (isCopilotRoute) {
       label = "Copilot";
-    } else if (location.pathname === ROUTES.KNOWLEDGE_PERFORMANCE) {
+    } else if (isKnowledgePerformanceRoute) {
       label = "Knowledge Performance";
     } else if (location.pathname === ROUTES.OBSERVABILITY) {
       label = "Observability";
@@ -367,19 +381,30 @@ function RootLayoutInner() {
       : GLOBAL_AI_ASSISTANT_KEY;
   const showAssistantResetButton = !isExploreConversationRoute;
 
+  const isSavedFolderDashboardRoute = Boolean(
+    location.pathname.startsWith("/saved/") && params.folderSlug && params.dashboardSlug,
+  );
+  const isSavedStandaloneDashboardRoute = Boolean(
+    location.pathname.startsWith("/saved/") &&
+      params.savedSlug &&
+      findStandaloneDashboardBySlug(standaloneDashboards, params.savedSlug),
+  );
+
   // Check if current route needs full-height layout (no outer scroll/padding — page manages its own)
   const isFullHeightPage =
-    location.pathname.includes('/dashboard') ||
-    location.pathname.startsWith('/conversation/') ||
-    location.pathname.startsWith('/anomaly-investigation/') ||
-    location.pathname === '/' ||
-    location.pathname === '/insights' ||
-    location.pathname === '/automation-opportunities' ||
+    location.pathname.includes("/dashboard") ||
+    location.pathname.startsWith("/conversation/") ||
+    location.pathname.startsWith("/anomaly-investigation/") ||
+    location.pathname === "/" ||
+    location.pathname === "/insights" ||
+    location.pathname === "/automation-opportunities" ||
     location.pathname.startsWith(`${ROUTES.AUTOMATION_OPPORTUNITIES}/agent/`) ||
-    location.pathname === ROUTES.COPILOT ||
-    location.pathname === ROUTES.KNOWLEDGE_PERFORMANCE ||
+    isCopilotRoute ||
+    isKnowledgePerformanceRoute ||
     location.pathname === ROUTES.AI_AGENTS ||
-    location.pathname.startsWith(`${ROUTES.AI_AGENTS}/`);
+    location.pathname.startsWith(`${ROUTES.AI_AGENTS}/`) ||
+    isSavedFolderDashboardRoute ||
+    isSavedStandaloneDashboardRoute;
 
   const assistantLayoutInset = aiAssistantOpen;
   const assistantChromeWidthPx =
