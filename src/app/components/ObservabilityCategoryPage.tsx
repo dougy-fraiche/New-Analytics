@@ -47,6 +47,8 @@ import { PageTransition } from "./PageTransition";
 import { KpiSparkline, KPI_SPARKLINE_SERIES } from "./KpiSparkline";
 import { KpiMetricValueTitle } from "./KpiMetricValueTitle";
 import { LabeledFilterInline, LabeledSelectValue } from "./HeaderFilters";
+import { TableAgentCell } from "./TableAgentCell";
+import { TableBadge } from "./TableBadge";
 import { AIAgentsOverviewTab } from "./AIAgentsOverviewTab";
 import { AIAgentsEvaluationTab } from "./AIAgentsEvaluationTab";
 import { AIAgentsIntentNluTab } from "./AIAgentsIntentNluTab";
@@ -488,12 +490,14 @@ export function ObservabilityCategoryPage() {
                   <TableBody>
                     {tableData.map((row) => (
                       <TableRow key={row.agent} className="h-[3rem]">
-                        <TableCell className="font-medium">{row.agent}</TableCell>
+                        <TableCell className="font-medium">
+                          <TableAgentCell name={row.agent} />
+                        </TableCell>
                         <TableCell className="text-right">{row.escalations}</TableCell>
                         <TableCell className="text-right">{row.resolved}</TableCell>
                         <TableCell className="text-right">{row.avgTime}</TableCell>
                         <TableCell className="text-right">
-                          <Badge variant="outline">{row.satisfaction}</Badge>
+                          <TableBadge variant="outline">{row.satisfaction}</TableBadge>
                         </TableCell>
                       </TableRow>
                     ))}

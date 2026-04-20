@@ -31,6 +31,7 @@ import {
   tableOverflowMenuColumnClassName,
 } from "./ui/table";
 import { LabeledFilterInline, LabeledSelectValue } from "./HeaderFilters";
+import { TableAgentCell } from "./TableAgentCell";
 import {
   DATE_RANGE_CUSTOM_OPTION,
   DATE_RANGE_LABELS,
@@ -224,7 +225,9 @@ export function SampleInteractionsDialog({
               <TableBody>
                 {sampleInteractionRows.map((row) => (
                   <TableRow key={row.id}>
-                    <TableCell className="font-normal">{row.agentName}</TableCell>
+                    <TableCell className="font-normal">
+                      <TableAgentCell name={row.agentName} />
+                    </TableCell>
                     <TableCell>{row.team}</TableCell>
                     <TableCell className="whitespace-pre-wrap">{row.dateTime}</TableCell>
                     <TableCell>{row.duration}</TableCell>

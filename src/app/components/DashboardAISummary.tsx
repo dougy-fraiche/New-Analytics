@@ -1336,10 +1336,10 @@ export function DashboardAISummary({
                             >
                               <button
                                 type="button"
-                                className="min-w-0 w-full rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                className="flex h-full min-w-0 w-full flex-col rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                 onClick={() => setSheetAction(action)}
                               >
-                                <div className="flex flex-col gap-2.5">
+                                <div className="flex min-h-0 flex-1 flex-col gap-2.5">
                                     <div className="flex items-start justify-between gap-2">
                                       <span className="line-clamp-2 text-base font-medium leading-6 text-foreground">
                                         {action.title}
@@ -1366,15 +1366,17 @@ export function DashboardAISummary({
                                         </DropdownMenu>
                                       </div>
                                     </div>
-                                    <Badge
-                                      variant="outline"
-                                      className="w-fit border-green-500/50 bg-emerald-50 px-2 py-0.5 text-xs font-normal text-emerald-800 dark:border-green-700 dark:bg-emerald-950/40 dark:text-emerald-300"
-                                    >
-                                      {action.impactValue}
-                                    </Badge>
                                     <p className="line-clamp-3 text-sm font-normal leading-snug text-foreground/80">
                                       {buildActionCardParagraph(action)}
                                     </p>
+                                    <div className="mt-auto pt-1.5">
+                                      <Badge
+                                        variant="outline"
+                                        className="w-fit border-green-500/50 bg-emerald-50 px-2 py-0.5 text-xs font-normal text-emerald-800 dark:border-green-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+                                      >
+                                        {action.impactValue}
+                                      </Badge>
+                                    </div>
                                 </div>
                               </button>
                             </div>

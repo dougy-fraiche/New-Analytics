@@ -56,6 +56,8 @@ import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
 import { PageTransition } from "./PageTransition";
 import { KpiSparkline, KPI_SPARKLINE_SERIES } from "./KpiSparkline";
 import { KpiMetricValueTitle } from "./KpiMetricValueTitle";
+import { TableAgentCell } from "./TableAgentCell";
+import { TableBadge } from "./TableBadge";
 import {
   DATE_RANGE_CUSTOM_OPTION,
   DATE_RANGE_LABELS,
@@ -730,7 +732,9 @@ export function DashboardPage({ resolvedStandaloneDashboardId }: DashboardPagePr
               <TableBody>
                 {tableData.map((row) => (
                   <TableRow key={row.agent}>
-                    <TableCell className="font-medium">{row.agent}</TableCell>
+                    <TableCell className="font-medium">
+                      <TableAgentCell name={row.agent} />
+                    </TableCell>
                     <TableCell className="text-right">
                       {row.escalations}
                     </TableCell>
@@ -741,7 +745,7 @@ export function DashboardPage({ resolvedStandaloneDashboardId }: DashboardPagePr
                       {row.avgTime}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Badge variant="outline">{row.satisfaction}</Badge>
+                      <TableBadge variant="outline">{row.satisfaction}</TableBadge>
                     </TableCell>
                   </TableRow>
                 ))}

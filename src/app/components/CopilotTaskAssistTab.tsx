@@ -25,6 +25,9 @@ import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
 import { WidgetAIExplanation } from "./WidgetAIExplanation";
 import { CopilotSessionTranscriptDialog } from "./CopilotSessionTranscriptDialog";
 import { CopilotProgressBar } from "./CopilotProgressBar";
+import { TableAgentCell } from "./TableAgentCell";
+import { TableChannelCell } from "./TableChannelCell";
+import { TableStatusBadge, tableStatusToneFromOutcome } from "./TableStatusBadges";
 import { cn } from "./ui/utils";
 import { copilotAiInsightsIds } from "../data/copilot-ai-insights";
 import {
@@ -128,7 +131,7 @@ const taskDurationDistributionOption: EChartsCoreOption = {
     interval: 95,
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))" },
   },
   series: [
@@ -162,7 +165,7 @@ const taskConfidenceDistributionOption: EChartsCoreOption = {
     interval: 95,
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))" },
   },
   series: [
@@ -221,8 +224,8 @@ const topActionsRows = [
 
 const sessionColumnOptions: Array<{ id: SessionColumnId; label: string }> = [
   { id: "contact", label: "Contact" },
-  { id: "channel", label: "Channel" },
   { id: "agent", label: "Agent" },
+  { id: "channel", label: "Channel" },
   { id: "skill", label: "Skill" },
   { id: "tasks", label: "Tasks" },
   { id: "duration", label: "Duration" },
@@ -748,8 +751,8 @@ export function CopilotTaskAssistTab({
               <TableHeader>
                 <TableRow>
                   {sessionColumnVisibility.contact ? <TableHead>Contact</TableHead> : null}
-                  {sessionColumnVisibility.channel ? <TableHead>Channel</TableHead> : null}
                   {sessionColumnVisibility.agent ? <TableHead>Agent</TableHead> : null}
+                  {sessionColumnVisibility.channel ? <TableHead>Channel</TableHead> : null}
                   {sessionColumnVisibility.skill ? <TableHead>Skill</TableHead> : null}
                   {sessionColumnVisibility.tasks ? <TableHead>Tasks</TableHead> : null}
                   {sessionColumnVisibility.duration ? <TableHead>Duration</TableHead> : null}
@@ -762,15 +765,30 @@ export function CopilotTaskAssistTab({
                 {paginatedSessionRows.map((row) => (
                   <TableRow key={row.contact}>
                     {sessionColumnVisibility.contact ? <TableCell>{row.contact}</TableCell> : null}
-                    {sessionColumnVisibility.channel ? <TableCell>{row.channel}</TableCell> : null}
-                    {sessionColumnVisibility.agent ? <TableCell>{row.agent}</TableCell> : null}
+                    {sessionColumnVisibility.agent ? (
+                      <TableCell>
+                        <TableAgentCell name={row.agent} />
+                      </TableCell>
+                    ) : null}
+                    {sessionColumnVisibility.channel ? (
+                      <TableCell>
+                        <TableChannelCell channel={row.channel} />
+                      </TableCell>
+                    ) : null}
                     {sessionColumnVisibility.skill ? <TableCell>{row.skill}</TableCell> : null}
                     {sessionColumnVisibility.tasks ? (
                       <TableCell className="text-primary tabular-nums">{row.tasks}</TableCell>
                     ) : null}
                     {sessionColumnVisibility.duration ? <TableCell className="tabular-nums">{row.duration}</TableCell> : null}
                     {sessionColumnVisibility.intent ? <TableCell>{row.intent}</TableCell> : null}
-                    {sessionColumnVisibility.outcome ? <TableCell>{row.outcome}</TableCell> : null}
+                    {sessionColumnVisibility.outcome ? (
+                      <TableCell>
+                        <TableStatusBadge
+                          label={row.outcome}
+                          tone={tableStatusToneFromOutcome(row.outcome)}
+                        />
+                      </TableCell>
+                    ) : null}
                     {sessionColumnVisibility.actions ? (
                       <TableCell>
                         <div className="flex items-center justify-end gap-1">

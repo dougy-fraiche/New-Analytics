@@ -1,0 +1,1 @@
+import{j as e}from"./index-BBJhcJyy.js";import{K as o,a as t,b as l}from"./KnowledgePerformanceShell-BAxA0qaD.js";import"./PageTransition-grxR7sU-.js";import"./tabs-FzHvxz-D.js";const a=l.find(r=>r.value==="rag-evals");function m(){return e.jsx(o,{activeTab:"rag-evals",children:e.jsx(t,{title:a.label,description:a.description})})}export{m as KnowledgePerformanceRagEvalsPage};

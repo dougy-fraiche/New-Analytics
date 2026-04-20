@@ -2,17 +2,12 @@ import type { EChartsCoreOption } from "echarts";
 import { useCallback, useState, type ReactNode } from "react";
 import {
   ArrowRight,
-  AudioLines,
   BarChart3,
   Columns3,
   Download,
   LayoutGrid,
-  MessageCircle,
-  MessageCircleMore,
-  MessageSquareShare,
-  MessagesSquare,
+  MessageSquare,
   Search,
-  Star,
   TrendingDown,
   TrendingUp,
   X,
@@ -29,12 +24,20 @@ import {
 import { Input } from "./ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
 import { cn } from "./ui/utils";
 import { EChartsCanvas, type ChartDataSelectInfo } from "./EChartsCanvas";
+import { CopilotSessionTranscriptDialog } from "./CopilotSessionTranscriptDialog";
+import { TableBadge } from "./TableBadge";
+import { TableChannelCell } from "./TableChannelCell";
+import { TableRatingStars } from "./TableRatingStars";
+import { TableStatusIconBadge } from "./TableStatusBadges";
 import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
 import { WidgetAIExplanation } from "./WidgetAIExplanation";
 import type { ChartType } from "./ChartVariants";
+import { fromAIAgentsIntentNluSessionRow } from "../data/ai-agent-session-transcript";
+import type { CopilotTranscriptSessionContext } from "../data/copilot-session-transcript";
 
 const weekLabels = ["W1", "W2", "W3", "W4", "W5", "W6", "W7"];
 
@@ -64,7 +67,7 @@ const intentScoreTrend: EChartsCoreOption = {
     max: 1,
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))", fontSize: 10, formatter: (v: number) => v.toFixed(1) },
   },
   series: [
@@ -94,7 +97,7 @@ const intentScoreTrend: EChartsCoreOption = {
 const usersByLocaleStacked: EChartsCoreOption = {
   grid: { left: 48, right: 8, top: 12, bottom: 36 },
   tooltip: { trigger: "axis", confine: true, appendToBody: true },
-  legend: { bottom: 0, itemWidth: 8, itemHeight: 8, textStyle: { fontSize: 10 } },
+  legend: { bottom: 0, itemWidth: 8, itemHeight: 8, textStyle: { fontSize: 10, color: "hsl(var(--muted-foreground))" } },
   xAxis: {
     type: "category",
     data: weekLabels,
@@ -106,7 +109,7 @@ const usersByLocaleStacked: EChartsCoreOption = {
     type: "value",
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))", fontSize: 10 },
   },
   series: localeNames.map((name, i) => ({
@@ -156,7 +159,7 @@ function buildDonutCenterOption(params: {
           text: params.centerLine1,
           fontSize: 22,
           fontWeight: 600,
-          fill: "hsl(var(--foreground))",
+          fill: "hsl(var(--muted-foreground))",
         },
       },
       {
@@ -194,7 +197,7 @@ const intentConfidenceBars: EChartsCoreOption = {
     max: 8,
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))", fontSize: 10 },
   },
   series: [
@@ -249,7 +252,7 @@ const nluExecutionTimeTrend: EChartsCoreOption = {
     max: 2200,
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))", fontSize: 10 },
   },
   series: [
@@ -313,7 +316,7 @@ const execTimeByEndpointOption: EChartsCoreOption = {
     axisTick: { show: false },
     splitLine: {
       show: true,
-      lineStyle: { type: "solid", color: "hsl(var(--border))" },
+      lineStyle: { type: "solid", color: "hsl(var(--muted-foreground))" },
     },
     axisLabel: { color: "hsl(var(--muted-foreground))", fontSize: 12 },
   },
@@ -359,7 +362,7 @@ const topSlotsBarOption: EChartsCoreOption = {
     max: 4000,
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))", fontSize: 10 },
   },
   yAxis: {
@@ -429,7 +432,7 @@ function buildTopIntentsBarChartOption(): EChartsCoreOption {
       axisTick: { show: false },
       splitLine: {
         show: true,
-        lineStyle: { type: "solid", color: "hsl(var(--border))" },
+        lineStyle: { type: "solid", color: "hsl(var(--muted-foreground))" },
       },
       axisLabel: { color: "hsl(var(--muted-foreground))", fontSize: 12 },
     },
@@ -559,7 +562,7 @@ function getTrendDirection(value: string): "up" | "down" | "neutral" {
 
 function ScoreCategoryBadge({ tone, children }: { tone: TopIntentRow["tone"]; children: ReactNode }) {
   return (
-    <Badge
+    <TableBadge
       variant="secondary"
       className={cn(
         "whitespace-normal text-left text-xs font-normal",
@@ -570,7 +573,7 @@ function ScoreCategoryBadge({ tone, children }: { tone: TopIntentRow["tone"]; ch
       )}
     >
       {children}
-    </Badge>
+    </TableBadge>
   );
 }
 
@@ -651,60 +654,29 @@ const sessionsToInvestigate: NluSessionInvestigateRow[] = [
 function NluSessionCategoryCell({ category }: { category: NluSessionCategory }) {
   if (category === "low_intent_score") {
     return (
-      <span className="inline-flex min-w-0 max-w-full items-center gap-3">
-        <TrendingDown className="size-4 shrink-0 text-destructive" aria-hidden />
-        <span className="min-w-0 truncate text-destructive">Low Intent Score</span>
-      </span>
+      <TableStatusIconBadge label="Low Intent Score" tone="negative" Icon={TrendingDown} />
     );
   }
   if (category === "high_escalation") {
     return (
-      <span className="inline-flex min-w-0 max-w-full items-center gap-3">
-        <TrendingDown className="size-4 shrink-0 text-destructive" aria-hidden />
-        <span className="min-w-0 truncate text-destructive">High Escalation</span>
-      </span>
+      <TableStatusIconBadge label="High Escalation" tone="negative" Icon={TrendingDown} />
     );
   }
   if (category === "missing_slots") {
     return (
-      <span className="inline-flex min-w-0 max-w-full items-center gap-3">
-        <X className="size-4 shrink-0 text-primary" aria-hidden />
-        <span className="min-w-0 truncate text-primary">Missing Slots</span>
-      </span>
+      <TableStatusIconBadge label="Missing Slots" tone="primary" Icon={X} />
     );
   }
   if (category === "low_rating") {
     return (
-      <span className="inline-flex min-w-0 max-w-full items-center gap-3">
-        <TrendingDown className="size-4 shrink-0 text-warning-border" aria-hidden />
-        <span className="min-w-0 truncate text-warning-border">Low Rating</span>
-      </span>
+      <TableStatusIconBadge label="Low Rating" tone="warning" Icon={TrendingDown} />
     );
   }
-  return (
-    <span className="inline-flex min-w-0 max-w-full items-center gap-3">
-      <ArrowRight className="size-4 shrink-0 text-success" aria-hidden />
-      <span className="min-w-0 truncate text-success">Long Duration</span>
-    </span>
-  );
+  return <TableStatusIconBadge label="Long Duration" tone="positive" Icon={ArrowRight} />;
 }
 
 function NluSessionChannelCell({ channel }: { channel: NluSessionChannel }) {
-  const cfg =
-    channel === "webchat"
-      ? { Icon: MessageCircleMore, label: "Webchat", iconClass: "text-muted-foreground" }
-      : channel === "voice"
-        ? { Icon: AudioLines, label: "Voice", iconClass: "text-muted-foreground" }
-        : channel === "whatsapp"
-          ? { Icon: MessageCircle, label: "WhatsApp", iconClass: "text-[#25D366]" }
-          : { Icon: MessagesSquare, label: "Messenger", iconClass: "text-[#0084FF]" };
-  const { Icon, label, iconClass } = cfg;
-  return (
-    <span className="inline-flex min-w-0 max-w-full items-center gap-3">
-      <Icon className={cn("size-4 shrink-0", iconClass)} aria-hidden />
-      <span className="min-w-0 truncate">{label}</span>
-    </span>
-  );
+  return <TableChannelCell channel={channel} />;
 }
 
 function NluIntentScoreBadge({ score }: { score: number }) {
@@ -716,42 +688,24 @@ function NluIntentScoreBadge({ score }: { score: number }) {
         ? "border border-[rgba(85,108,214,0.4)] bg-[rgba(85,108,214,0.1)] text-[#3b439f]"
         : "border border-emerald-500/40 bg-emerald-500/10 text-[#10743f]";
   return (
-    <Badge variant="outline" className={cn("w-fit border px-2 py-0.5 font-normal", cls)}>
+    <TableBadge variant="outline" className={cn("w-fit border font-normal", cls)}>
       {score.toFixed(2)}
-    </Badge>
-  );
-}
-
-function NluSessionRatingStars({ rating }: { rating: number }) {
-  return (
-    <span className="inline-flex items-center gap-1" aria-label={`${rating} out of 5 rating`}>
-      {Array.from({ length: 5 }, (_, i) => (
-        <Star
-          key={i}
-          className={cn(
-            "size-4 shrink-0",
-            i < rating ? "fill-primary text-primary" : "fill-none text-muted-foreground/35",
-          )}
-          strokeWidth={1.75}
-          aria-hidden
-        />
-      ))}
-    </span>
+    </TableBadge>
   );
 }
 
 function NluEscalatedBadge({ escalated }: { escalated: boolean }) {
   return escalated ? (
-    <Badge className="rounded-md border-transparent bg-primary px-2 py-0.5 font-normal text-primary-foreground">
+    <TableBadge className="rounded-md border-transparent bg-primary font-normal text-primary-foreground">
       Yes
-    </Badge>
+    </TableBadge>
   ) : (
-    <Badge
+    <TableBadge
       variant="outline"
-      className="rounded-md border-transparent bg-[#e0dbf5] px-2 py-0.5 font-normal text-[#2a1b66] dark:bg-primary/20 dark:text-foreground"
+      className="rounded-md border-transparent bg-[#e0dbf5] font-normal text-[#2a1b66] dark:bg-primary/20 dark:text-foreground"
     >
       No
-    </Badge>
+    </TableBadge>
   );
 }
 
@@ -779,6 +733,7 @@ export function AIAgentsIntentNluTab({
   const [anchorPoint, setAnchorPoint] = useState<{ x: number; y: number } | null>(null);
   const [topIntentView, setTopIntentView] = useState<"table" | "chart">("table");
   const [slotGroupMode, setSlotGroupMode] = useState<"frequency" | "intent">("frequency");
+  const [selectedSession, setSelectedSession] = useState<CopilotTranscriptSessionContext | null>(null);
   const [nluSessionsColumnVisibility, setNluSessionsColumnVisibility] = useState<
     Record<NluSessionsToggleableColumnId, boolean>
   >(
@@ -1381,7 +1336,7 @@ export function AIAgentsIntentNluTab({
                   {nluSessionsColumnVisibility.escalated ? <TableHead>Escalated</TableHead> : null}
                   {nluSessionsColumnVisibility.duration ? <TableHead>Duration</TableHead> : null}
                   <TableHead className="whitespace-nowrap pl-2 pr-4 text-right">
-                    <span className="sr-only">Open transcript</span>
+                    <span className="sr-only">Transcript actions</span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -1411,7 +1366,7 @@ export function AIAgentsIntentNluTab({
                     ) : null}
                     {nluSessionsColumnVisibility.rating ? (
                       <TableCell>
-                        <NluSessionRatingStars rating={row.rating} />
+                        <TableRatingStars rating={row.rating} />
                       </TableCell>
                     ) : null}
                     {nluSessionsColumnVisibility.escalated ? (
@@ -1420,11 +1375,31 @@ export function AIAgentsIntentNluTab({
                       </TableCell>
                     ) : null}
                     {nluSessionsColumnVisibility.duration ? <TableCell>{row.duration}</TableCell> : null}
-                    <TableCell className="whitespace-nowrap pl-2 pr-4 text-right">
-                      <Button variant="outline" size="sm">
-                        <MessageSquareShare aria-hidden />
-                        Open Transcript
-                      </Button>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8"
+                              aria-label="View Transcript"
+                              onClick={() => setSelectedSession(fromAIAgentsIntentNluSessionRow(row))}
+                            >
+                              <MessageSquare className="size-4" aria-hidden />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">View Transcript</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="size-8" aria-label="Download">
+                              <Download className="size-4" aria-hidden />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">Download</TooltipContent>
+                        </Tooltip>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -1436,6 +1411,15 @@ export function AIAgentsIntentNluTab({
             <WidgetAIExplanation widgetTitle="Sessions to Investigate" chartType="metric" />
           </CardFooter>
       </Card>
+
+      <CopilotSessionTranscriptDialog
+        open={selectedSession !== null}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setSelectedSession(null);
+        }}
+        session={selectedSession}
+        sourceLabel="AI Agents Intent & NLU"
+      />
     </div>
   );
 }

@@ -3,18 +3,13 @@ import { useCallback, useMemo, useState, type ReactNode } from "react";
 import {
   AlertTriangle,
   ArrowRight,
-  AudioLines,
   Check,
   Clock3,
   Columns3,
   Download,
   DollarSign,
-  MessageCircle,
-  MessageCircleMore,
-  MessageSquareShare,
-  MessagesSquare,
+  MessageSquare,
   Search,
-  Star,
   TrendingDown,
   TrendingUp,
   X,
@@ -26,10 +21,18 @@ import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMe
 import { Input } from "./ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { EChartsCanvas, type ChartDataSelectInfo } from "./EChartsCanvas";
+import { CopilotSessionTranscriptDialog } from "./CopilotSessionTranscriptDialog";
+import { TableBadge } from "./TableBadge";
+import { TableChannelCell } from "./TableChannelCell";
+import { TableRatingStars } from "./TableRatingStars";
+import { TableStatusIconBadge } from "./TableStatusBadges";
 import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
 import { WidgetAIExplanation } from "./WidgetAIExplanation";
 import { cn } from "./ui/utils";
+import { fromAIAgentsGoalsOutcomesSessionRow } from "../data/ai-agent-session-transcript";
+import type { CopilotTranscriptSessionContext } from "../data/copilot-session-transcript";
 
 const goalsPerformanceOption: EChartsCoreOption = {
   grid: { left: 44, right: 12, top: 16, bottom: 44 },
@@ -38,7 +41,7 @@ const goalsPerformanceOption: EChartsCoreOption = {
     bottom: 0,
     itemWidth: 8,
     itemHeight: 8,
-    textStyle: { fontSize: 12, color: "hsl(var(--foreground))" },
+    textStyle: { fontSize: 12, color: "hsl(var(--muted-foreground))" },
   },
   xAxis: {
     type: "category",
@@ -53,7 +56,7 @@ const goalsPerformanceOption: EChartsCoreOption = {
     splitNumber: 4,
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "solid", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "solid", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))" },
   },
   series: [
@@ -91,7 +94,7 @@ const financialOutcomesOption: EChartsCoreOption = {
     bottom: 0,
     itemWidth: 8,
     itemHeight: 8,
-    textStyle: { fontSize: 12, color: "hsl(var(--foreground))" },
+    textStyle: { fontSize: 12, color: "hsl(var(--muted-foreground))" },
   },
   xAxis: {
     type: "category",
@@ -106,7 +109,7 @@ const financialOutcomesOption: EChartsCoreOption = {
     splitNumber: 4,
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "solid", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "solid", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))" },
   },
   series: [
@@ -355,61 +358,29 @@ function GoalsMetricPill({ label, tone, icon }: { label: string; tone: GoalsMetr
 function SessionCategoryCell({ category }: { category: SessionCategory }) {
   if (category === "low_intent_score") {
     return (
-      <span className="inline-flex min-w-0 max-w-full items-center gap-3">
-        <TrendingDown className="size-4 shrink-0 text-destructive" aria-hidden />
-        <span className="min-w-0 truncate text-destructive">Low Intent Score</span>
-      </span>
+      <TableStatusIconBadge label="Low Intent Score" tone="negative" Icon={TrendingDown} />
     );
   }
   if (category === "high_escalation") {
     return (
-      <span className="inline-flex min-w-0 max-w-full items-center gap-3">
-        <TrendingDown className="size-4 shrink-0 text-destructive" aria-hidden />
-        <span className="min-w-0 truncate text-destructive">High Escalation</span>
-      </span>
+      <TableStatusIconBadge label="High Escalation" tone="negative" Icon={TrendingDown} />
     );
   }
   if (category === "missing_slots") {
     return (
-      <span className="inline-flex min-w-0 max-w-full items-center gap-3">
-        <X className="size-4 shrink-0 text-primary" aria-hidden />
-        <span className="min-w-0 truncate text-primary">Missing Slots</span>
-      </span>
+      <TableStatusIconBadge label="Missing Slots" tone="primary" Icon={X} />
     );
   }
   if (category === "low_rating") {
     return (
-      <span className="inline-flex min-w-0 max-w-full items-center gap-3">
-        <TrendingDown className="size-4 shrink-0 text-warning-border" aria-hidden />
-        <span className="min-w-0 truncate text-warning-border">Low Rating</span>
-      </span>
+      <TableStatusIconBadge label="Low Rating" tone="warning" Icon={TrendingDown} />
     );
   }
-  return (
-    <span className="inline-flex min-w-0 max-w-full items-center gap-3">
-      <ArrowRight className="size-4 shrink-0 text-success" aria-hidden />
-      <span className="min-w-0 truncate text-success">Long Duration</span>
-    </span>
-  );
+  return <TableStatusIconBadge label="Long Duration" tone="positive" Icon={ArrowRight} />;
 }
 
 function SessionChannelCell({ channel }: { channel: SessionChannel }) {
-  const cfg =
-    channel === "webchat"
-      ? { Icon: MessageCircleMore, label: "Webchat", iconClass: "text-muted-foreground" }
-      : channel === "voice"
-        ? { Icon: AudioLines, label: "Voice", iconClass: "text-muted-foreground" }
-        : channel === "whatsapp"
-          ? { Icon: MessageCircle, label: "WhatsApp", iconClass: "text-[#25D366]" }
-          : { Icon: MessagesSquare, label: "Messenger", iconClass: "text-[#0084FF]" };
-  const { Icon, label, iconClass } = cfg;
-
-  return (
-    <span className="inline-flex min-w-0 max-w-full items-center gap-3">
-      <Icon className={cn("size-4 shrink-0", iconClass)} aria-hidden />
-      <span className="min-w-0 truncate">{label}</span>
-    </span>
-  );
+  return <TableChannelCell channel={channel} />;
 }
 
 function IntentScoreBadge({ score }: { score: number }) {
@@ -422,42 +393,24 @@ function IntentScoreBadge({ score }: { score: number }) {
         : "border border-emerald-500/40 bg-emerald-500/10 text-[#10743f]";
 
   return (
-    <Badge variant="outline" className={cn("w-fit border px-2 py-0.5 font-normal", cls)}>
+    <TableBadge variant="outline" className={cn("w-fit border font-normal", cls)}>
       {score.toFixed(2)}
-    </Badge>
-  );
-}
-
-function RatingStars({ rating }: { rating: number }) {
-  return (
-    <span className="inline-flex items-center gap-1" aria-label={`${rating} out of 5 rating`}>
-      {Array.from({ length: 5 }, (_, i) => (
-        <Star
-          key={i}
-          className={cn(
-            "size-4 shrink-0",
-            i < rating ? "fill-primary text-primary" : "fill-none text-muted-foreground/35",
-          )}
-          strokeWidth={1.75}
-          aria-hidden
-        />
-      ))}
-    </span>
+    </TableBadge>
   );
 }
 
 function EscalatedBadge({ escalated }: { escalated: boolean }) {
   return escalated ? (
-    <Badge className="rounded-md border-transparent bg-primary px-2 py-0.5 font-normal text-primary-foreground">
+    <TableBadge className="rounded-md border-transparent bg-primary font-normal text-primary-foreground">
       Yes
-    </Badge>
+    </TableBadge>
   ) : (
-    <Badge
+    <TableBadge
       variant="outline"
-      className="rounded-md border-transparent bg-[#e0dbf5] px-2 py-0.5 font-normal text-[#2a1b66] dark:bg-primary/20 dark:text-foreground"
+      className="rounded-md border-transparent bg-[#e0dbf5] font-normal text-[#2a1b66] dark:bg-primary/20 dark:text-foreground"
     >
       No
-    </Badge>
+    </TableBadge>
   );
 }
 
@@ -492,6 +445,7 @@ export function AIAgentsGoalsOutcomesTab({
   const [anchorPoint, setAnchorPoint] = useState<{ x: number; y: number } | null>(null);
   const [goalFilter, setGoalFilter] = useState("all-goals");
   const [sessionSearch, setSessionSearch] = useState("");
+  const [selectedSession, setSelectedSession] = useState<CopilotTranscriptSessionContext | null>(null);
   const [sessionsColumnVisibility, setSessionsColumnVisibility] = useState<
     Record<SessionsToggleableColumnId, boolean>
   >(
@@ -934,13 +888,13 @@ export function AIAgentsGoalsOutcomesTab({
                   </TableCell>
                   <TableCell>
                     {row.status === "valid" ? (
-                      <Badge variant="outline" className="h-5 border-emerald-500/35 bg-emerald-500/10 px-2 text-xs font-normal text-[#10743f]">
+                      <TableBadge variant="outline" className="border-emerald-500/35 bg-emerald-500/10 font-normal text-[#10743f]">
                         Valid
-                      </Badge>
+                      </TableBadge>
                     ) : (
-                      <Badge variant="outline" className="h-5 border-red-500/35 bg-red-500/10 px-2 text-xs font-normal text-[#a0152a]">
+                      <TableBadge variant="outline" className="border-red-500/35 bg-red-500/10 font-normal text-[#a0152a]">
                         Invalid
-                      </Badge>
+                      </TableBadge>
                     )}
                   </TableCell>
                 </TableRow>
@@ -1025,7 +979,7 @@ export function AIAgentsGoalsOutcomesTab({
                   {sessionsColumnVisibility.escalated ? <TableHead>Escalated</TableHead> : null}
                   {sessionsColumnVisibility.duration ? <TableHead>Duration</TableHead> : null}
                   <TableHead className="whitespace-nowrap pl-2 pr-4 text-right">
-                    <span className="sr-only">Open transcript</span>
+                    <span className="sr-only">Transcript actions</span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -1051,7 +1005,7 @@ export function AIAgentsGoalsOutcomesTab({
                     ) : null}
                     {sessionsColumnVisibility.rating ? (
                       <TableCell>
-                        <RatingStars rating={row.rating} />
+                        <TableRatingStars rating={row.rating} />
                       </TableCell>
                     ) : null}
                     {sessionsColumnVisibility.escalated ? (
@@ -1060,10 +1014,31 @@ export function AIAgentsGoalsOutcomesTab({
                       </TableCell>
                     ) : null}
                     {sessionsColumnVisibility.duration ? <TableCell>{row.duration}</TableCell> : null}
-                    <TableCell className="whitespace-nowrap pl-2 pr-4 text-right">
-                      <Button variant="ghost" size="icon" aria-label="Open transcript">
-                        <MessageSquareShare className="size-4" aria-hidden />
-                      </Button>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8"
+                              aria-label="View Transcript"
+                              onClick={() => setSelectedSession(fromAIAgentsGoalsOutcomesSessionRow(row))}
+                            >
+                              <MessageSquare className="size-4" aria-hidden />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">View Transcript</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="size-8" aria-label="Download">
+                              <Download className="size-4" aria-hidden />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">Download</TooltipContent>
+                        </Tooltip>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -1075,6 +1050,15 @@ export function AIAgentsGoalsOutcomesTab({
             <WidgetAIExplanation widgetTitle="Sessions to Investigate" chartType="metric" />
           </CardFooter>
       </Card>
+
+      <CopilotSessionTranscriptDialog
+        open={selectedSession !== null}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setSelectedSession(null);
+        }}
+        session={selectedSession}
+        sourceLabel="AI Agents Goals & Outcomes"
+      />
     </div>
   );
 }

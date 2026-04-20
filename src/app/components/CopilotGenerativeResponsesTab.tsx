@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import type { EChartsCoreOption } from "echarts";
 import { CircleGauge, LineChart } from "lucide-react";
 import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
@@ -16,6 +17,46 @@ const STATUS_COLORS = {
   revised: "#f5aa09",
   ignored: "#d41f45",
 } as const;
+
+const CATEGORY_ANALYSIS_LEGEND_KEYS = ["As Is", "Minor Revision", "Revised", "Ignored"] as const;
+type CategoryAnalysisLegendKey = (typeof CATEGORY_ANALYSIS_LEGEND_KEYS)[number];
+type CategoryAnalysisLegendSelection = Record<CategoryAnalysisLegendKey, boolean>;
+
+function buildCategoryAnalysisLegendOption(selected: CategoryAnalysisLegendSelection): EChartsCoreOption {
+  return {
+    animation: false,
+    tooltip: { show: false },
+    legend: {
+      selectedMode: true,
+      selected,
+      left: "center",
+      top: "middle",
+      orient: "horizontal",
+      itemWidth: 12,
+      itemHeight: 12,
+      itemGap: 24,
+      icon: "circle",
+      textStyle: { color: "hsl(var(--muted-foreground))", fontSize: 12 },
+      data: [...CATEGORY_ANALYSIS_LEGEND_KEYS],
+    },
+    series: [
+      {
+        type: "pie",
+        radius: 0,
+        center: [-999, -999],
+        silent: true,
+        label: { show: false },
+        labelLine: { show: false },
+        data: [
+          { name: "As Is", value: 1, itemStyle: { color: STATUS_COLORS.asIs } },
+          { name: "Minor Revision", value: 1, itemStyle: { color: STATUS_COLORS.minorRevision } },
+          { name: "Revised", value: 1, itemStyle: { color: STATUS_COLORS.revised } },
+          { name: "Ignored", value: 1, itemStyle: { color: STATUS_COLORS.ignored } },
+        ],
+      },
+    ],
+  };
+}
 
 const KPI_VALUES = [
   { label: "Total KB Answers", value: "6,072" },
@@ -68,7 +109,7 @@ const answerStatusOverTimeOption: EChartsCoreOption = {
     axisLine: { show: false },
     axisTick: { show: false },
     axisLabel: { color: "hsl(var(--muted-foreground))", interval: 5 },
-    splitLine: { show: true, lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { show: true, lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
   },
   yAxis: {
     type: "value",
@@ -77,7 +118,7 @@ const answerStatusOverTimeOption: EChartsCoreOption = {
     interval: 20,
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))" },
   },
   series: [
@@ -125,7 +166,7 @@ const avgKbPerInteractionOption: EChartsCoreOption = {
     axisLine: { show: false },
     axisTick: { show: false },
     axisLabel: { color: "hsl(var(--muted-foreground))", interval: 5 },
-    splitLine: { show: true, lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { show: true, lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
   },
   yAxis: {
     type: "value",
@@ -134,7 +175,7 @@ const avgKbPerInteractionOption: EChartsCoreOption = {
     interval: 2,
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))" },
   },
   series: [
@@ -174,7 +215,7 @@ const adherenceByCategoryOption: EChartsCoreOption = {
     max: 100,
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))", formatter: "{value}%" },
   },
   yAxis: {
@@ -220,56 +261,35 @@ const adherenceByCategoryOption: EChartsCoreOption = {
   ],
 };
 
-const categoryAnalysisLegendOption: EChartsCoreOption = {
-  animation: false,
-  tooltip: { show: false },
-  legend: {
-    selectedMode: false,
-    left: 0,
-    top: "middle",
-    orient: "horizontal",
-    itemWidth: 14,
-    itemHeight: 14,
-    itemGap: 28,
-    icon: "circle",
-    textStyle: { color: "hsl(var(--foreground))", fontSize: 16, fontWeight: 500 },
-    data: ["As Is", "Minor Revision", "Revised", "Ignored"],
-  },
-  series: [
-    {
-      type: "pie",
-      radius: 0,
-      center: [-999, -999],
-      silent: true,
-      label: { show: false },
-      labelLine: { show: false },
-      data: [
-        { name: "As Is", value: 1, itemStyle: { color: STATUS_COLORS.asIs } },
-        { name: "Minor Revision", value: 1, itemStyle: { color: STATUS_COLORS.minorRevision } },
-        { name: "Revised", value: 1, itemStyle: { color: STATUS_COLORS.revised } },
-        { name: "Ignored", value: 1, itemStyle: { color: STATUS_COLORS.ignored } },
-      ],
-    },
-  ],
-};
-
 function AdherenceSplitBar({
   asIs,
   minorRevision,
   revised,
   ignored,
+  selected,
 }: {
   asIs: number;
   minorRevision: number;
   revised: number;
   ignored: number;
+  selected: CategoryAnalysisLegendSelection;
 }) {
+  const segments = [
+    { key: "As Is" as const, width: asIs, color: STATUS_COLORS.asIs },
+    { key: "Minor Revision" as const, width: minorRevision, color: STATUS_COLORS.minorRevision },
+    { key: "Revised" as const, width: revised, color: STATUS_COLORS.revised },
+    { key: "Ignored" as const, width: ignored, color: STATUS_COLORS.ignored },
+  ].filter((segment) => selected[segment.key]);
+
   return (
     <div className="flex h-4 w-36 overflow-hidden rounded-full bg-muted">
-      <div className="h-full" style={{ width: `${asIs}%`, backgroundColor: STATUS_COLORS.asIs }} />
-      <div className="h-full" style={{ width: `${minorRevision}%`, backgroundColor: STATUS_COLORS.minorRevision }} />
-      <div className="h-full" style={{ width: `${revised}%`, backgroundColor: STATUS_COLORS.revised }} />
-      <div className="h-full" style={{ width: `${ignored}%`, backgroundColor: STATUS_COLORS.ignored }} />
+      {segments.map((segment) => (
+        <div
+          key={segment.key}
+          className="h-full"
+          style={{ width: `${segment.width}%`, backgroundColor: segment.color }}
+        />
+      ))}
     </div>
   );
 }
@@ -281,6 +301,17 @@ export function CopilotGenerativeResponsesTab({
   isCompactDashboard: boolean;
   showWidgetOverflowMenu?: boolean;
 }) {
+  const [categoryAnalysisLegendSelection, setCategoryAnalysisLegendSelection] = useState<CategoryAnalysisLegendSelection>({
+    "As Is": true,
+    "Minor Revision": true,
+    Revised: true,
+    Ignored: true,
+  });
+  const categoryAnalysisLegendOption = useMemo(
+    () => buildCategoryAnalysisLegendOption(categoryAnalysisLegendSelection),
+    [categoryAnalysisLegendSelection],
+  );
+
   return (
     <div className="space-y-4">
       <HeaderAIInsightsRow dashboardId={copilotAiInsightsIds.generativeResponses} />
@@ -398,6 +429,7 @@ export function CopilotGenerativeResponsesTab({
                           minorRevision={row.minorRevision}
                           revised={row.revised}
                           ignored={row.ignored}
+                          selected={categoryAnalysisLegendSelection}
                         />
                       </span>
                     </TableCell>
@@ -406,7 +438,18 @@ export function CopilotGenerativeResponsesTab({
               </TableBody>
             </Table>
             <div className="h-12 w-full">
-              <EChartsCanvas option={categoryAnalysisLegendOption} />
+              <EChartsCanvas
+                option={categoryAnalysisLegendOption}
+                onLegendSelectChange={(info) => {
+                  if (!info.selected) return;
+                  setCategoryAnalysisLegendSelection((current) => ({
+                    "As Is": info.selected?.["As Is"] ?? current["As Is"],
+                    "Minor Revision": info.selected?.["Minor Revision"] ?? current["Minor Revision"],
+                    Revised: info.selected?.Revised ?? current.Revised,
+                    Ignored: info.selected?.Ignored ?? current.Ignored,
+                  }));
+                }}
+              />
             </div>
             </CardContent>
             <CardFooter className="mt-auto pt-4">

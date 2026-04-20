@@ -1,8 +1,8 @@
 import type * as echarts from "echarts";
 import type { ChartType } from "./ChartVariants";
 
-const axisMuted = "hsl(var(--muted-foreground) / 0.85)";
-const gridLine = "hsl(var(--border) / 0.5)";
+const axisMuted = "hsl(var(--muted-foreground))";
+const gridLine = "hsl(var(--muted-foreground))";
 
 function baseGrid(): echarts.GridComponentOption {
   return {
@@ -335,7 +335,7 @@ export function buildUniversalEChartsOption(params: {
             label: {
               show: true,
               position: "inside",
-              color: "hsl(var(--foreground))",
+              color: "hsl(var(--muted-foreground))",
               fontSize: 11,
               formatter: "{b}",
             },
@@ -364,7 +364,7 @@ export function buildUniversalEChartsOption(params: {
             breadcrumb: { show: false },
             label: {
               show: true,
-              color: "hsl(var(--foreground))",
+              color: "hsl(var(--muted-foreground))",
               fontSize: 11,
               overflow: "truncate",
             },

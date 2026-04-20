@@ -1,8 +1,8 @@
 import { CircleGauge, LineChart } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Badge } from "./ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { EChartsCanvas } from "./EChartsCanvas";
+import { TableBadge } from "./TableBadge";
 import {
   type KnowledgePerformanceArticleRow,
   knowledgeOverviewKpiTiles,
@@ -26,8 +26,8 @@ function ArticleTable({
 }) {
   const badgeClassName =
     tone === "positive"
-      ? "h-5 border-emerald-500/35 bg-emerald-500/10 px-2 text-xs font-normal text-[#10743f]"
-      : "h-5 border-red-500/35 bg-red-500/10 px-2 text-xs font-normal text-[#a0152a]";
+      ? "border-emerald-500/35 bg-emerald-500/10 font-normal text-[#10743f]"
+      : "border-red-500/35 bg-red-500/10 font-normal text-[#a0152a]";
 
   return (
     <Card className={cn(OVERVIEW_CARD_HOVER)}>
@@ -50,14 +50,14 @@ function ArticleTable({
                 <TableCell className="font-medium">{row.title}</TableCell>
                 <TableCell className="text-right tabular-nums">{row.retrievals}</TableCell>
                 <TableCell className="text-right tabular-nums">
-                  <Badge variant="outline" className={cn("tabular-nums", badgeClassName)}>
+                  <TableBadge variant="outline" className={cn("tabular-nums", badgeClassName)}>
                     {row.relevancyScore.toFixed(2)}
-                  </Badge>
+                  </TableBadge>
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
-                  <Badge variant="outline" className={cn("tabular-nums", badgeClassName)}>
+                  <TableBadge variant="outline" className={cn("tabular-nums", badgeClassName)}>
                     {row.helpfulRatePct}%
-                  </Badge>
+                  </TableBadge>
                 </TableCell>
               </TableRow>
             ))}

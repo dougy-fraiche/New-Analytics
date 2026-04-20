@@ -1,17 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  Clock3,
-} from "lucide-react";
 import { useParams } from "react-router";
 import { toast } from "sonner";
 
 import { useCreateAIAgentJobs } from "../contexts/CreateAIAgentJobsContext";
 import { WidgetAIProvider } from "../contexts/WidgetAIContext";
-import type { AgentJobDraft, AgentToolDraft } from "../data/automation-opportunities-agent-page";
+import type {
+  AgentJobDraft,
+  AgentToolDraft,
+  AgentToolParameterRowDraft,
+} from "../data/automation-opportunities-agent-page";
 import {
   deriveAgentConfigFromTitle,
+  normalizeToolParameterRows,
   type AgentConfigDraft,
 } from "../data/automation-opportunities-agent-page";
 import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
@@ -41,6 +43,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import { cn } from "./ui/utils";
 import { ScrollArea } from "./ui/scroll-area";
+import { AutomationOpportunitiesFlowView } from "./AutomationOpportunitiesFlowView";
 
 const PROJECT_OPTIONS = ["Project Alpha", "Project Atlas", "Project Nova"] as const;
 const AGENT_PAGE_OOTB_ID = "automation-opportunities";
@@ -55,7 +58,10 @@ function cloneDraft(config: AgentConfigDraft): AgentConfigDraft {
     ...config,
     jobs: config.jobs.map((job) => ({
       ...job,
-      tools: job.tools.map((tool) => ({ ...tool })),
+      tools: job.tools.map((tool) => ({
+        ...tool,
+        parameterRows: normalizeToolParameterRows(tool).map((row) => ({ ...row })),
+      })),
     })),
   };
 }
@@ -194,11 +200,50 @@ export function AutomationOpportunitiesAgentPage() {
     [selectedJobId],
   );
 
+  const updateJobById = useCallback(
+    (jobId: string, updater: (job: AgentJobDraft) => AgentJobDraft) => {
+      setDraft((prev) => ({
+        ...prev,
+        jobs: prev.jobs.map((job) => (job.id === jobId ? updater(job) : job)),
+      }));
+    },
+    [],
+  );
+
+  const updateJobFieldById = useCallback(
+    (jobId: string, field: "description" | "instruction", value: string) => {
+      updateJobById(jobId, (job) => ({ ...job, [field]: value }));
+    },
+    [updateJobById],
+  );
+
   const updateJobField = useCallback(
     (field: "description" | "instruction", value: string) => {
       updateSelectedJob((job) => ({ ...job, [field]: value }));
     },
     [updateSelectedJob],
+  );
+
+  const updateToolFieldByJob = useCallback(
+    (
+      jobId: string,
+      toolId: string,
+      field:
+        | "name"
+        | "description"
+        | "cognigyNodes"
+        | "placeholderValue"
+        | "parameters",
+      value: string,
+    ) => {
+      updateJobById(jobId, (job) => ({
+        ...job,
+        tools: job.tools.map((tool) =>
+          tool.id === toolId ? { ...tool, [field]: value } : tool,
+        ),
+      }));
+    },
+    [updateJobById],
   );
 
   const updateToolField = useCallback(
@@ -212,14 +257,31 @@ export function AutomationOpportunitiesAgentPage() {
         | "parameters",
       value: string,
     ) => {
-      updateSelectedJob((job) => ({
+      if (!selectedJobId) return;
+      updateToolFieldByJob(selectedJobId, toolId, field, value);
+    },
+    [selectedJobId, updateToolFieldByJob],
+  );
+
+  const updateToolParameterRowsByJob = useCallback(
+    (jobId: string, toolId: string, rows: AgentToolParameterRowDraft[]) => {
+      updateJobById(jobId, (job) => ({
         ...job,
         tools: job.tools.map((tool) =>
-          tool.id === toolId ? { ...tool, [field]: value } : tool,
+          tool.id === toolId
+            ? {
+                ...tool,
+                parameterRows: rows.map((row) => ({ ...row })),
+                parameters: rows
+                  .map((row) => row.name.trim())
+                  .filter(Boolean)
+                  .join(", "),
+              }
+            : tool,
         ),
       }));
     },
-    [updateSelectedJob],
+    [updateJobById],
   );
 
   const isFieldRewriteLoading = useCallback(
@@ -389,12 +451,6 @@ export function AutomationOpportunitiesAgentPage() {
               onValueChange={(nextValue) => {
                 if (nextValue === "textual" || nextValue === "flow") {
                   setViewMode(nextValue);
-                  if (nextValue === "flow") {
-                    toast.message("Flow view coming soon", {
-                      description:
-                        "Flow editing and visualization will be available in a future update.",
-                    });
-                  }
                 }
               }}
             >
@@ -515,37 +571,15 @@ export function AutomationOpportunitiesAgentPage() {
                       ))}
                     </div>
                   ) : (
-                    <Card className="border-border/80 bg-background">
-                      <CardHeader>
-                        <CardTitle className="text-2xl font-medium text-neutral-700">
-                          Flow View
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="rounded-md border border-border/70 bg-neutral-25 p-6">
-                          <div className="flex items-center gap-2 text-foreground">
-                            <Clock3 className="size-4 text-primary" />
-                            <span className="font-medium">Flow View Coming Soon</span>
-                          </div>
-                          <p className="mt-2 text-sm text-muted-foreground">
-                            You can continue editing agent descriptions and tools in Textual
-                            View for now.
-                          </p>
-                        </div>
-                        {selectedJob ? (
-                          <div className="rounded-md border border-border/70 bg-background p-3 text-xs text-muted-foreground">
-                            <span className="font-medium text-foreground">
-                              Selected job:
-                            </span>{" "}
-                            {selectedJob.name} ·{" "}
-                            <span className="font-medium text-foreground">
-                              Configured tools:
-                            </span>{" "}
-                            {selectedJob.tools.length}
-                          </div>
-                        ) : null}
-                      </CardContent>
-                    </Card>
+                    <div className="h-[760px] max-h-[calc(100vh-20rem)] min-h-[620px]">
+                      <AutomationOpportunitiesFlowView
+                        jobs={draft.jobs}
+                        selectedJobId={selectedJobId}
+                        onUpdateJobField={updateJobFieldById}
+                        onUpdateToolField={updateToolFieldByJob}
+                        onUpdateToolParameterRows={updateToolParameterRowsByJob}
+                      />
+                    </div>
                   )}
                 </div>
               </ScrollArea>

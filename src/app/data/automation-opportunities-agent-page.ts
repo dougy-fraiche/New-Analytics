@@ -7,6 +7,14 @@ export type AgentToolDraft = {
   cognigyNodes: string;
   placeholderValue: string;
   parameters: string;
+  parameterRows: AgentToolParameterRowDraft[];
+};
+
+export type AgentToolParameterRowDraft = {
+  id: string;
+  name: string;
+  dataType: string;
+  description: string;
 };
 
 export type AgentJobDraft = {
@@ -44,9 +52,19 @@ function slug(input: string): string {
 
 function makeTool(
   key: string,
-  value: Omit<AgentToolDraft, "id">,
+  value: Omit<AgentToolDraft, "id" | "parameterRows"> & {
+    parameterRows?: AgentToolParameterRowDraft[];
+  },
 ): AgentToolDraft {
-  return { ...value, id: key };
+  return {
+    ...value,
+    id: key,
+    parameterRows: normalizeToolParameterRows({
+      id: key,
+      parameters: value.parameters,
+      parameterRows: value.parameterRows,
+    }),
+  };
 }
 
 function makeJob(
@@ -62,6 +80,46 @@ function titleCaseWords(input: string): string {
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
     .join(" ");
+}
+
+function parameterTokenToDescription(token: string): string {
+  const normalized = token.replace(/[_-]+/g, " ").trim();
+  if (!normalized) return "Parameter used by this tool at execution time.";
+  return `${titleCaseWords(normalized)} used by this tool at execution time.`;
+}
+
+export function deriveParameterRowsFromParameters(
+  parameters: string,
+  toolId: string,
+): AgentToolParameterRowDraft[] {
+  const tokens = parameters
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  return tokens.map((token, index) => ({
+    id: `${toolId}-param-${slug(token) || index + 1}`,
+    name: token,
+    dataType: "string",
+    description: parameterTokenToDescription(token),
+  }));
+}
+
+export function normalizeToolParameterRows(tool: {
+  id: string;
+  parameters: string;
+  parameterRows?: AgentToolParameterRowDraft[];
+}): AgentToolParameterRowDraft[] {
+  if (tool.parameterRows?.length) {
+    return tool.parameterRows.map((row, index) => ({
+      id: row.id || `${tool.id}-param-${index + 1}`,
+      name: row.name,
+      dataType: row.dataType,
+      description: row.description,
+    }));
+  }
+
+  return deriveParameterRowsFromParameters(tool.parameters, tool.id);
 }
 
 function billingTemplate(intentTitle: string): AgentConfigDraft {
@@ -87,6 +145,26 @@ function billingTemplate(intentTitle: string): AgentConfigDraft {
             cognigyNodes: "Validate Charge > Resolve Tool Action",
             placeholderValue: "Evaluate retrieved charges for duplication or unusual activity",
             parameters: "customer_id, charge_id, dispute_reason",
+            parameterRows: [
+              {
+                id: "tool-evaluate-charges-param-customer-id",
+                name: "customer_id",
+                dataType: "string",
+                description: "Unique customer account identifier for the charge lookup.",
+              },
+              {
+                id: "tool-evaluate-charges-param-charge-id",
+                name: "charge_id",
+                dataType: "string",
+                description: "Identifier of the disputed charge to evaluate.",
+              },
+              {
+                id: "tool-evaluate-charges-param-dispute-reason",
+                name: "dispute_reason",
+                dataType: "string",
+                description: "Customer-reported reason code for the billing dispute.",
+              },
+            ],
           }),
           makeTool("tool-initiate-refund", {
             name: "initiate_credit_or_refund",
@@ -95,6 +173,26 @@ function billingTemplate(intentTitle: string): AgentConfigDraft {
             cognigyNodes: "Issue Credit > Notify Customer",
             placeholderValue: "Initiate credit or refund workflow",
             parameters: "charge_id, amount, reason_code",
+            parameterRows: [
+              {
+                id: "tool-initiate-refund-param-charge-id",
+                name: "charge_id",
+                dataType: "string",
+                description: "Charge identifier linked to the requested correction.",
+              },
+              {
+                id: "tool-initiate-refund-param-amount",
+                name: "amount",
+                dataType: "number",
+                description: "Refund or credit amount to authorize.",
+              },
+              {
+                id: "tool-initiate-refund-param-reason-code",
+                name: "reason_code",
+                dataType: "string",
+                description: "Policy reason code describing why credit is issued.",
+              },
+            ],
           }),
         ],
       }),
@@ -112,6 +210,20 @@ function billingTemplate(intentTitle: string): AgentConfigDraft {
             cognigyNodes: "Invoice Parser > Explain Charges",
             placeholderValue: "Explain line items and payment allocations",
             parameters: "statement_id, locale",
+            parameterRows: [
+              {
+                id: "tool-explain-line-items-param-statement-id",
+                name: "statement_id",
+                dataType: "string",
+                description: "Statement identifier containing invoice and line-item details.",
+              },
+              {
+                id: "tool-explain-line-items-param-locale",
+                name: "locale",
+                dataType: "string",
+                description: "Localization setting for response formatting and copy tone.",
+              },
+            ],
           }),
         ],
       }),
@@ -142,6 +254,20 @@ function cardTemplate(intentTitle: string): AgentConfigDraft {
             cognigyNodes: "Card Status > Resolve Action",
             placeholderValue: "Check card status and eligibility",
             parameters: "customer_id, card_reference",
+            parameterRows: [
+              {
+                id: "tool-card-state-param-customer-id",
+                name: "customer_id",
+                dataType: "string",
+                description: "Customer identifier used to retrieve card account context.",
+              },
+              {
+                id: "tool-card-state-param-card-reference",
+                name: "card_reference",
+                dataType: "string",
+                description: "Masked card reference or token associated with the request.",
+              },
+            ],
           }),
           makeTool("tool-replacement", {
             name: "start_replacement_flow",
@@ -150,6 +276,20 @@ function cardTemplate(intentTitle: string): AgentConfigDraft {
             cognigyNodes: "Replacement Intake > Fulfillment Queue",
             placeholderValue: "Start replacement and provide timeline",
             parameters: "card_reference, replacement_reason",
+            parameterRows: [
+              {
+                id: "tool-replacement-param-card-reference",
+                name: "card_reference",
+                dataType: "string",
+                description: "Card reference needed to begin replacement fulfillment.",
+              },
+              {
+                id: "tool-replacement-param-replacement-reason",
+                name: "replacement_reason",
+                dataType: "string",
+                description: "Reason for replacement (lost, stolen, damaged, etc.).",
+              },
+            ],
           }),
         ],
       }),
@@ -166,6 +306,20 @@ function cardTemplate(intentTitle: string): AgentConfigDraft {
             cognigyNodes: "Verify Identity > PIN Reset",
             placeholderValue: "Trigger PIN reset and confirm completion",
             parameters: "customer_id, verification_token",
+            parameterRows: [
+              {
+                id: "tool-pin-reset-param-customer-id",
+                name: "customer_id",
+                dataType: "string",
+                description: "Customer identifier for secure PIN reset routing.",
+              },
+              {
+                id: "tool-pin-reset-param-verification-token",
+                name: "verification_token",
+                dataType: "string",
+                description: "Verified token confirming user eligibility for reset.",
+              },
+            ],
           }),
         ],
       }),
@@ -196,6 +350,26 @@ function disputeTemplate(intentTitle: string): AgentConfigDraft {
             cognigyNodes: "Dispute Intake > Case Router",
             placeholderValue: "Collect complete dispute context",
             parameters: "transaction_id, reason_code, evidence_refs",
+            parameterRows: [
+              {
+                id: "tool-dispute-intake-param-transaction-id",
+                name: "transaction_id",
+                dataType: "string",
+                description: "Transaction identifier tied to the disputed activity.",
+              },
+              {
+                id: "tool-dispute-intake-param-reason-code",
+                name: "reason_code",
+                dataType: "string",
+                description: "Dispute reason classification selected during intake.",
+              },
+              {
+                id: "tool-dispute-intake-param-evidence-refs",
+                name: "evidence_refs",
+                dataType: "string",
+                description: "Reference IDs for uploaded evidence artifacts.",
+              },
+            ],
           }),
           makeTool("tool-case-routing", {
             name: "route_dispute_case",
@@ -204,6 +378,26 @@ function disputeTemplate(intentTitle: string): AgentConfigDraft {
             cognigyNodes: "Policy Rules > Queue Routing",
             placeholderValue: "Route case to proper operations queue",
             parameters: "case_id, queue_hint, priority",
+            parameterRows: [
+              {
+                id: "tool-case-routing-param-case-id",
+                name: "case_id",
+                dataType: "string",
+                description: "Case identifier generated during dispute intake.",
+              },
+              {
+                id: "tool-case-routing-param-queue-hint",
+                name: "queue_hint",
+                dataType: "string",
+                description: "Suggested operations queue based on policy classification.",
+              },
+              {
+                id: "tool-case-routing-param-priority",
+                name: "priority",
+                dataType: "string",
+                description: "Priority label used to enforce SLA expectations.",
+              },
+            ],
           }),
         ],
       }),
@@ -235,6 +429,20 @@ function genericTemplate(intentTitle: string): AgentConfigDraft {
             cognigyNodes: "Intent Router > Context Lookup",
             placeholderValue: "Load context needed to resolve this request",
             parameters: "customer_id, request_context",
+            parameterRows: [
+              {
+                id: `tool-${slug(normalized) || "specialist"}-lookup-param-customer-id`,
+                name: "customer_id",
+                dataType: "string",
+                description: "Customer identifier used for contextual lookups.",
+              },
+              {
+                id: `tool-${slug(normalized) || "specialist"}-lookup-param-request-context`,
+                name: "request_context",
+                dataType: "string",
+                description: "Request context payload needed for resolution planning.",
+              },
+            ],
           }),
         ],
       }),

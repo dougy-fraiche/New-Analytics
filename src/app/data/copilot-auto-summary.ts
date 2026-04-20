@@ -78,7 +78,7 @@ export const similarityScoreDistributionOption: EChartsCoreOption = {
     type: "value",
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))" },
   },
   series: [
@@ -171,7 +171,7 @@ export const editRateTrendOption: EChartsCoreOption = {
     interval: 10,
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))" },
   },
   series: [
@@ -228,7 +228,7 @@ export const intentDistributionOption: EChartsCoreOption = {
     interval: 4,
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))" },
   },
   series: [
@@ -279,7 +279,7 @@ export const summaryWordCountDistributionOption: EChartsCoreOption = {
     interval: 150,
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))" },
   },
   series: [
@@ -312,7 +312,7 @@ export const tokenUsageTrendOption: EChartsCoreOption = {
     interval: 400,
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))" },
   },
   series: [
@@ -377,7 +377,7 @@ const outcomeDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 export const outcomeDistributionCountOption: EChartsCoreOption = {
   grid: { left: 46, right: 24, top: 18, bottom: 46 },
   tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, confine: true, appendToBody: true },
-  legend: { bottom: 0, icon: "circle", textStyle: { fontSize: 11 } },
+  legend: { bottom: 0, icon: "circle", textStyle: { fontSize: 11, color: "hsl(var(--muted-foreground))" } },
   xAxis: {
     type: "category",
     data: outcomeDays,
@@ -392,7 +392,7 @@ export const outcomeDistributionCountOption: EChartsCoreOption = {
     interval: 200,
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))" },
   },
   series: [
@@ -412,7 +412,7 @@ export const outcomeDistributionRateOption: EChartsCoreOption = {
     appendToBody: true,
     valueFormatter: (value: number | string) => `${value}%`,
   },
-  legend: { bottom: 0, icon: "circle", textStyle: { fontSize: 11 } },
+  legend: { bottom: 0, icon: "circle", textStyle: { fontSize: 11, color: "hsl(var(--muted-foreground))" } },
   xAxis: {
     type: "category",
     data: outcomeDays,
@@ -427,7 +427,7 @@ export const outcomeDistributionRateOption: EChartsCoreOption = {
     interval: 25,
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))", formatter: "{value}%" },
   },
   series: [
@@ -480,7 +480,7 @@ export const timeToSaveAnalysisOption: EChartsCoreOption = {
     interval: 1500,
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))" },
   },
   series: [
@@ -544,8 +544,8 @@ export const sessionsToInvestigateRows: SessionInvestigateRow[] = expandRowsForP
 );
 
 export const autoSummarySessionColumns = [
-  { id: "channel", label: "Channel" },
   { id: "agent", label: "Agent" },
+  { id: "channel", label: "Channel" },
   { id: "skill", label: "Skill" },
   { id: "similarity", label: "Similarity" },
   { id: "duration", label: "Duration" },

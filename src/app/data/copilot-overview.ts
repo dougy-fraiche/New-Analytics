@@ -150,7 +150,7 @@ export const copilotAgentFeedbackDistributionOption: EChartsCoreOption = {
     interval: 35,
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))" },
   },
   series: [
@@ -245,7 +245,7 @@ export const copilotFeatureCooccurrenceOption: EChartsCoreOption = {
     data: [...copilotFeatureCooccurrenceAxes],
     axisLine: { show: false },
     axisTick: { show: false },
-    axisLabel: { color: "hsl(var(--foreground))", fontSize: 12 },
+    axisLabel: { color: "hsl(var(--muted-foreground))", fontSize: 12 },
     splitArea: { show: false },
   },
   yAxis: {
@@ -253,7 +253,7 @@ export const copilotFeatureCooccurrenceOption: EChartsCoreOption = {
     data: [...copilotFeatureCooccurrenceAxes],
     axisLine: { show: false },
     axisTick: { show: false },
-    axisLabel: { color: "hsl(var(--foreground))", fontSize: 12 },
+    axisLabel: { color: "hsl(var(--muted-foreground))", fontSize: 12 },
     splitArea: { show: false },
   },
   series: [
@@ -311,7 +311,7 @@ export const copilotTopInteractionIntentsOption: EChartsCoreOption = {
     interval: 30,
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))" },
   },
   yAxis: {
@@ -492,8 +492,8 @@ export const copilotSessionRows: CopilotSessionRow[] = expandRowsForPagination(
 export const copilotSessionsDataTimestamp = "Data as of ~3:26 PM (~30 min delay)";
 
 export const copilotSessionColumnOptions = [
-  { id: "channel", label: "Channel" },
   { id: "agent", label: "Agent" },
+  { id: "channel", label: "Channel" },
   { id: "skill", label: "Skill" },
   { id: "duration", label: "Duration" },
   { id: "handleTime", label: "Handle Time" },

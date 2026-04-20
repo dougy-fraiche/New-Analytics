@@ -70,6 +70,11 @@ export type ChartDataSelectInfo = {
   clientY?: number;
 };
 
+export type LegendSelectChangeInfo = {
+  name?: string;
+  selected?: Record<string, boolean>;
+};
+
 type ZrLikeEvent = {
   clientX?: number;
   clientY?: number;
@@ -106,11 +111,14 @@ export function EChartsCanvas({
   option,
   className,
   onDataSelect,
+  onLegendSelectChange,
 }: {
   option: EChartsOption;
   className?: string;
   /** Called when user clicks a data point (bar, pie slice, line point, etc.). */
   onDataSelect?: (info: ChartDataSelectInfo) => void;
+  /** Called when an ECharts legend item is toggled. */
+  onLegendSelectChange?: (info: LegendSelectChangeInfo) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDark, setIsDark] = useState(false);
@@ -138,6 +146,8 @@ export function EChartsCanvas({
   // (e.g. inline handlers from the dashboard grid) — that causes visible chart flicker.
   const onDataSelectRef = useRef(onDataSelect);
   onDataSelectRef.current = onDataSelect;
+  const onLegendSelectChangeRef = useRef(onLegendSelectChange);
+  onLegendSelectChangeRef.current = onLegendSelectChange;
 
   /** Keep latest option for theme init without re-running the init effect when only data changes. */
   const optionForThemeRef = useRef(optionForTheme);
@@ -168,6 +178,18 @@ export function EChartsCanvas({
     };
     chart.on("click", handleClick);
 
+    const handleLegendSelectChanged = (params: unknown) => {
+      const payload =
+        params && typeof params === "object"
+          ? (params as { name?: string; selected?: Record<string, boolean> })
+          : {};
+      onLegendSelectChangeRef.current?.({
+        name: payload.name,
+        selected: payload.selected,
+      });
+    };
+    chart.on("legendselectchanged", handleLegendSelectChanged);
+
     const ro = new ResizeObserver(() => {
       chart.resize();
     });
@@ -175,6 +197,7 @@ export function EChartsCanvas({
 
     return () => {
       chart.off("click", handleClick);
+      chart.off("legendselectchanged", handleLegendSelectChanged);
       ro.disconnect();
       chart.dispose();
     };

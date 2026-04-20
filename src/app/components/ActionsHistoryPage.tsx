@@ -52,6 +52,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { PageTransition } from "./PageTransition";
 import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
+import { TableBadge } from "./TableBadge";
 import { WidgetAIProvider } from "../contexts/WidgetAIContext";
 import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 
@@ -384,10 +385,10 @@ export function ActionsHistoryPage() {
                         </section>
                       </TableCell>
                       <TableCell className="w-[180px]">
-                        <Badge variant="secondary">{action.type}</Badge>
+                        <TableBadge variant="secondary">{action.type}</TableBadge>
                       </TableCell>
                       <TableCell className="w-[128px]">
-                        <Badge
+                        <TableBadge
                           variant={statusInfo.variant}
                           className={cn(
                             "gap-1.5",
@@ -402,7 +403,7 @@ export function ActionsHistoryPage() {
                             <statusInfo.icon className="h-4 w-4" aria-hidden />
                           )}
                           {statusInfo.label}
-                        </Badge>
+                        </TableBadge>
                       </TableCell>
                       <TableCell className="w-[180px] text-sm">{action.triggeredBy}</TableCell>
                       <TableCell className="w-[196px]">

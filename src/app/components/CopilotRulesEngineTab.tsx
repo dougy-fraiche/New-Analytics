@@ -22,6 +22,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { WidgetAIExplanation } from "./WidgetAIExplanation";
 import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
 import { CopilotSessionTranscriptDialog } from "./CopilotSessionTranscriptDialog";
+import { TableAgentCell } from "./TableAgentCell";
+import { TableBadge } from "./TableBadge";
+import { TableChannelCell } from "./TableChannelCell";
+import { TableStatusBadge, tableStatusToneFromOutcome } from "./TableStatusBadges";
 import { cn } from "./ui/utils";
 import { copilotAiInsightsIds } from "../data/copilot-ai-insights";
 import {
@@ -46,13 +50,6 @@ function completionBadgeClass(completionPct: number): string {
     return "border-transparent bg-amber-100 text-amber-700";
   }
   return "border-transparent bg-red-100 text-red-600";
-}
-
-function outcomeToneClass(outcome: string): string {
-  const normalized = outcome.toLowerCase();
-  if (normalized.includes("satisfied") || normalized.includes("resolved")) return "text-emerald-700";
-  if (normalized.includes("pending") || normalized.includes("follow-up")) return "text-amber-700";
-  return "text-muted-foreground";
 }
 
 function transferredToneClass(transferred: "Yes" | "No"): string {
@@ -188,9 +185,9 @@ export function CopilotRulesEngineTab({
                   <TableCell className="text-right tabular-nums">{row.fires}</TableCell>
                   <TableCell className="text-right tabular-nums">{row.percentTotal.toFixed(1)}%</TableCell>
                   <TableCell className="text-right tabular-nums">
-                    <Badge variant="secondary" className={completionBadgeClass(row.completionPct)}>
+                    <TableBadge variant="secondary" className={completionBadgeClass(row.completionPct)}>
                       {Number.isInteger(row.completionPct) ? row.completionPct.toFixed(0) : row.completionPct.toFixed(1)}%
-                    </Badge>
+                    </TableBadge>
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {Number.isInteger(row.avgDurationSec) ? row.avgDurationSec.toFixed(0) : row.avgDurationSec.toFixed(1)}s
@@ -288,8 +285,8 @@ export function CopilotRulesEngineTab({
             <TableHeader>
               <TableRow>
                 <TableHead>Contact</TableHead>
-                {sessionColumnVisibility.channel ? <TableHead>Channel</TableHead> : null}
                 {sessionColumnVisibility.agent ? <TableHead>Agent</TableHead> : null}
+                {sessionColumnVisibility.channel ? <TableHead>Channel</TableHead> : null}
                 {sessionColumnVisibility.ruleFires ? <TableHead>Rule Fires</TableHead> : null}
                 {sessionColumnVisibility.skill ? <TableHead>Skill</TableHead> : null}
                 {sessionColumnVisibility.duration ? <TableHead>Duration</TableHead> : null}
@@ -302,15 +299,28 @@ export function CopilotRulesEngineTab({
               {paginatedSessionRows.map((row) => (
                 <TableRow key={row.contact}>
                   <TableCell className="tabular-nums">{row.contact}</TableCell>
-                  {sessionColumnVisibility.channel ? <TableCell>{row.channel}</TableCell> : null}
-                  {sessionColumnVisibility.agent ? <TableCell>{row.agent}</TableCell> : null}
+                  {sessionColumnVisibility.agent ? (
+                    <TableCell>
+                      <TableAgentCell name={row.agent} />
+                    </TableCell>
+                  ) : null}
+                  {sessionColumnVisibility.channel ? (
+                    <TableCell>
+                      <TableChannelCell channel={row.channel} />
+                    </TableCell>
+                  ) : null}
                   {sessionColumnVisibility.ruleFires ? (
                     <TableCell className="tabular-nums text-[#6752be]">{row.ruleFires}</TableCell>
                   ) : null}
                   {sessionColumnVisibility.skill ? <TableCell>{row.skill}</TableCell> : null}
                   {sessionColumnVisibility.duration ? <TableCell className="tabular-nums">{row.duration}</TableCell> : null}
                   {sessionColumnVisibility.outcome ? (
-                    <TableCell className={outcomeToneClass(row.outcome)}>{row.outcome}</TableCell>
+                    <TableCell>
+                      <TableStatusBadge
+                        label={row.outcome}
+                        tone={tableStatusToneFromOutcome(row.outcome)}
+                      />
+                    </TableCell>
                   ) : null}
                   {sessionColumnVisibility.transferred ? (
                     <TableCell className={transferredToneClass(row.transferred)}>{row.transferred}</TableCell>

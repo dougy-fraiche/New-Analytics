@@ -118,7 +118,7 @@ export const realTimeVolumeTrendOption: EChartsCoreOption = {
     interval: 6,
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))" },
   },
   series: [
@@ -168,7 +168,7 @@ export const realTimeTokenUsageTrendOption: EChartsCoreOption = {
     interval: 200,
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))" },
   },
   series: [
@@ -309,8 +309,8 @@ export const copilotRealTimeSessionRows: CopilotRealTimeSessionRow[] = expandRow
 export const copilotRealTimeSessionsDataTimestamp = "Data as of ~3:26 PM (~30 min delay)";
 
 export const copilotRealTimeSessionColumnOptions = [
-  { id: "channel", label: "Channel" },
   { id: "agent", label: "Agent" },
+  { id: "channel", label: "Channel" },
   { id: "skill", label: "Skill" },
   { id: "similarity", label: "Similarity" },
   { id: "duration", label: "Duration" },

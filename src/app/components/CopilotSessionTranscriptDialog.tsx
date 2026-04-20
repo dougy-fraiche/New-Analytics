@@ -151,14 +151,14 @@ export function CopilotSessionTranscriptDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="h-[calc(100vh-2rem)] max-w-[calc(100vw-2rem)] gap-0 overflow-hidden p-0 sm:h-[888px] sm:w-[960px] sm:max-w-[960px]">
+      <DialogContent className="flex h-[calc(100vh-2rem)] min-h-0 flex-col max-w-[calc(100vw-2rem)] gap-0 overflow-hidden p-0 sm:h-[888px] sm:w-[960px] sm:max-w-[960px]">
         {!payload ? null : (
           <Tabs
             value={activeTab}
             onValueChange={(value) => setActiveTab(value as TranscriptTab)}
-            className="flex h-full flex-col gap-0"
+            className="flex h-full min-h-0 flex-col gap-0"
           >
-            <div className="border-b p-6 pb-4">
+            <div className="shrink-0 border-b p-6 pb-4">
               <DialogHeader className="pr-8 text-left">
                 <DialogTitle>Transcript Viewer</DialogTitle>
                 <DialogDescription className="sr-only">
@@ -256,7 +256,7 @@ export function CopilotSessionTranscriptDialog({
               </div>
             </div>
 
-            <TabsContent value="transcript" className="mt-0 min-h-0 flex-1 overflow-hidden">
+            <TabsContent value="transcript" className="mt-0 h-0 min-h-0 flex-1 overflow-hidden">
               <div className="h-full overflow-y-auto overscroll-contain">
                 <div className="space-y-0 px-6 py-5">
                   {filteredMessages.map((message, index) => (
@@ -302,7 +302,7 @@ export function CopilotSessionTranscriptDialog({
               </div>
             </TabsContent>
 
-            <TabsContent value="summary" className="mt-0 min-h-0 flex-1">
+            <TabsContent value="summary" className="mt-0 h-0 min-h-0 flex-1">
               <ScrollArea className="h-full">
                 <div className="mx-auto w-full space-y-6 px-8 py-8">
                   <section className="space-y-5">

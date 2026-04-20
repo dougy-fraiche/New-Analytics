@@ -22,6 +22,11 @@ import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
 import { WidgetAIExplanation } from "./WidgetAIExplanation";
 import { CopilotSessionTranscriptDialog } from "./CopilotSessionTranscriptDialog";
 import { CopilotProgressBar } from "./CopilotProgressBar";
+import { TableAgentCell } from "./TableAgentCell";
+import { TableChannelCell } from "./TableChannelCell";
+import { TableFeatureBadges } from "./TableFeatureBadges";
+import { TableRatingStars } from "./TableRatingStars";
+import { TableStatusBadge, tableStatusToneFromOutcome, tableStatusToneFromSentiment } from "./TableStatusBadges";
 import { cn } from "./ui/utils";
 import {
   copilotAgentFeedbackAverage,
@@ -44,12 +49,6 @@ import {
   fromCopilotOverviewRow,
   type CopilotTranscriptSessionContext,
 } from "../data/copilot-session-transcript";
-
-function sentimentClassName(sentiment: "positive" | "neutral" | "mixed") {
-  if (sentiment === "positive") return "text-emerald-700";
-  if (sentiment === "mixed") return "text-amber-700";
-  return "text-muted-foreground";
-}
 
 export function CopilotOverviewTab({
   isCompactDashboard,
@@ -272,7 +271,7 @@ export function CopilotOverviewTab({
             <div className="h-[260px] w-full">
               <EChartsCanvas option={copilotAgentFeedbackDistributionOption} />
             </div>
-            <div className="mt-4 flex items-center justify-between text-muted-foreground">
+            <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
               <p>{copilotAgentFeedbackTotalRatings} total ratings</p>
               <p>Avg: {copilotAgentFeedbackAverage}</p>
             </div>
@@ -469,8 +468,8 @@ export function CopilotOverviewTab({
             <TableHeader>
               <TableRow>
                 <TableHead>Contact</TableHead>
-                {sessionColumnVisibility.channel ? <TableHead>Channel</TableHead> : null}
                 {sessionColumnVisibility.agent ? <TableHead>Agent</TableHead> : null}
+                {sessionColumnVisibility.channel ? <TableHead>Channel</TableHead> : null}
                 {sessionColumnVisibility.skill ? <TableHead>Skill</TableHead> : null}
                 {sessionColumnVisibility.duration ? <TableHead>Duration</TableHead> : null}
                 {sessionColumnVisibility.handleTime ? <TableHead>Handle Time</TableHead> : null}
@@ -486,21 +485,46 @@ export function CopilotOverviewTab({
               {paginatedSessionRows.map((row) => (
                 <TableRow key={row.contact}>
                   <TableCell className="tabular-nums">{row.contact}</TableCell>
-                  {sessionColumnVisibility.channel ? <TableCell>{row.channel}</TableCell> : null}
-                  {sessionColumnVisibility.agent ? <TableCell>{row.agent}</TableCell> : null}
+                  {sessionColumnVisibility.agent ? (
+                    <TableCell>
+                      <TableAgentCell name={row.agent} />
+                    </TableCell>
+                  ) : null}
+                  {sessionColumnVisibility.channel ? (
+                    <TableCell>
+                      <TableChannelCell channel={row.channel} />
+                    </TableCell>
+                  ) : null}
                   {sessionColumnVisibility.skill ? <TableCell>{row.skill}</TableCell> : null}
                   {sessionColumnVisibility.duration ? <TableCell className="tabular-nums">{row.duration}</TableCell> : null}
                   {sessionColumnVisibility.handleTime ? <TableCell className="tabular-nums">{row.handleTime}</TableCell> : null}
                   {sessionColumnVisibility.features ? (
-                    <TableCell className="max-w-[260px] truncate" title={row.features}>
-                      {row.features}
+                    <TableCell>
+                      <TableFeatureBadges features={row.features} />
                     </TableCell>
                   ) : null}
                   {sessionColumnVisibility.sentiment ? (
-                    <TableCell className={cn("capitalize", sentimentClassName(row.sentiment))}>{row.sentiment}</TableCell>
+                    <TableCell>
+                      <TableStatusBadge
+                        label={row.sentiment}
+                        tone={tableStatusToneFromSentiment(row.sentiment)}
+                        labelClassName="capitalize"
+                      />
+                    </TableCell>
                   ) : null}
-                  {sessionColumnVisibility.disposition ? <TableCell>{row.disposition}</TableCell> : null}
-                  {sessionColumnVisibility.rating ? <TableCell className="tabular-nums">{row.rating}</TableCell> : null}
+                  {sessionColumnVisibility.disposition ? (
+                    <TableCell>
+                      <TableStatusBadge
+                        label={row.disposition}
+                        tone={tableStatusToneFromOutcome(row.disposition)}
+                      />
+                    </TableCell>
+                  ) : null}
+                  {sessionColumnVisibility.rating ? (
+                    <TableCell>
+                      <TableRatingStars rating={row.rating} />
+                    </TableCell>
+                  ) : null}
                   <TableCell>
                     <div className="flex items-center justify-end gap-1">
                       <Tooltip>

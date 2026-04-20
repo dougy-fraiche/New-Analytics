@@ -2,15 +2,11 @@ import type { EChartsCoreOption } from "echarts";
 import { useCallback, useState, type ReactNode } from "react";
 import {
   ArrowRight,
-  AudioLines,
   Columns3,
   Download,
   CircleGauge,
   LineChart,
-  MessageCircle,
-  MessageCircleMore,
-  MessageSquareShare,
-  MessagesSquare,
+  MessageSquare,
   Search,
   TrendingDown,
   TrendingUp,
@@ -27,13 +23,20 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { EChartsCanvas, type ChartDataSelectInfo } from "./EChartsCanvas";
+import { CopilotSessionTranscriptDialog } from "./CopilotSessionTranscriptDialog";
 import { KpiSparkline } from "./KpiSparkline";
 import { KpiMetricValueTitle } from "./KpiMetricValueTitle";
+import { TableChannelCell } from "./TableChannelCell";
+import { TableRatingStars } from "./TableRatingStars";
+import { TableStatusIconBadge } from "./TableStatusBadges";
 import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
 import { WidgetAIExplanation } from "./WidgetAIExplanation";
 import type { ChartType } from "./ChartVariants";
+import { fromAIAgentsOverviewSessionRow } from "../data/ai-agent-session-transcript";
 import { aiAgentOverviewKpis } from "../data/ai-agent-kpis";
+import type { CopilotTranscriptSessionContext } from "../data/copilot-session-transcript";
 
 function getTrendDirection(trend: string): "up" | "down" | "neutral" {
   const normalized = trend.trim();
@@ -56,7 +59,7 @@ const sessionsOverTimeOption: EChartsCoreOption = {
     type: "value",
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))" },
   },
   series: [
@@ -90,7 +93,7 @@ const sessionsByChannelOption: EChartsCoreOption = {
     type: "value",
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))" },
   },
   yAxis: {
@@ -129,7 +132,7 @@ const ratingsDistributionOption: EChartsCoreOption = {
     type: "value",
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))" },
   },
   series: [{ type: "bar", barMaxWidth: 34, data: [380, 520, 760, 2600, 8400], itemStyle: { color: "#6E56CF", borderRadius: [6, 6, 0, 0] } }],
@@ -151,7 +154,7 @@ const positiveByChannelOption: EChartsCoreOption = {
     max: 100,
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))", formatter: "{value}%" },
   },
   series: [
@@ -182,7 +185,7 @@ const sessionDurationOption: EChartsCoreOption = {
     type: "value",
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))" },
   },
   series: [{ type: "bar", barMaxWidth: 30, data: [4200, 5400, 1800, 420, 160], itemStyle: { color: "#6E56CF", borderRadius: [6, 6, 0, 0] } }],
@@ -195,7 +198,7 @@ const stepFunnelOption: EChartsCoreOption = {
     type: "value",
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))" },
   },
   yAxis: {
@@ -224,7 +227,7 @@ const stepFunnelOption: EChartsCoreOption = {
 const escalationsByDurationOption: EChartsCoreOption = {
   grid: { left: 44, right: 12, top: 16, bottom: 28 },
   tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, confine: true, appendToBody: true },
-  legend: { bottom: 0, textStyle: { fontSize: 10 } },
+  legend: { bottom: 0, textStyle: { fontSize: 10, color: "hsl(var(--muted-foreground))" } },
   xAxis: {
     type: "category",
     data: ["0-2 min", "2-5 min", "5-10 min", "10-15 min", ">15 min"],
@@ -236,7 +239,7 @@ const escalationsByDurationOption: EChartsCoreOption = {
     type: "value",
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))" },
   },
   series: [
@@ -259,7 +262,7 @@ const escalationsOverTimeCountOption: EChartsCoreOption = {
     type: "value",
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))" },
   },
   series: [{ type: "bar", barMaxWidth: 34, data: [58, 53, 56, 50, 52, 55, 51], itemStyle: { color: "#6E56CF", borderRadius: [6, 6, 0, 0] } }],
@@ -287,7 +290,7 @@ const escalationsOverTimeRateOption: EChartsCoreOption = {
     interval: 0.75,
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: {
       color: "hsl(var(--muted-foreground))",
       formatter: (value: number) => `${Number(value.toFixed(2)).toString()}%`,
@@ -373,27 +376,12 @@ function OverviewSessionsCategoryCell({
   label: string;
 }) {
   if (categoryKind === "high_escalation") {
-    return (
-      <span className="inline-flex min-w-0 max-w-full items-center gap-3">
-        <TrendingUp className="size-4 shrink-0 text-destructive" aria-hidden />
-        <span className="min-w-0 truncate text-destructive">{label}</span>
-      </span>
-    );
+    return <TableStatusIconBadge label={label} tone="negative" Icon={TrendingUp} />;
   }
   if (categoryKind === "low_rating") {
-    return (
-      <span className="inline-flex min-w-0 max-w-full items-center gap-3">
-        <TrendingDown className="size-4 shrink-0 text-warning-border" aria-hidden />
-        <span className="min-w-0 truncate text-warning-border">{label}</span>
-      </span>
-    );
+    return <TableStatusIconBadge label={label} tone="warning" Icon={TrendingDown} />;
   }
-  return (
-    <span className="inline-flex min-w-0 max-w-full items-center gap-3">
-      <ArrowRight className="size-4 shrink-0 text-success" aria-hidden />
-      <span className="min-w-0 truncate text-success">{label}</span>
-    </span>
-  );
+  return <TableStatusIconBadge label={label} tone="positive" Icon={ArrowRight} />;
 }
 
 const OVERVIEW_SESSIONS_TOGGLEABLE_COLUMNS = [
@@ -405,24 +393,6 @@ const OVERVIEW_SESSIONS_TOGGLEABLE_COLUMNS = [
 ] as const;
 
 type OverviewSessionsToggleableColumnId = (typeof OVERVIEW_SESSIONS_TOGGLEABLE_COLUMNS)[number]["id"];
-
-function OverviewSessionsChannelCell({ channel }: { channel: OverviewSessionsChannel }) {
-  const cfg =
-    channel === "voice"
-      ? { Icon: AudioLines, label: "Voice", iconClass: "text-muted-foreground" }
-      : channel === "webchat"
-        ? { Icon: MessageCircleMore, label: "Webchat", iconClass: "text-primary" }
-        : channel === "whatsapp"
-          ? { Icon: MessageCircle, label: "WhatsApp", iconClass: "text-success" }
-          : { Icon: MessagesSquare, label: "Messenger", iconClass: "text-primary" };
-  const { Icon, label, iconClass } = cfg;
-  return (
-    <span className="inline-flex min-w-0 max-w-full items-center gap-3">
-      <Icon className={`size-4 shrink-0 ${iconClass}`} aria-hidden />
-      <span className="min-w-0 truncate text-foreground">{label}</span>
-    </span>
-  );
-}
 
 const overviewChartPanels: Array<{
   title: string;
@@ -524,6 +494,7 @@ export function AIAgentsOverviewTab({
   const [selectedKpiLabel, setSelectedKpiLabel] = useState<string | null>(null);
   const [anchorPoint, setAnchorPoint] = useState<{ x: number; y: number } | null>(null);
   const [escalationsOverTimeTab, setEscalationsOverTimeTab] = useState<"count" | "rate">("count");
+  const [selectedSession, setSelectedSession] = useState<CopilotTranscriptSessionContext | null>(null);
   const [overviewSessionsColumnVisibility, setOverviewSessionsColumnVisibility] = useState<
     Record<OverviewSessionsToggleableColumnId, boolean>
   >(
@@ -740,7 +711,7 @@ export function AIAgentsOverviewTab({
                   {overviewSessionsColumnVisibility.escalations ? <TableHead>Escalation Count</TableHead> : null}
                   {overviewSessionsColumnVisibility.duration ? <TableHead>Duration</TableHead> : null}
                   <TableHead className="whitespace-nowrap pl-2 pr-4 text-right">
-                    <span className="sr-only">Open transcript</span>
+                    <span className="sr-only">Transcript actions</span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -755,11 +726,13 @@ export function AIAgentsOverviewTab({
                     ) : null}
                     {overviewSessionsColumnVisibility.channel ? (
                       <TableCell>
-                        <OverviewSessionsChannelCell channel={row.channel} />
+                        <TableChannelCell channel={row.channel} />
                       </TableCell>
                     ) : null}
                     {overviewSessionsColumnVisibility.rating ? (
-                      <TableCell className="tabular-nums">{row.rating}</TableCell>
+                      <TableCell>
+                        <TableRatingStars rating={row.rating} />
+                      </TableCell>
                     ) : null}
                     {overviewSessionsColumnVisibility.escalations ? (
                       <TableCell className="tabular-nums">{row.escalations}</TableCell>
@@ -767,11 +740,31 @@ export function AIAgentsOverviewTab({
                     {overviewSessionsColumnVisibility.duration ? (
                       <TableCell className="tabular-nums">{row.duration}</TableCell>
                     ) : null}
-                    <TableCell className="whitespace-nowrap pl-2 pr-4 text-right">
-                      <Button variant="outline" size="sm">
-                        <MessageSquareShare aria-hidden />
-                        Open Transcript
-                      </Button>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8"
+                              aria-label="View Transcript"
+                              onClick={() => setSelectedSession(fromAIAgentsOverviewSessionRow(row))}
+                            >
+                              <MessageSquare className="size-4" aria-hidden />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">View Transcript</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="size-8" aria-label="Download">
+                              <Download className="size-4" aria-hidden />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">Download</TooltipContent>
+                        </Tooltip>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -783,6 +776,15 @@ export function AIAgentsOverviewTab({
             <WidgetAIExplanation widgetTitle="Sessions to Investigate" chartType="metric" />
           </CardFooter>
       </Card>
+
+      <CopilotSessionTranscriptDialog
+        open={selectedSession !== null}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setSelectedSession(null);
+        }}
+        session={selectedSession}
+        sourceLabel="AI Agents Overview"
+      />
     </div>
   );
 }

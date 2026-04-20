@@ -97,25 +97,30 @@ export const underperformingKnowledgeArticles: KnowledgePerformanceArticleRow[] 
 
 export const knowledgeRetrievalSuccessTrendOption: EChartsCoreOption = {
   grid: { left: 58, right: 16, top: 22, bottom: 42 },
-  tooltip: { trigger: "axis", confine: true, appendToBody: true, valueFormatter: (value) => `${Number(value).toFixed(2)}%` },
+  tooltip: {
+    trigger: "axis",
+    confine: true,
+    appendToBody: true,
+    valueFormatter: (value: string | number) => `${Number(value).toFixed(2)}%`,
+  },
   xAxis: {
     type: "category",
     boundaryGap: false,
     data: knowledgeOverviewTrendPoints.map((point) => point.date),
-    axisLine: { lineStyle: { color: "hsl(var(--border))" } },
+    axisLine: { lineStyle: { color: "hsl(var(--muted-foreground))" } },
     axisTick: { show: false },
     axisLabel: { color: "hsl(var(--muted-foreground))", hideOverlap: true },
-    splitLine: { show: true, lineStyle: { type: "dashed", color: "hsl(var(--border) / 0.4)" } },
+    splitLine: { show: true, lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
   },
   yAxis: {
     type: "value",
     min: 0,
     max: 100,
     interval: 25,
-    axisLine: { lineStyle: { color: "hsl(var(--border))" } },
+    axisLine: { lineStyle: { color: "hsl(var(--muted-foreground))" } },
     axisTick: { show: false },
     axisLabel: { color: "hsl(var(--muted-foreground))", formatter: "{value}%" },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border) / 0.55)" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
   },
   series: [
     {

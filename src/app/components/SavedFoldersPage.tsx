@@ -46,6 +46,7 @@ import {
 import { cn } from "./ui/utils";
 import { PageTransition } from "./PageTransition";
 import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
+import { TableBadge } from "./TableBadge";
 import { ROUTES } from "../routes";
 import {
   getDashboardSlug,
@@ -675,9 +676,9 @@ export function SavedFoldersPage({ resolvedFolderId }: { resolvedFolderId?: stri
                         <TableCell>
                           <div className="flex flex-wrap gap-1.5">
                             {dashboard.kpis.map((kpi) => (
-                              <Badge key={kpi} variant="secondary" className="text-xs">
+                              <TableBadge key={kpi} variant="secondary">
                                 {kpi}
-                              </Badge>
+                              </TableBadge>
                             ))}
                           </div>
                         </TableCell>
@@ -1199,9 +1200,9 @@ export function SavedFoldersPage({ resolvedFolderId }: { resolvedFolderId?: stri
                       </TableCell>
                       <TableCell>
                         {item.folderName ? (
-                          <Badge asChild variant="secondary">
+                          <TableBadge asChild variant="secondary">
                             <Link to={folderPath(item.projectId!)}>{item.folderName}</Link>
-                          </Badge>
+                          </TableBadge>
                         ) : (
                           <span className="text-muted-foreground text-sm">--</span>
                         )}

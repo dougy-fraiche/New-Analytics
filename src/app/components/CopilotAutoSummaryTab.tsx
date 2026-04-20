@@ -26,6 +26,10 @@ import { WidgetAIExplanation } from "./WidgetAIExplanation";
 import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
 import { CopilotSessionTranscriptDialog } from "./CopilotSessionTranscriptDialog";
 import { CopilotProgressBar } from "./CopilotProgressBar";
+import { TableAgentCell } from "./TableAgentCell";
+import { TableBadge } from "./TableBadge";
+import { TableChannelCell } from "./TableChannelCell";
+import { TableStatusBadge, tableStatusToneFromSentiment } from "./TableStatusBadges";
 import { cn } from "./ui/utils";
 import { copilotAiInsightsIds } from "../data/copilot-ai-insights";
 import {
@@ -79,13 +83,6 @@ function reasonBarClass(tone: "purple" | "red" | "orange" | "green" | "gray" | "
   if (tone === "gray") return "bg-muted-foreground";
   if (tone === "blue") return "bg-indigo-600";
   return "bg-violet-600";
-}
-
-function sentimentToneClass(sentiment: "positive" | "neutral" | "mixed" | "negative") {
-  if (sentiment === "positive") return "text-emerald-700";
-  if (sentiment === "negative") return "text-red-600";
-  if (sentiment === "mixed") return "text-amber-700";
-  return "text-muted-foreground";
 }
 
 function KpiCard({
@@ -442,7 +439,7 @@ export function CopilotAutoSummaryTab({
             <div className="h-[300px] w-full">
               <EChartsCanvas option={tokenUsageTrendOption} />
             </div>
-            <div className="mt-3 flex items-center justify-between gap-2 text-sm text-muted-foreground">
+            <div className="mt-3 flex items-center justify-between gap-2 text-xs text-muted-foreground">
               <p>{tokenUsageTotals.totalTokens}</p>
               <p>{tokenUsageTotals.totalSummaries}</p>
             </div>
@@ -665,8 +662,8 @@ export function CopilotAutoSummaryTab({
             <TableHeader>
               <TableRow>
                 <TableHead>Contact</TableHead>
-                {sessionColumnVisibility.channel ? <TableHead>Channel</TableHead> : null}
                 {sessionColumnVisibility.agent ? <TableHead>Agent</TableHead> : null}
+                {sessionColumnVisibility.channel ? <TableHead>Channel</TableHead> : null}
                 {sessionColumnVisibility.skill ? <TableHead>Skill</TableHead> : null}
                 {sessionColumnVisibility.similarity ? <TableHead>Similarity</TableHead> : null}
                 {sessionColumnVisibility.duration ? <TableHead>Duration</TableHead> : null}
@@ -679,20 +676,34 @@ export function CopilotAutoSummaryTab({
               {paginatedSessionRows.map((row) => (
                 <TableRow key={row.contact}>
                   <TableCell className="tabular-nums">{row.contact}</TableCell>
-                  {sessionColumnVisibility.channel ? <TableCell>{row.channel}</TableCell> : null}
-                  {sessionColumnVisibility.agent ? <TableCell>{row.agent}</TableCell> : null}
+                  {sessionColumnVisibility.agent ? (
+                    <TableCell>
+                      <TableAgentCell name={row.agent} />
+                    </TableCell>
+                  ) : null}
+                  {sessionColumnVisibility.channel ? (
+                    <TableCell>
+                      <TableChannelCell channel={row.channel} />
+                    </TableCell>
+                  ) : null}
                   {sessionColumnVisibility.skill ? <TableCell>{row.skill}</TableCell> : null}
                   {sessionColumnVisibility.similarity ? (
                     <TableCell>
-                      <Badge variant="secondary" className="border-transparent bg-amber-100 text-amber-700 tabular-nums">
+                      <TableBadge variant="secondary" className="border-transparent bg-amber-100 text-amber-700 tabular-nums">
                         {row.similarity.toFixed(3)}
-                      </Badge>
+                      </TableBadge>
                     </TableCell>
                   ) : null}
                   {sessionColumnVisibility.duration ? <TableCell className="tabular-nums">{row.duration}</TableCell> : null}
                   {sessionColumnVisibility.intent ? <TableCell>{row.intent}</TableCell> : null}
                   {sessionColumnVisibility.sentiment ? (
-                    <TableCell className={cn("capitalize", sentimentToneClass(row.sentiment))}>{row.sentiment}</TableCell>
+                    <TableCell>
+                      <TableStatusBadge
+                        label={row.sentiment}
+                        tone={tableStatusToneFromSentiment(row.sentiment)}
+                        labelClassName="capitalize"
+                      />
+                    </TableCell>
                   ) : null}
                   <TableCell>
                     <div className="flex items-center justify-end gap-1">

@@ -126,7 +126,7 @@ export const ruleEffectivenessOption: EChartsCoreOption = {
     interval: 2,
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))" },
   },
   yAxis: {
@@ -216,8 +216,8 @@ export const rulesEngineSessionRows: RulesEngineSessionRow[] = expandRowsForPagi
 );
 
 export const rulesEngineSessionColumns = [
-  { id: "channel", label: "Channel" },
   { id: "agent", label: "Agent" },
+  { id: "channel", label: "Channel" },
   { id: "ruleFires", label: "Rule Fires" },
   { id: "skill", label: "Skill" },
   { id: "duration", label: "Duration" },

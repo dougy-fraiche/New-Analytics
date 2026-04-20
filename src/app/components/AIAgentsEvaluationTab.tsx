@@ -2,7 +2,6 @@ import type { EChartsCoreOption } from "echarts";
 import { useCallback, useState } from "react";
 import {
   AlertTriangle,
-  AudioLines,
   Check,
   Columns3,
   Download,
@@ -10,10 +9,7 @@ import {
   Info,
   CircleGauge,
   Meh,
-  MessageCircle,
-  MessageCircleMore,
-  MessageSquareShare,
-  MessagesSquare,
+  MessageSquare,
   Search,
   Smile,
   TrendingDown,
@@ -31,13 +27,20 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { Alert, AlertDescription } from "./ui/alert";
 import { EChartsCanvas, type ChartDataSelectInfo } from "./EChartsCanvas";
+import { CopilotSessionTranscriptDialog } from "./CopilotSessionTranscriptDialog";
+import { TableAgentCell } from "./TableAgentCell";
+import { TableBadge } from "./TableBadge";
+import { TableChannelCell } from "./TableChannelCell";
 import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
 import { KpiMetricValueTitle } from "./KpiMetricValueTitle";
 import { WidgetAIExplanation } from "./WidgetAIExplanation";
 import type { ChartType } from "./ChartVariants";
+import { fromAIAgentsEvaluationSessionRow } from "../data/ai-agent-session-transcript";
 import { aiAgentEvaluationKpis } from "../data/ai-agent-kpis";
+import type { CopilotTranscriptSessionContext } from "../data/copilot-session-transcript";
 
 const weekLabels = ["W1", "W2", "W3", "W4", "W5", "W6", "W7"];
 
@@ -118,7 +121,7 @@ const knowledgeToolGapDonutOption: EChartsCoreOption = {
         text: "62%",
         fontSize: 22,
         fontWeight: 600,
-        fill: "hsl(var(--foreground))",
+        fill: "hsl(var(--muted-foreground))",
       },
     },
     {
@@ -203,7 +206,7 @@ function buildDonutGaugeOption(params: {
           text: params.centerValue,
           fontSize: 22,
           fontWeight: 600,
-          fill: "hsl(var(--foreground))",
+          fill: "hsl(var(--muted-foreground))",
         },
       },
       {
@@ -235,7 +238,7 @@ function axisStyles(): Pick<EChartsCoreOption, "xAxis" | "yAxis"> {
       max: 100,
       axisLine: { show: false },
       axisTick: { show: false },
-      splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+      splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
       axisLabel: { color: "hsl(var(--muted-foreground))", fontSize: 10, formatter: "{value}%" },
     },
   };
@@ -504,7 +507,7 @@ const handoverReasonOption: EChartsCoreOption = {
     max: 520,
     axisLine: { show: false },
     axisTick: { show: false },
-    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--border))" } },
+    splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))", fontSize: 10 },
   },
   yAxis: {
@@ -602,8 +605,8 @@ const sessionsToInvestigate: SessionToInvestigateRow[] = [
 
 const EVALUATION_SESSIONS_TOGGLEABLE_COLUMNS = [
   { id: "timestamp", label: "Timestamp" },
-  { id: "channel", label: "Channel" },
   { id: "agent", label: "Agent" },
+  { id: "channel", label: "Channel" },
   { id: "sentiment", label: "Sentiment" },
   { id: "containment", label: "Containment" },
   { id: "successful", label: "Successful" },
@@ -614,21 +617,7 @@ const EVALUATION_SESSIONS_TOGGLEABLE_COLUMNS = [
 type EvaluationSessionsToggleableColumnId = (typeof EVALUATION_SESSIONS_TOGGLEABLE_COLUMNS)[number]["id"];
 
 function SessionsInvestigateChannelCell({ channel }: { channel: InvestigateChannel }) {
-  const cfg =
-    channel === "webchat"
-      ? { Icon: MessageCircleMore, label: "Webchat", iconClass: "text-muted-foreground" }
-      : channel === "voice"
-        ? { Icon: AudioLines, label: "Voice", iconClass: "text-muted-foreground" }
-        : channel === "whatsapp"
-          ? { Icon: MessageCircle, label: "WhatsApp", iconClass: "text-[#25D366]" }
-          : { Icon: MessagesSquare, label: "Messenger", iconClass: "text-[#0084FF]" };
-  const { Icon, label, iconClass } = cfg;
-  return (
-    <span className="inline-flex min-w-0 max-w-full items-center gap-2">
-      <Icon className={`size-4 shrink-0 ${iconClass}`} aria-hidden />
-      <span className="min-w-0 truncate text-foreground">{label}</span>
-    </span>
-  );
+  return <TableChannelCell channel={channel} />;
 }
 
 function SessionsInvestigateSentimentPill({ sentiment }: { sentiment: InvestigateSentiment }) {
@@ -652,17 +641,17 @@ function SessionsInvestigateSentimentPill({ sentiment }: { sentiment: Investigat
           };
   const { Icon, label, cls } = cfg;
   return (
-    <Badge variant="outline" className={`min-w-0 max-w-full justify-start font-normal ${cls}`}>
+    <TableBadge variant="outline" className={`min-w-0 max-w-full justify-start font-normal ${cls}`}>
       <Icon className="shrink-0" aria-hidden />
       <span className="min-w-0 truncate">{label}</span>
-    </Badge>
+    </TableBadge>
   );
 }
 
 function SessionsInvestigateContainmentPill({ containment }: { containment: InvestigateContainment }) {
   const ok = containment === "contained";
   return (
-    <Badge
+    <TableBadge
       variant="outline"
       className={
         ok
@@ -671,7 +660,7 @@ function SessionsInvestigateContainmentPill({ containment }: { containment: Inve
       }
     >
       <span className="min-w-0 truncate">{ok ? "Contained" : "Escalated"}</span>
-    </Badge>
+    </TableBadge>
   );
 }
 
@@ -684,16 +673,16 @@ function SessionsInvestigateCompliancePill({ compliance }: { compliance: Investi
         : "border-border bg-muted/60 text-muted-foreground";
   const label = compliance === "compliant" ? "Compliant" : compliance === "non_compliant" ? "Non-Compliant" : "N/A";
   return (
-    <Badge variant="outline" className={`min-w-0 max-w-full font-normal ${cls}`}>
+    <TableBadge variant="outline" className={`min-w-0 max-w-full font-normal ${cls}`}>
       <span className="min-w-0 truncate">{label}</span>
-    </Badge>
+    </TableBadge>
   );
 }
 
 function SessionsInvestigateConfidencePill({ avgConfidence }: { avgConfidence: InvestigateConfidence }) {
   const high = avgConfidence === "high";
   return (
-    <Badge
+    <TableBadge
       variant="outline"
       className={
         high
@@ -702,7 +691,7 @@ function SessionsInvestigateConfidencePill({ avgConfidence }: { avgConfidence: I
       }
     >
       <span className="min-w-0 truncate">{high ? "High" : "Medium"}</span>
-    </Badge>
+    </TableBadge>
   );
 }
 
@@ -839,6 +828,7 @@ export function AIAgentsEvaluationTab({
   const [openAskPanelIndex, setOpenAskPanelIndex] = useState<number | null>(null);
   const [selectedKpiLabel, setSelectedKpiLabel] = useState<string | null>(null);
   const [anchorPoint, setAnchorPoint] = useState<{ x: number; y: number } | null>(null);
+  const [selectedSession, setSelectedSession] = useState<CopilotTranscriptSessionContext | null>(null);
   const [evaluationSessionsColumnVisibility, setEvaluationSessionsColumnVisibility] = useState<
     Record<EvaluationSessionsToggleableColumnId, boolean>
   >(
@@ -1254,15 +1244,15 @@ export function AIAgentsEvaluationTab({
                 <TableRow>
                   <TableHead>Conversation ID</TableHead>
                   {evaluationSessionsColumnVisibility.timestamp ? <TableHead>Timestamp</TableHead> : null}
-                  {evaluationSessionsColumnVisibility.channel ? <TableHead>Channel</TableHead> : null}
                   {evaluationSessionsColumnVisibility.agent ? <TableHead>Agent</TableHead> : null}
+                  {evaluationSessionsColumnVisibility.channel ? <TableHead>Channel</TableHead> : null}
                   {evaluationSessionsColumnVisibility.sentiment ? <TableHead>Sentiment</TableHead> : null}
                   {evaluationSessionsColumnVisibility.containment ? <TableHead>Containment</TableHead> : null}
                   {evaluationSessionsColumnVisibility.successful ? <TableHead>Successful</TableHead> : null}
                   {evaluationSessionsColumnVisibility.compliance ? <TableHead>Compliance</TableHead> : null}
                   {evaluationSessionsColumnVisibility.avgConfidence ? <TableHead>Avg Conf.</TableHead> : null}
                   <TableHead className="whitespace-nowrap pl-2 pr-4 text-right">
-                    <span className="sr-only">Open transcript</span>
+                    <span className="sr-only">Transcript actions</span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -1273,12 +1263,16 @@ export function AIAgentsEvaluationTab({
                     {evaluationSessionsColumnVisibility.timestamp ? (
                       <TableCell className="tabular-nums text-muted-foreground">{row.timestamp}</TableCell>
                     ) : null}
+                    {evaluationSessionsColumnVisibility.agent ? (
+                      <TableCell>
+                        <TableAgentCell name={row.agent} />
+                      </TableCell>
+                    ) : null}
                     {evaluationSessionsColumnVisibility.channel ? (
                       <TableCell>
                         <SessionsInvestigateChannelCell channel={row.channel} />
                       </TableCell>
                     ) : null}
-                    {evaluationSessionsColumnVisibility.agent ? <TableCell>{row.agent}</TableCell> : null}
                     {evaluationSessionsColumnVisibility.sentiment ? (
                       <TableCell>
                         <SessionsInvestigateSentimentPill sentiment={row.sentiment} />
@@ -1304,11 +1298,31 @@ export function AIAgentsEvaluationTab({
                         <SessionsInvestigateConfidencePill avgConfidence={row.avgConfidence} />
                       </TableCell>
                     ) : null}
-                    <TableCell className="whitespace-nowrap pl-2 pr-4 text-right">
-                      <Button variant="outline" size="sm">
-                        <MessageSquareShare aria-hidden />
-                        Open Transcript
-                      </Button>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8"
+                              aria-label="View Transcript"
+                              onClick={() => setSelectedSession(fromAIAgentsEvaluationSessionRow(row))}
+                            >
+                              <MessageSquare className="size-4" aria-hidden />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">View Transcript</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="size-8" aria-label="Download">
+                              <Download className="size-4" aria-hidden />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">Download</TooltipContent>
+                        </Tooltip>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -1320,6 +1334,15 @@ export function AIAgentsEvaluationTab({
             <WidgetAIExplanation widgetTitle="Sessions to Investigate" chartType="metric" />
           </CardFooter>
       </Card>
+
+      <CopilotSessionTranscriptDialog
+        open={selectedSession !== null}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setSelectedSession(null);
+        }}
+        session={selectedSession}
+        sourceLabel="AI Agents Evaluation"
+      />
     </div>
   );
 }

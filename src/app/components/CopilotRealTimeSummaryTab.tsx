@@ -28,6 +28,10 @@ import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
 import { WidgetAIExplanation } from "./WidgetAIExplanation";
 import { CopilotSessionTranscriptDialog } from "./CopilotSessionTranscriptDialog";
 import { CopilotProgressBar } from "./CopilotProgressBar";
+import { TableAgentCell } from "./TableAgentCell";
+import { TableBadge } from "./TableBadge";
+import { TableChannelCell } from "./TableChannelCell";
+import { TableStatusBadge, tableStatusToneFromSentiment } from "./TableStatusBadges";
 import { cn } from "./ui/utils";
 import { copilotAiInsightsIds } from "../data/copilot-ai-insights";
 import {
@@ -54,13 +58,6 @@ function metricTileClassName(tone: "neutral" | "primary" | "warning") {
   if (tone === "primary") return "border-[#c8c2eb] bg-[#f4f2fc]";
   if (tone === "warning") return "border-[#ece2bf] bg-[#f4edd6]";
   return "border-border bg-muted/40";
-}
-
-function sentimentClassName(sentiment: "positive" | "neutral" | "mixed" | "negative") {
-  if (sentiment === "positive") return "text-emerald-700";
-  if (sentiment === "negative") return "text-red-600";
-  if (sentiment === "mixed") return "text-amber-700";
-  return "text-muted-foreground";
 }
 
 export function CopilotRealTimeSummaryTab({
@@ -271,7 +268,7 @@ export function CopilotRealTimeSummaryTab({
             <div className="h-[340px] w-full">
               <EChartsCanvas option={realTimeVolumeTrendOption} />
             </div>
-            <div className="mt-4 flex items-center justify-between text-muted-foreground">
+            <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
               <p>{realTimeVolumeTotals.totalSummaries}</p>
               <p>{realTimeVolumeTotals.rangeLabel}</p>
             </div>
@@ -296,7 +293,7 @@ export function CopilotRealTimeSummaryTab({
           <div className="h-[320px] w-full">
             <EChartsCanvas option={realTimeTokenUsageTrendOption} />
           </div>
-          <div className="mt-4 flex items-center justify-between text-muted-foreground">
+          <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
             <p>{realTimeTokenTotals.totalTokens}</p>
             <p>{realTimeTokenTotals.totalSummaries}</p>
           </div>
@@ -430,8 +427,8 @@ export function CopilotRealTimeSummaryTab({
             <TableHeader>
               <TableRow>
                 <TableHead>Contact</TableHead>
-                {sessionColumnVisibility.channel ? <TableHead>Channel</TableHead> : null}
                 {sessionColumnVisibility.agent ? <TableHead>Agent</TableHead> : null}
+                {sessionColumnVisibility.channel ? <TableHead>Channel</TableHead> : null}
                 {sessionColumnVisibility.skill ? <TableHead>Skill</TableHead> : null}
                 {sessionColumnVisibility.similarity ? <TableHead>Similarity</TableHead> : null}
                 {sessionColumnVisibility.duration ? <TableHead>Duration</TableHead> : null}
@@ -444,23 +441,37 @@ export function CopilotRealTimeSummaryTab({
               {paginatedSessionRows.map((row) => (
                 <TableRow key={row.contact}>
                   <TableCell className="tabular-nums">{row.contact}</TableCell>
-                  {sessionColumnVisibility.channel ? <TableCell>{row.channel}</TableCell> : null}
-                  {sessionColumnVisibility.agent ? <TableCell>{row.agent}</TableCell> : null}
+                  {sessionColumnVisibility.agent ? (
+                    <TableCell>
+                      <TableAgentCell name={row.agent} />
+                    </TableCell>
+                  ) : null}
+                  {sessionColumnVisibility.channel ? (
+                    <TableCell>
+                      <TableChannelCell channel={row.channel} />
+                    </TableCell>
+                  ) : null}
                   {sessionColumnVisibility.skill ? <TableCell>{row.skill}</TableCell> : null}
                   {sessionColumnVisibility.similarity ? (
                     <TableCell>
-                      <Badge
+                      <TableBadge
                         variant="secondary"
                         className="border-transparent bg-amber-100 tabular-nums text-amber-700"
                       >
                         {row.similarity.toFixed(3)}
-                      </Badge>
+                      </TableBadge>
                     </TableCell>
                   ) : null}
                   {sessionColumnVisibility.duration ? <TableCell className="tabular-nums">{row.duration}</TableCell> : null}
                   {sessionColumnVisibility.intent ? <TableCell>{row.intent}</TableCell> : null}
                   {sessionColumnVisibility.sentiment ? (
-                    <TableCell className={cn("capitalize", sentimentClassName(row.sentiment))}>{row.sentiment}</TableCell>
+                    <TableCell>
+                      <TableStatusBadge
+                        label={row.sentiment}
+                        tone={tableStatusToneFromSentiment(row.sentiment)}
+                        labelClassName="capitalize"
+                      />
+                    </TableCell>
                   ) : null}
                   <TableCell>
                     <div className="flex items-center justify-end gap-1">

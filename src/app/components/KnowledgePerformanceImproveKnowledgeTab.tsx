@@ -4,6 +4,7 @@ import { Badge } from "./ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { Progress } from "./ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
+import { TableBadge } from "./TableBadge";
 import { cn } from "./ui/utils";
 
 type FlaggedArticleSeverity = "High" | "Medium" | "Low";
@@ -249,12 +250,12 @@ export function KnowledgePerformanceImproveKnowledgeTab() {
                   <TableCell className="font-medium">{article.title}</TableCell>
                   <TableCell>{article.issue}</TableCell>
                   <TableCell>
-                    <Badge
+                    <TableBadge
                       variant={severityBadgeVariantByLevel[article.severity]}
                       className={severityBadgeClassByLevel[article.severity]}
                     >
                       {article.severity}
-                    </Badge>
+                    </TableBadge>
                   </TableCell>
                   <TableCell>{article.suggestedAction}</TableCell>
                 </TableRow>
@@ -285,16 +286,16 @@ export function KnowledgePerformanceImproveKnowledgeTab() {
                   <TableCell className="font-mono">{row.id}</TableCell>
                   <TableCell className="font-medium">{row.title}</TableCell>
                   <TableCell>
-                    <Badge
+                    <TableBadge
                       variant={approvalTypeBadgeVariantByType[row.type]}
                       className={approvalTypeBadgeClassByType[row.type]}
                     >
                       {row.type}
-                    </Badge>
+                    </TableBadge>
                   </TableCell>
                   <TableCell>{row.submittedBy}</TableCell>
                   <TableCell>
-                    <Badge
+                    <TableBadge
                       variant={approvalStatusBadgeVariantByType[row.status]}
                       className={cn("gap-1.5", approvalStatusBadgeClassByType[row.status])}
                     >
@@ -302,7 +303,7 @@ export function KnowledgePerformanceImproveKnowledgeTab() {
                       {row.status === "Approved" ? <CheckCircle2 className="size-3.5" aria-hidden /> : null}
                       {row.status === "Rejected" ? <XCircle className="size-3.5" aria-hidden /> : null}
                       {row.status}
-                    </Badge>
+                    </TableBadge>
                   </TableCell>
                 </TableRow>
               ))}

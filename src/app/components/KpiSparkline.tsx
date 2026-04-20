@@ -3,7 +3,7 @@ import type { EChartsCoreOption } from "echarts";
 import { EChartsCanvas } from "./EChartsCanvas";
 import { cn } from "./ui/utils";
 
-const gridLine = "hsl(var(--border) / 0.5)";
+const gridLine = "hsl(var(--muted-foreground))";
 
 /** Human-readable labels matching other area charts ("Mon, Jan 13"). */
 function buildKpiAxisDateLabels(length: number): string[] {
