@@ -5,13 +5,14 @@ import {
   Download,
   Loader2,
   Mail,
+  Settings,
   Play,
   MoreVertical,
   RotateCcw,
   Trophy,
 } from "lucide-react";
 import type { DateRange } from "react-day-picker";
-import { useLocation } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 
 import { Button } from "./ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
@@ -615,6 +616,7 @@ function TopOpportunityCard({
 
 export function AutomationOpportunitiesPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const deepLinkedTarget = useMemo(() => {
     const params = new URLSearchParams(location.search);
     const target = params.get("target");
@@ -833,10 +835,29 @@ export function AutomationOpportunitiesPage() {
       >
         <div className="flex flex-col flex-1 min-h-0">
           <PageHeader className={pageHeaderTabsFooterClassName}>
-            <h1 className="text-3xl tracking-tight">Automation Opportunities</h1>
-            <p className="text-muted-foreground mt-1">
-              Dashboard view of high-impact opportunities to improve efficiency and customer outcomes.
-            </p>
+            <section className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h1 className="text-3xl tracking-tight">Automation Opportunities</h1>
+                <p className="text-muted-foreground mt-1">
+                  Dashboard view of high-impact opportunities to improve efficiency and customer outcomes.
+                </p>
+              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 w-8 shrink-0 p-0"
+                    onClick={() => navigate("settings")}
+                    aria-label="Open automation settings"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Settings</TooltipContent>
+              </Tooltip>
+            </section>
 
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <Select

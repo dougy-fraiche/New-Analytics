@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { useParams } from "react-router";
 import { toast } from "sonner";
 
@@ -41,6 +42,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { cn } from "./ui/utils";
 import { ScrollArea } from "./ui/scroll-area";
 import { AutomationOpportunitiesFlowView } from "./AutomationOpportunitiesFlowView";
@@ -284,6 +286,14 @@ export function AutomationOpportunitiesAgentPage() {
     [updateJobById],
   );
 
+  const updateToolParameterRows = useCallback(
+    (toolId: string, rows: AgentToolParameterRowDraft[]) => {
+      if (!selectedJobId) return;
+      updateToolParameterRowsByJob(selectedJobId, toolId, rows);
+    },
+    [selectedJobId, updateToolParameterRowsByJob],
+  );
+
   const isFieldRewriteLoading = useCallback(
     (jobId: string, target: RewriteTarget) =>
       Boolean(rewriteLoadingByField[rewriteLoadingKey(jobId, target)]),
@@ -422,7 +432,7 @@ export function AutomationOpportunitiesAgentPage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-0 -mt-1">
             <div className="flex flex-wrap items-center gap-4 text-sm">
               <div className="flex items-center gap-2">
                 <span className="font-medium text-foreground">Created By:</span>
@@ -474,116 +484,129 @@ export function AutomationOpportunitiesAgentPage() {
       </PageHeader>
 
       <div className="flex-1 min-h-0 overflow-auto bg-white lg:overflow-hidden">
-        <div className={cn(pageRootListScrollGutterClassName, "h-full pt-0 pb-0")}>
-          <PageTransition className={cn(pageMainColumnClassName, "h-full min-h-0")}>
-            <div className="grid h-full min-h-0 items-start gap-8 lg:grid-cols-[17rem_minmax(0,1fr)]">
-              <aside className="space-y-3 self-start pt-8 pb-8 lg:sticky lg:top-0">
-                <h3 className="tracking-tight">Jobs</h3>
-                <Tabs
-                  orientation="vertical"
-                  value={selectedJobId}
-                  onValueChange={setSelectedJobId}
-                  className="w-full"
-                >
-                  <TabsList
-                    className={cn(
-                      "w-full items-stretch gap-1 rounded-none bg-transparent p-0",
-                      "group-data-[orientation=vertical]/tabs:flex-col",
-                    )}
+        <div
+          className={cn(
+            "h-full pt-0 pb-0",
+            viewMode === "textual" ? pageRootListScrollGutterClassName : "w-full min-w-0",
+          )}
+        >
+          <PageTransition
+            className={cn(
+              "h-full min-h-0",
+              viewMode === "textual" ? pageMainColumnClassName : "w-full min-w-0",
+            )}
+          >
+            {viewMode === "textual" ? (
+              <div className="grid h-full min-h-0 items-start gap-8 lg:grid-cols-[17rem_minmax(0,1fr)]">
+                <aside className="space-y-3 self-start pt-0 pb-8 lg:sticky lg:top-0">
+                  <h3 className="tracking-tight">Jobs</h3>
+                  <Tabs
+                    orientation="vertical"
+                    value={selectedJobId}
+                    onValueChange={setSelectedJobId}
+                    className="w-full"
                   >
-                    {draft.jobs.map((job) => (
-                      <TabsTrigger
-                        key={job.id}
-                        value={job.id}
-                        size="sm"
-                        className={cn(
-                          "w-full justify-start rounded-xl px-3 py-2 text-left text-foreground",
-                          "whitespace-normal leading-snug",
-                          "data-[state=inactive]:bg-transparent data-[state=inactive]:text-foreground data-[state=inactive]:hover:bg-primary-25",
-                          "data-[state=active]:bg-primary-50 data-[state=active]:text-primary-900 data-[state=active]:shadow-none",
-                        )}
-                      >
-                        {job.name}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                </Tabs>
-              </aside>
-
-              <ScrollArea
-                className="min-w-0 h-full min-h-0"
-                showScrollbarOnHover
-              >
-                <div className="space-y-4 pt-8 pb-8 lg:pr-2">
-                  <h3 className="tracking-tight">{selectedJob?.name ?? "AI Agent"}</h3>
-
-                  {viewMode === "textual" && selectedJob ? (
-                    <div className="space-y-4">
-                      <Card className="border-border/80 bg-background">
-                        <CardHeader className="pb-2">
-                          <div className="flex items-center justify-between gap-2">
-                            <CardTitle className="flex-1 text-base">
-                              Descriptions
-                            </CardTitle>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="job-description">Job Description:</Label>
-                            {isFieldRewriteLoading(selectedJob.id, "description") ? (
-                              <LoadingTextareaSkeleton />
-                            ) : (
-                              <Textarea
-                                id="job-description"
-                                className="min-h-20"
-                                value={selectedJob.description}
-                                onChange={(event) =>
-                                  updateJobField("description", event.target.value)
-                                }
-                              />
-                            )}
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="job-instruction">Job Instruction:</Label>
-                            {isFieldRewriteLoading(selectedJob.id, "instruction") ? (
-                              <LoadingTextareaSkeleton />
-                            ) : (
-                              <Textarea
-                                id="job-instruction"
-                                className="min-h-20"
-                                value={selectedJob.instruction}
-                                onChange={(event) =>
-                                  updateJobField("instruction", event.target.value)
-                                }
-                              />
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      {selectedJob.tools.map((tool, index) => (
-                        <ToolSection
-                          key={tool.id}
-                          tool={tool}
-                          index={index}
-                          onToolFieldChange={updateToolField}
-                        />
+                    <TabsList
+                      className={cn(
+                        "w-full items-stretch gap-1 rounded-none bg-transparent p-0",
+                        "group-data-[orientation=vertical]/tabs:flex-col",
+                      )}
+                    >
+                      {draft.jobs.map((job) => (
+                        <TabsTrigger
+                          key={job.id}
+                          value={job.id}
+                          size="sm"
+                          className={cn(
+                            "w-full justify-start rounded-xl px-3 py-2 text-left text-foreground",
+                            "whitespace-normal leading-snug",
+                            "data-[state=inactive]:bg-transparent data-[state=inactive]:text-foreground data-[state=inactive]:hover:bg-primary-25",
+                            "data-[state=active]:bg-primary-50 data-[state=active]:text-primary-900 data-[state=active]:shadow-none",
+                          )}
+                        >
+                          {job.name}
+                        </TabsTrigger>
                       ))}
-                    </div>
-                  ) : (
-                    <div className="h-[760px] max-h-[calc(100vh-20rem)] min-h-[620px]">
-                      <AutomationOpportunitiesFlowView
-                        jobs={draft.jobs}
-                        selectedJobId={selectedJobId}
-                        onUpdateJobField={updateJobFieldById}
-                        onUpdateToolField={updateToolFieldByJob}
-                        onUpdateToolParameterRows={updateToolParameterRowsByJob}
-                      />
-                    </div>
-                  )}
-                </div>
-              </ScrollArea>
-            </div>
+                    </TabsList>
+                  </Tabs>
+                </aside>
+
+                <ScrollArea
+                  className="min-w-0 h-full min-h-0"
+                  showScrollbarOnHover
+                >
+                  <div className="space-y-4 pt-0 pb-8 lg:pr-2">
+                    <h3 className="tracking-tight">{selectedJob?.name ?? "AI Agent"}</h3>
+
+                    {selectedJob ? (
+                      <div className="space-y-4">
+                        <Card className="border-border/80 bg-background">
+                          <CardHeader className="pb-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <CardTitle className="flex-1 text-base">
+                                Descriptions
+                              </CardTitle>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="job-description">Job Description:</Label>
+                              {isFieldRewriteLoading(selectedJob.id, "description") ? (
+                                <LoadingTextareaSkeleton />
+                              ) : (
+                                <Textarea
+                                  id="job-description"
+                                  className="min-h-20"
+                                  value={selectedJob.description}
+                                  onChange={(event) =>
+                                    updateJobField("description", event.target.value)
+                                  }
+                                />
+                              )}
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="job-instruction">Job Instruction:</Label>
+                              {isFieldRewriteLoading(selectedJob.id, "instruction") ? (
+                                <LoadingTextareaSkeleton />
+                              ) : (
+                                <Textarea
+                                  id="job-instruction"
+                                  className="min-h-20"
+                                  value={selectedJob.instruction}
+                                  onChange={(event) =>
+                                    updateJobField("instruction", event.target.value)
+                                  }
+                                />
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        {selectedJob.tools.map((tool, index) => (
+                          <ToolSection
+                            key={tool.id}
+                            tool={tool}
+                            index={index}
+                            onToolFieldChange={updateToolField}
+                            onToolParameterRowsChange={updateToolParameterRows}
+                          />
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                </ScrollArea>
+              </div>
+            ) : (
+              <div className="h-full min-h-0 w-full">
+                <AutomationOpportunitiesFlowView
+                  jobs={draft.jobs}
+                  selectedJobId={selectedJobId}
+                  onUpdateJobField={updateJobFieldById}
+                  onUpdateToolField={updateToolFieldByJob}
+                  onUpdateToolParameterRows={updateToolParameterRowsByJob}
+                />
+              </div>
+            )}
           </PageTransition>
         </div>
       </div>
@@ -608,6 +631,7 @@ function ToolSection({
   tool,
   index,
   onToolFieldChange,
+  onToolParameterRowsChange,
 }: {
   tool: AgentToolDraft;
   index: number;
@@ -621,7 +645,17 @@ function ToolSection({
       | "parameters",
     value: string,
   ) => void;
+  onToolParameterRowsChange: (
+    toolId: string,
+    rows: AgentToolParameterRowDraft[],
+  ) => void;
 }) {
+  const [showParameters, setShowParameters] = useState(false);
+  const parameterRows = useMemo(
+    () => normalizeToolParameterRows(tool),
+    [tool],
+  );
+
   return (
     <Card className="border-border/80 bg-background">
       <CardHeader className="pb-2">
@@ -674,15 +708,71 @@ function ToolSection({
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor={`${tool.id}-parameters`}>Parameters:</Label>
-          <Input
-            id={`${tool.id}-parameters`}
-            value={tool.parameters}
-            onChange={(event) =>
-              onToolFieldChange(tool.id, "parameters", event.target.value)
-            }
-          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowParameters((prev) => !prev)}
+            className="px-0"
+          >
+            <ChevronDown
+              className={`mr-2 h-4 w-4 transition-transform ${showParameters ? "rotate-180" : ""}`}
+            />
+            {showParameters ? "Hide" : "View"} Parameters ({parameterRows.length})
+          </Button>
         </div>
+        {showParameters ? (
+          <div className="space-y-2">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[180px] min-w-[180px] max-w-[180px]"><span>Name</span></TableHead>
+                  <TableHead className="w-[72px] min-w-[72px] max-w-[72px]"><span>Type</span></TableHead>
+                  <TableHead><span>Description</span></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {parameterRows.map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell className="w-[180px] min-w-[180px] max-w-[180px]">
+                      <Input
+                        value={row.name}
+                        onChange={(event) =>
+                          onToolParameterRowsChange(
+                            tool.id,
+                            parameterRows.map((candidate) =>
+                              candidate.id === row.id
+                                ? { ...candidate, name: event.target.value }
+                                : candidate,
+                            ),
+                          )
+                        }
+                      />
+                    </TableCell>
+                    <TableCell className="w-[72px] min-w-[72px] max-w-[72px]">
+                      <span className="text-sm text-foreground">{row.dataType}</span>
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={row.description}
+                        onChange={(event) =>
+                          onToolParameterRowsChange(
+                            tool.id,
+                            parameterRows.map((candidate) =>
+                              candidate.id === row.id
+                                ? { ...candidate, description: event.target.value }
+                                : candidate,
+                            ),
+                          )
+                        }
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );

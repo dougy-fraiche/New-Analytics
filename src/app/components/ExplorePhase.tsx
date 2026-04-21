@@ -369,7 +369,10 @@ export function ExplorePhase({
   const renderTopInsightCard = (card: TopInsightCard) => (
     <Card
       key={card.id}
-      className="group/widget relative flex h-auto min-h-[8rem] shrink-0 flex-col overflow-hidden transition-[box-shadow,border-color] hover:border-primary/30 hover:shadow-md sm:h-[8rem]"
+      className={cn(
+        "group/widget relative flex h-auto shrink-0 flex-col overflow-hidden transition-[box-shadow,border-color] hover:border-primary/30 hover:shadow-md",
+        card.segment === "opportunity" ? "min-h-[10.5rem] sm:min-h-[11rem]" : "min-h-[8rem] sm:h-[8rem]",
+      )}
     >
       {card.segment === "anomaly" ? (
         <DropdownMenu>
@@ -418,8 +421,14 @@ export function ExplorePhase({
           <CardTitle className="line-clamp-2 text-base font-semibold leading-snug">
             {card.title}
           </CardTitle>
-          <CardDescription className="line-clamp-2 text-xs leading-snug">
-            {card.description}
+          <CardDescription
+            className={
+              card.segment === "opportunity"
+                ? "line-clamp-4 text-xs leading-snug"
+                : "line-clamp-2 text-xs leading-snug"
+            }
+          >
+            {card.segment === "opportunity" ? card.cardBody : card.description}
           </CardDescription>
         </CardHeader>
         <div className="mt-auto flex w-full min-w-0 shrink-0 flex-wrap items-center gap-2 px-4 pb-3 pt-2">
@@ -439,9 +448,15 @@ export function ExplorePhase({
               </>
             ) : (
               <>
-                <Badge variant="outline" className="gap-1">
+                <Badge variant="outline" className="shrink-0 gap-1">
                   <Bot className="h-3 w-3" />
-                  Automation Opportunity
+                  Opportunity
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="w-fit shrink-0 border-green-500/50 bg-emerald-50 px-2 py-0.5 text-xs font-normal text-emerald-800 dark:border-green-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+                >
+                  {card.annualSavingsBadge}
                 </Badge>
               </>
             )}

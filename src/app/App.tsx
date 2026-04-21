@@ -74,15 +74,34 @@ const router = createBrowserRouter([
       { path: "anomaly-investigation/:insightId", Component: ExplorePage },
       { path: "conversations", ...lazyRoute(() => import("./components/AllConversationsPage"), "AllConversationsPage") },
       {
-        path: "automation-opportunities/agent/:agentId",
-        ...lazyRoute(
-          () => import("./components/AutomationOpportunitiesAgentPage"),
-          "AutomationOpportunitiesAgentPage",
-        ),
+        path: "automation-opportunities",
+        children: [
+          {
+            path: "agent/:agentId",
+            ...lazyRoute(
+              () => import("./components/AutomationOpportunitiesAgentPage"),
+              "AutomationOpportunitiesAgentPage",
+            ),
+          },
+          {
+            path: "settings",
+            ...lazyRoute(
+              () => import("./components/AutomationOpportunitiesSettingsPage"),
+              "AutomationOpportunitiesSettingsPage",
+            ),
+          },
+          {
+            index: true,
+            ...lazyRoute(
+              () => import("./components/AutomationOpportunitiesPage"),
+              "AutomationOpportunitiesPage",
+            ),
+          },
+        ],
       },
-      { path: "automation-opportunities", ...lazyRoute(() => import("./components/AutomationOpportunitiesPage"), "AutomationOpportunitiesPage") },
       { path: "observability", ...lazyRoute(() => import("./components/ObservabilityPage"), "ObservabilityPage") },
       { path: "observability/ai-agents", ...lazyRoute(() => import("./components/ObservabilityCategoryPage"), "ObservabilityCategoryPage") },
+      { path: "observability/ai-agents/settings", ...lazyRoute(() => import("./components/AIAgentsSettingsPage"), "AIAgentsSettingsPage") },
       { path: "observability/ai-agents/:dashboardId", ...lazyRoute(() => import("./components/ObservabilityCategoryPage"), "ObservabilityCategoryPage") },
       { path: "observability/copilot", element: <Navigate to={ROUTES.COPILOT_TAB("overview")} replace /> },
       { path: "observability/copilot/overview", ...lazyRoute(() => import("./components/CopilotOverviewPage"), "CopilotOverviewPage") },

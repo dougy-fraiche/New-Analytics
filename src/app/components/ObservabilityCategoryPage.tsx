@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router";
 import {
   Calendar,
-  Download,
   RotateCcw,
+  Settings,
   TrendingDown,
   TrendingUp,
   CircleGauge,
@@ -53,6 +53,7 @@ import { AIAgentsOverviewTab } from "./AIAgentsOverviewTab";
 import { AIAgentsEvaluationTab } from "./AIAgentsEvaluationTab";
 import { AIAgentsIntentNluTab } from "./AIAgentsIntentNluTab";
 import { AIAgentsGoalsOutcomesTab } from "./AIAgentsGoalsOutcomesTab";
+import { AIAgentsDataConnectionDialog } from "./AIAgentsDataConnectionDialog";
 import { cn } from "./ui/utils";
 import { ROUTES } from "../routes";
 import {
@@ -125,6 +126,8 @@ export function ObservabilityCategoryPage() {
   const [dateRange, setDateRange] = useState<DateRangeOption>(DEFAULT_FILTERS.dateRange);
   const [team, setTeam] = useState(DEFAULT_FILTERS.team);
   const [product, setProduct] = useState(DEFAULT_FILTERS.product);
+  const [dataConnectionDialogOpen, setDataConnectionDialogOpen] = useState(false);
+  const [isDataConnectionConnected, setIsDataConnectionConnected] = useState(false);
 
   const hasFilterChanges = useMemo(() => {
     return (
@@ -202,9 +205,38 @@ export function ObservabilityCategoryPage() {
               <section className="flex items-center gap-2">
                 <h1 className="text-3xl tracking-tight">{category.name}</h1>
                 <div className="ml-auto flex items-center gap-2">
-                  <Button variant="outline" size="sm" className="h-8">
-                    <Download className="h-4 w-4 mr-2" />
-                    Export
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1.5"
+                    onClick={() => setDataConnectionDialogOpen(true)}
+                  >
+                    <span className="relative inline-flex size-2.5" aria-hidden>
+                      <span
+                        className={cn(
+                          "absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping",
+                          isDataConnectionConnected ? "bg-emerald-500" : "bg-red-500",
+                        )}
+                      />
+                      <span
+                        className={cn(
+                          "relative inline-flex size-2.5 rounded-full",
+                          isDataConnectionConnected ? "bg-emerald-500" : "bg-red-500",
+                        )}
+                      />
+                    </span>
+                    Data Connection
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    aria-label="Open AI Agents settings"
+                    onClick={() => navigate(ROUTES.AI_AGENTS_SETTINGS)}
+                  >
+                    <Settings className="h-4 w-4" />
                   </Button>
                 </div>
               </section>
@@ -513,6 +545,11 @@ export function ObservabilityCategoryPage() {
         </div>
       </div>
       </Tabs>
+      <AIAgentsDataConnectionDialog
+        open={dataConnectionDialogOpen}
+        onOpenChange={setDataConnectionDialogOpen}
+        onConnectionStatusChange={setIsDataConnectionConnected}
+      />
 
     </WidgetAIProvider>
   );

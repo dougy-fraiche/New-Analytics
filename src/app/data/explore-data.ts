@@ -184,6 +184,10 @@ export type TopInsightCard =
       segment: "opportunity";
       /** Shows an Action pill alongside Opportunity (automations, recommended actions, etc.). */
       showActionPill: boolean;
+      /** Primary body copy rendered on Explore top recommended action cards. */
+      cardBody: string;
+      /** Footer badge text showing annualized savings estimate. */
+      annualSavingsBadge: string;
       /** Deterministic deep-link target in Automation Opportunities. */
       automationTarget: {
         scope: AutomationScopeTab;
@@ -218,6 +222,9 @@ export const topInsightsCards: TopInsightCard[] = [
     id: 3,
     segment: "opportunity",
     showActionPill: true,
+    cardBody:
+      "Automating this topic could save $26K annually across 40.5K monthly interactions. Agents are commonly verifying account details, explaining posted charges, and routing payment resolutions.",
+    annualSavingsBadge: "$26K Annual Savings",
     automationTarget: { scope: "categories", id: "billing-payments" },
     title: "Billing & Payment Inquiries",
     description: "High-volume category with repeatable verification and lookup steps.",
@@ -228,6 +235,9 @@ export const topInsightsCards: TopInsightCard[] = [
     id: 4,
     segment: "opportunity",
     showActionPill: true,
+    cardBody:
+      "Automating this topic could save $13K annually across 1,620 interactions. Agents are commonly reviewing statement line items, validating fee logic, and clarifying due-date and balance changes.",
+    annualSavingsBadge: "$13K Annual Savings",
     automationTarget: { scope: "topics", id: "topics-bill-explanation" },
     title: "Bill Explanation",
     description: "1,620 automatable calls · 3.6% of total mix.",
@@ -238,6 +248,9 @@ export const topInsightsCards: TopInsightCard[] = [
     id: 5,
     segment: "opportunity",
     showActionPill: true,
+    cardBody:
+      "Automating this topic could save $7K annually across 9,420 interactions. Agents are commonly pulling line-item histories, validating charge legitimacy, and explaining clearance decisions.",
+    annualSavingsBadge: "$7K Annual Savings",
     automationTarget: { scope: "subtopics", id: "subtopics-charge-breakdown" },
     title: "Charge Breakdown",
     description: "Repeat line-item and clearance questions fit deterministic triage.",
@@ -248,6 +261,9 @@ export const topInsightsCards: TopInsightCard[] = [
     id: 6,
     segment: "opportunity",
     showActionPill: true,
+    cardBody:
+      "Automating this topic could save $27K annually across 3,230 interactions. Agents are commonly handling activation checks, limit validations, and replacement-card workflows.",
+    annualSavingsBadge: "$27K Annual Savings",
     automationTarget: { scope: "categories", id: "card-services" },
     title: "Card Services & Management",
     description: "Highly standardized activation, limit, and replacement flows.",
@@ -258,6 +274,9 @@ export const topInsightsCards: TopInsightCard[] = [
     id: 7,
     segment: "opportunity",
     showActionPill: true,
+    cardBody:
+      "Automating this topic could save $15K annually across 20,833 interactions. Agents are commonly confirming identity signals, walking activation steps, and handling PIN or lockout follow-ups.",
+    annualSavingsBadge: "$15K Annual Savings",
     automationTarget: { scope: "topics", id: "topics-card-activation" },
     title: "Card Activation",
     description: "Activation and verification requests are ideal for guided self-serve.",
@@ -268,6 +287,9 @@ export const topInsightsCards: TopInsightCard[] = [
     id: 8,
     segment: "opportunity",
     showActionPill: true,
+    cardBody:
+      "Automating this topic could save $6K annually across 5,356 interactions. Agents are commonly verifying funding credentials, validating account ownership, and confirming enrollment success.",
+    annualSavingsBadge: "$6K Annual Savings",
     automationTarget: { scope: "subtopics", id: "subtopics-add-payment-method" },
     title: "Add Payment Method",
     description: "Predictable verification flow with strong deterministic coverage.",

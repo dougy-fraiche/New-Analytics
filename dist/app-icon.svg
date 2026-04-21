@@ -1,1 +1,22 @@
-<?xml version="1.0" encoding="UTF-8"?><svg fill="oklch(0.3994 0.3437 286.95)" id="Artwork_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 381.33 381.33"><circle cx="93.73" cy="93.73" r="31.24" transform="translate(-23.14 31.18) rotate(-16.85)"/><circle cx="193.35" cy="93.73" r="31.24"/><path d="M315.85,124.97h-45.79c-1.64,0-2.96,1.32-3,2.97-1.56,76.01-63.11,137.56-139.12,139.12-1.64.03-2.97,1.35-2.97,3v45.79c0,1.67,1.36,3.03,3.03,3,104.52-1.61,189.25-86.33,190.85-190.85.03-1.67-1.34-3.03-3-3.03Z"/></svg>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg
+  id="Artwork_1"
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 381.33 381.33"
+  fill="url(#appIconGradient)"
+>
+  <defs>
+    <linearGradient id="appIconGradient" x1="62.03870" y1="61.99997" x2="645.23300" y2="61.00648" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6366F1"/>
+      <stop offset="0.166667" stop-color="#A855F7"/>
+      <stop offset="0.333333" stop-color="#EC4899"/>
+      <stop offset="0.5" stop-color="#F59E0B"/>
+      <stop offset="0.666667" stop-color="#10B981"/>
+      <stop offset="0.833333" stop-color="#3B82F6"/>
+      <stop offset="1" stop-color="#6366F1"/>
+    </linearGradient>
+  </defs>
+  <circle cx="93.73" cy="93.73" r="31.24" transform="translate(-23.14 31.18) rotate(-16.85)"/>
+  <circle cx="193.35" cy="93.73" r="31.24"/>
+  <path d="M315.85,124.97h-45.79c-1.64,0-2.96,1.32-3,2.97-1.56,76.01-63.11,137.56-139.12,139.12-1.64.03-2.97,1.35-2.97,3v45.79c0,1.67,1.36,3.03,3.03,3,104.52-1.61,189.25-86.33,190.85-190.85.03-1.67-1.34-3.03-3-3.03Z"/>
+</svg>

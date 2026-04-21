@@ -26,10 +26,12 @@ export const ROUTES = {
   ANOMALY_INVESTIGATION: (insightId: string | number) => `/anomaly-investigation/${insightId}`,
   CONVERSATIONS: "/conversations",
   AUTOMATION_OPPORTUNITIES: "/automation-opportunities",
+  AUTOMATION_OPPORTUNITIES_SETTINGS: "/automation-opportunities/settings",
   /** Stable agent id (UUID) as the path segment. */
   AUTOMATION_OPPORTUNITIES_AGENT: (agentId: string) => `/automation-opportunities/agent/${agentId}`,
   OBSERVABILITY: "/observability",
   AI_AGENTS: "/observability/ai-agents",
+  AI_AGENTS_SETTINGS: "/observability/ai-agents/settings",
   AI_AGENTS_DASHBOARD: (dashboardId: string) => `/observability/ai-agents/${dashboardId}`,
   COPILOT: "/observability/copilot",
   COPILOT_TAB: (tab: CopilotTabRoute) => `/observability/copilot/${tab}`,

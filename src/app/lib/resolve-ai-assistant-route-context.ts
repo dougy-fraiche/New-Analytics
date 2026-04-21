@@ -45,7 +45,10 @@ export function resolveAiAssistantRouteContext(
     return { dashboardId: "all-insights", sourceOotbId: "all-insights" };
   }
 
-  if (pathname === ROUTES.AUTOMATION_OPPORTUNITIES) {
+  if (
+    pathname === ROUTES.AUTOMATION_OPPORTUNITIES ||
+    pathname === ROUTES.AUTOMATION_OPPORTUNITIES_SETTINGS
+  ) {
     return { dashboardId: AUTOMATION_OPPORTUNITIES_ID, sourceOotbId: AUTOMATION_OPPORTUNITIES_ID };
   }
 
@@ -66,6 +69,10 @@ export function resolveAiAssistantRouteContext(
 
   if (pathname.startsWith(`${ROUTES.AUTOMATION_OPPORTUNITIES}/agent/`)) {
     return { dashboardId: AUTOMATION_OPPORTUNITIES_ID, sourceOotbId: AUTOMATION_OPPORTUNITIES_ID };
+  }
+
+  if (pathname === ROUTES.AI_AGENTS_SETTINGS) {
+    return { dashboardId: "ai-agents-settings", sourceOotbId: "ai-agents-settings" };
   }
 
   // OOTB dashboard: /dashboard/:dashboardId

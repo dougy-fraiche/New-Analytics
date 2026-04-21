@@ -165,8 +165,15 @@ function RootLayoutInner() {
       return [{ label: "Explore" }];
     }
 
-    if (location.pathname === "/automation-opportunities") {
+    if (location.pathname === ROUTES.AUTOMATION_OPPORTUNITIES) {
       return [{ label: "Automation Opportunities" }];
+    }
+
+    if (location.pathname === ROUTES.AUTOMATION_OPPORTUNITIES_SETTINGS) {
+      return [
+        { label: "Automation Opportunities", href: ROUTES.AUTOMATION_OPPORTUNITIES },
+        { label: "Settings" },
+      ];
     }
 
     if (location.pathname === ROUTES.OBSERVABILITY) {
@@ -181,6 +188,16 @@ function RootLayoutInner() {
       return [
         { label: "Automation Opportunities", href: ROUTES.AUTOMATION_OPPORTUNITIES },
         { label: agent?.scopeTitle ?? decodeURIComponent(params.agentId) ?? "Agent" },
+      ];
+    }
+
+    if (
+      location.pathname === ROUTES.AI_AGENTS_SETTINGS
+    ) {
+      return [
+        { label: "Observability", href: ROUTES.OBSERVABILITY },
+        { label: "AI Agents", href: ROUTES.AI_AGENTS },
+        { label: "Settings" },
       ];
     }
 
@@ -335,7 +352,8 @@ function RootLayoutInner() {
     } else if (location.pathname === "/insights") {
       label = "All Insights";
     } else if (
-      location.pathname === "/automation-opportunities" ||
+      location.pathname === ROUTES.AUTOMATION_OPPORTUNITIES ||
+      location.pathname === ROUTES.AUTOMATION_OPPORTUNITIES_SETTINGS ||
       location.pathname.startsWith(`${ROUTES.AUTOMATION_OPPORTUNITIES}/agent/`)
     ) {
       if (params.agentId) {
@@ -343,6 +361,10 @@ function RootLayoutInner() {
       } else {
         label = "Automation Opportunities";
       }
+    } else if (
+      location.pathname === ROUTES.AI_AGENTS_SETTINGS
+    ) {
+      label = "Settings";
     } else if (
       location.pathname === ROUTES.AI_AGENTS ||
       location.pathname.startsWith(`${ROUTES.AI_AGENTS}/`)
@@ -397,7 +419,8 @@ function RootLayoutInner() {
     location.pathname.startsWith("/anomaly-investigation/") ||
     location.pathname === "/" ||
     location.pathname === "/insights" ||
-    location.pathname === "/automation-opportunities" ||
+    location.pathname === ROUTES.AUTOMATION_OPPORTUNITIES ||
+    location.pathname === ROUTES.AUTOMATION_OPPORTUNITIES_SETTINGS ||
     location.pathname.startsWith(`${ROUTES.AUTOMATION_OPPORTUNITIES}/agent/`) ||
     isCopilotRoute ||
     isKnowledgePerformanceRoute ||
