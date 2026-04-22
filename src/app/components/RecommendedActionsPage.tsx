@@ -42,6 +42,10 @@ import {
   type RecommendedAction,
 } from "../data/recommended-actions";
 import {
+  ACTION_STATUS_LABELS,
+  recommendedActionActivityById,
+} from "../data/action-activity";
+import {
   PageHeader,
   pageMainColumnClassName,
   pageRootListScrollGutterClassName,
@@ -379,11 +383,13 @@ export function RecommendedActionsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedActions.map((action) => (
+              {sortedActions.map((action) => {
+                const activity = recommendedActionActivityById[action.id];
+                return (
                   <TableRow
                     key={action.id}
                     data-state={selectedIds.has(action.id) ? "selected" : undefined}
-                    className="cursor-pointer"
+                    className="cursor-pointer hover:bg-muted/40"
                     onClick={() => setSheetAction(action)}
                   >
                     <TableCell onClick={(e) => e.stopPropagation()}>
@@ -399,9 +405,14 @@ export function RecommendedActionsPage() {
                         <p className="text-sm text-muted-foreground mt-0.5">
                           {action.description}
                         </p>
-                        <p className="text-xs text-amber-600 mt-1 italic">
+                        <p className="mt-1 text-xs italic text-muted-foreground">
                           {action.note}
                         </p>
+                        {activity ? (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {activity.owner} · {ACTION_STATUS_LABELS[activity.status]} · Updated {activity.updatedAt}
+                          </p>
+                        ) : null}
                       </div>
                     </TableCell>
                     <TableCell className="w-[132px]">
@@ -419,7 +430,7 @@ export function RecommendedActionsPage() {
                       </span>
                     </TableCell>
                     <TableCell className="w-[220px]">
-                      <p className="text-sm font-normal text-green-700">
+                      <p className="text-sm font-normal text-success">
                         {action.impactValue}
                       </p>
                       <p className="text-xs text-muted-foreground">
@@ -469,7 +480,8 @@ export function RecommendedActionsPage() {
                       </Tooltip>
                     </TableCell>
                   </TableRow>
-                ))}
+                );
+              })}
             </TableBody>
           </Table>
       </div>

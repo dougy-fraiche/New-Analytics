@@ -142,7 +142,7 @@ export function ObservabilityCategoryPage() {
 
   useEffect(() => {
     if (standaloneCategoryId) {
-      navigate(`/dashboard/${standaloneCategoryId}`, { replace: true });
+      navigate(ROUTES.DASHBOARD(standaloneCategoryId), { replace: true });
     }
   }, [standaloneCategoryId, navigate]);
 

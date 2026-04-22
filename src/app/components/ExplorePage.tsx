@@ -303,7 +303,7 @@ export function ExplorePage() {
       setMessages([userMessage, stub]);
 
       queueMicrotask(() => {
-        navigate(`/conversation/${newConversation.id}`);
+        navigate(ROUTES.CONVERSATION(newConversation.id));
       });
 
       void runPhasedExploreAssistantReply({

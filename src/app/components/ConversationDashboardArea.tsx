@@ -225,7 +225,7 @@ function buildAnomalyKpiSparklineValues(
   const start = baseline - direction * amplitude * 3.2;
 
   return Array.from({ length: points }, (_, i) => {
-    const t = points === 1 ? 1 : i / (points - 1);
+    const t = i / (points - 1);
     const trendValue = start + (baseline - start) * t;
     const wiggle = Math.sin((i + index) * 0.8) * amplitude * 0.15;
     return Math.max(0, trendValue + wiggle);
@@ -320,7 +320,7 @@ function AnomalyPrimaryFindingContent({
   onDelete?: () => void;
 }) {
   const showConversationMenu = Boolean(onRename || onDelete);
-  const relatedAnomalyFallback = {
+  const relatedAnomalyFallback: (typeof model.relatedAnomalies)[number] = {
     label: "Service Quality",
     detail: "Quality and operational efficiency indicators moved outside expected baseline.",
   };

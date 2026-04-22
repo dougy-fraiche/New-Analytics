@@ -55,8 +55,15 @@ import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
 import { TableBadge } from "./TableBadge";
 import { WidgetAIProvider } from "../contexts/WidgetAIContext";
 import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
+import { ROUTES } from "../routes";
+import { recommendedActionsData } from "../data/recommended-actions";
+import {
+  ACTION_STATUS_LABELS,
+  type ActionExecutionStatus,
+  recommendedActionActivityById,
+} from "../data/action-activity";
 
-type ActionStatus = "completed" | "failed" | "in_progress" | "pending" | "created";
+type ActionStatus = ActionExecutionStatus;
 
 interface ActionRecord {
   id: string;
@@ -74,90 +81,24 @@ interface ActionRecord {
 }
 
 const initialActions: ActionRecord[] = [
-  {
-    id: "act-001",
-    name: "Deploy Account Verification Agent",
-    type: "AI Agent",
-    status: "completed",
-    triggeredBy: "John Doe",
-    startedAt: "Feb 20, 2026 09:14 AM",
-    completedAt: "Feb 20, 2026 09:16 AM",
-    impactBadge: "+23%",
-    impactDescription: "Containment lift for verification volume; ~$180K/yr value at current run rate",
-    details: "Deployed AI agent to handle account verification requests in Tier-1 queue.",
-  },
-  {
-    id: "act-002",
-    name: "Update Knowledge Base — Password Reset",
-    type: "Deterministic Process",
-    status: "completed",
-    triggeredBy: "Emily Rodriguez",
-    startedAt: "Feb 20, 2026 08:45 AM",
-    completedAt: "Feb 20, 2026 08:45 AM",
-    impactBadge: "−12%",
-    impactDescription: "Repeat contacts on reset intent; ~$42K/yr deflection value projected",
-    details: "Updated article #KB-1042 with new 2FA reset flow instructions.",
-  },
-  {
-    id: "act-003",
-    name: "Retrain Escalation Classifier",
-    type: "AI Agent",
-    status: "in_progress",
-    triggeredBy: "Alex Morgan",
-    startedAt: "Feb 20, 2026 08:00 AM",
-    completedAt: null,
-    impactBadge: "+4%",
-    impactDescription: "Routing accuracy once training finishes; validation holdout in progress",
-    details: "Retraining escalation prediction model with last 30 days of labeled data.",
-  },
-  {
-    id: "act-004",
-    name: "Export Q4 Analytics Report",
-    type: "Deterministic Process",
-    status: "created",
-    triggeredBy: "Sarah Johnson",
-    startedAt: "Feb 19, 2026 04:30 PM",
-    completedAt: "Feb 19, 2026 04:31 PM",
-    impactBadge: "Q4 pack",
-    impactDescription: "Executive readout for workforce and channel planning decisions",
-    details: "Exported PDF report for Q4 2025 customer support analytics.",
-  },
-  {
-    id: "act-005",
-    name: "Bulk Reassign Billing Tickets",
-    type: "AI Agent",
-    status: "failed",
-    triggeredBy: "Michael Chen",
-    startedAt: "Feb 19, 2026 02:10 PM",
-    completedAt: "Feb 19, 2026 02:10 PM",
-    impactBadge: "−3 min AHT",
-    impactDescription: "Target for billing queue; not realized — run failed at destination capacity",
-    details: "Attempted to reassign 47 billing tickets to Tier-2. Failed: target queue at capacity.",
-  },
-  {
-    id: "act-006",
-    name: "Enable Copilot for Technical Team",
-    type: "AI Agent",
-    status: "completed",
-    triggeredBy: "John Doe",
-    startedAt: "Feb 19, 2026 11:00 AM",
-    completedAt: "Feb 19, 2026 11:00 AM",
-    impactBadge: "−38%",
-    impactDescription: "Handle time for technical queue; ~$5.8K/wk labor savings (measured)",
-    details: "Enabled AI Copilot suggestions for all agents in the Technical Support team.",
-  },
-  {
-    id: "act-007",
-    name: "Generate Weekly Digest",
-    type: "Deterministic Process",
-    status: "in_progress",
-    triggeredBy: "Priya Patel",
-    startedAt: "Feb 21, 2026 06:00 AM",
-    completedAt: null,
-    impactBadge: "Weekly",
-    impactDescription: "Digest to team leads; faster review vs. ad hoc dashboard checks",
-    details: "Scheduled weekly digest email for all team leads.",
-  },
+  ...recommendedActionsData
+    .map((action): ActionRecord | null => {
+      const activity = recommendedActionActivityById[action.id];
+      if (!activity) return null;
+      return {
+        id: `rec-${action.id}`,
+        name: action.title,
+        type: action.type,
+        status: activity.status,
+        triggeredBy: activity.owner,
+        startedAt: activity.startedAt,
+        completedAt: activity.completedAt,
+        impactBadge: action.impactValue,
+        impactDescription: `${action.impactLabel}; ${action.projectedROI} projected ROI`,
+        details: action.note,
+      };
+    })
+    .filter((action): action is ActionRecord => Boolean(action)),
   {
     id: "act-008",
     name: "Archive Stale Conversations",
@@ -200,11 +141,11 @@ const statusConfig: Record<
   ActionStatus,
   { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: typeof CheckCircle2 }
 > = {
-  completed: { label: "Published", variant: "outline", icon: Check },
-  created: { label: "Created", variant: "default", icon: Bot },
-  failed: { label: "Failed", variant: "destructive", icon: XCircle },
-  in_progress: { label: "In Progress", variant: "secondary", icon: Loader2 },
-  pending: { label: "In Progress", variant: "outline", icon: Clock },
+  completed: { label: ACTION_STATUS_LABELS.completed, variant: "outline", icon: Check },
+  created: { label: ACTION_STATUS_LABELS.created, variant: "default", icon: Bot },
+  failed: { label: ACTION_STATUS_LABELS.failed, variant: "destructive", icon: XCircle },
+  in_progress: { label: ACTION_STATUS_LABELS.in_progress, variant: "secondary", icon: Loader2 },
+  pending: { label: ACTION_STATUS_LABELS.pending, variant: "outline", icon: Clock },
 };
 
 const allTypes = Array.from(new Set(initialActions.map((a) => a.type)));
@@ -270,7 +211,7 @@ export function ActionsHistoryPage() {
       <SelectItem value="created">Created</SelectItem>
                     <SelectItem value="failed">Failed</SelectItem>
                     <SelectItem value="in_progress">In Progress</SelectItem>
-      <SelectItem value="pending">In Progress</SelectItem>
+      <SelectItem value="pending">Queued</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={typeFilter} onValueChange={setTypeFilter}>
@@ -374,7 +315,7 @@ export function ActionsHistoryPage() {
                   return (
                     <TableRow
                       key={action.id}
-                      className="group"
+                      className="group hover:bg-muted/40"
                     >
                       <TableCell className="w-[340px] whitespace-normal">
                         <section>
@@ -431,7 +372,9 @@ export function ActionsHistoryPage() {
                             <DropdownMenuItem
                               onSelect={() => {
                                 navigate(
-                                  `/automation-opportunities/agent/${encodeURIComponent(action.name)}`,
+                                  ROUTES.AUTOMATION_OPPORTUNITIES_AGENT(
+                                    encodeURIComponent(action.name),
+                                  ),
                                 );
                               }}
                             >
@@ -472,7 +415,7 @@ export function ActionsHistoryPage() {
               Deploy recommended actions to see them tracked here as an audit log
             </EmptyDescription>
           </EmptyHeader>
-          <Link to="/recommended-actions">
+          <Link to={ROUTES.RECOMMENDED_ACTIONS}>
             <Button variant="outline" size="sm">
               View Recommended Actions
             </Button>

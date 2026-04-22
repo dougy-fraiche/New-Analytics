@@ -15,6 +15,7 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "./
 import { ChatInputBar } from "./ChatInputBar";
 import { KpiMetricValueTitle } from "./KpiMetricValueTitle";
 import { KpiSparkline } from "./KpiSparkline";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { cn } from "./ui/utils";
 import {
   type TopInsightCard,
@@ -376,17 +377,22 @@ export function ExplorePhase({
     >
       {card.segment === "anomaly" ? (
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-xs"
-              aria-label={`Open actions for ${card.title}`}
-              className="absolute right-2 top-2 z-20"
-            >
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
+          <Tooltip>
+            <DropdownMenuTrigger asChild>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label={`Open actions for ${card.title}`}
+                  className="absolute right-2 top-2 z-20"
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+            </DropdownMenuTrigger>
+            <TooltipContent side="left">More options</TooltipContent>
+          </Tooltip>
           <DropdownMenuContent align="end">
             <DropdownMenuItem
               onSelect={(event) => {
@@ -439,7 +445,7 @@ export function ExplorePhase({
                   variant={card.severity === "Critical" ? "destructive" : "secondary"}
                   className={
                     card.severity === "High"
-                      ? "border-orange-200 bg-orange-100 text-orange-800 dark:border-orange-900 dark:bg-orange-950/40 dark:text-orange-300"
+                      ? "border-warning-border bg-warning-bg text-warning"
                       : undefined
                   }
                 >
@@ -454,7 +460,7 @@ export function ExplorePhase({
                 </Badge>
                 <Badge
                   variant="outline"
-                  className="w-fit shrink-0 border-green-500/50 bg-emerald-50 px-2 py-0.5 text-xs font-normal text-emerald-800 dark:border-green-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+                  className="w-fit shrink-0 border-success-border bg-success-bg px-2 py-0.5 text-xs font-normal text-success"
                 >
                   {card.annualSavingsBadge}
                 </Badge>

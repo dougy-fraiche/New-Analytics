@@ -51,6 +51,7 @@ import {
   getSavedFolderDashboardPath,
   getSavedStandaloneDashboardPath,
 } from "../lib/saved-slugs";
+import { ROUTES } from "../routes";
 
 // ─── Shared data sets (same as DashboardPage) ──────────────────────────────
 
@@ -162,7 +163,7 @@ function collectAllWidgets(
   for (const dashboard of allOotbDashboards) {
     processDashboard(dashboard.id, {
       name: dashboard.name,
-      path: `/dashboard/${dashboard.id}`,
+      path: ROUTES.DASHBOARD(dashboard.id),
       type: "ootb",
     });
   }
@@ -171,7 +172,7 @@ function collectAllWidgets(
   for (const cat of standaloneCategories) {
     processDashboard(cat.id, {
       name: cat.name,
-      path: `/dashboard/${cat.id}`,
+      path: ROUTES.DASHBOARD(cat.id),
       type: "ootb",
     });
   }

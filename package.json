@@ -4,8 +4,10 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
+    "prebuild": "npm run check:routes",
     "build": "vite build",
     "dev": "vite",
+    "check:routes": "node scripts/check-routes.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

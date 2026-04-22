@@ -49,6 +49,7 @@ import { cn } from "./ui/utils";
 import { PageTransition } from "./PageTransition";
 import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
 import { showDeletedObjectToast, showObjectDeletionToast } from "../lib/object-deletion-toast";
+import { ROUTES } from "../routes";
 // @tanstack/react-virtual is installed and ready for virtualization
 // when conversation lists grow beyond ~50 items. Import useVirtualizer
 // from "@tanstack/react-virtual" and wrap the TableBody accordingly.
@@ -241,7 +242,7 @@ export function AllConversationsPage() {
                       </TableCell>
                       <TableCell>
                         <Link
-                          to={`/conversation/${conversation.id}`}
+                          to={ROUTES.CONVERSATION(conversation.id)}
                           className="flex items-center gap-3 hover:underline"
                         >
                           <span className="font-normal truncate">{conversation.name}</span>

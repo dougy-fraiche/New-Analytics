@@ -58,6 +58,8 @@ const lazyRoute = (importFn: () => Promise<{ [key: string]: React.ComponentType 
   },
 });
 
+const toChildPath = (route: string) => route.replace(/^\//, "");
+
 const router = createBrowserRouter([
   {
     path: ROUTES.INTERACTION_PLAYBACK,
@@ -70,98 +72,147 @@ const router = createBrowserRouter([
     HydrateFallback: HydrateFallback,
     children: [
       { index: true, Component: ExplorePage },
-      { path: "conversation/:conversationId", Component: ExplorePage },
-      { path: "anomaly-investigation/:insightId", Component: ExplorePage },
-      { path: "conversations", ...lazyRoute(() => import("./components/AllConversationsPage"), "AllConversationsPage") },
+      { path: toChildPath(ROUTES.CONVERSATION(":conversationId")), Component: ExplorePage },
+      { path: toChildPath(ROUTES.ANOMALY_INVESTIGATION(":insightId")), Component: ExplorePage },
       {
-        path: "automation-opportunities",
-        children: [
-          {
-            path: "agent/:agentId",
-            ...lazyRoute(
-              () => import("./components/AutomationOpportunitiesAgentPage"),
-              "AutomationOpportunitiesAgentPage",
-            ),
-          },
-          {
-            path: "settings",
-            ...lazyRoute(
-              () => import("./components/AutomationOpportunitiesSettingsPage"),
-              "AutomationOpportunitiesSettingsPage",
-            ),
-          },
-          {
-            index: true,
-            ...lazyRoute(
-              () => import("./components/AutomationOpportunitiesPage"),
-              "AutomationOpportunitiesPage",
-            ),
-          },
-        ],
+        path: toChildPath(ROUTES.CONVERSATIONS),
+        ...lazyRoute(() => import("./components/AllConversationsPage"), "AllConversationsPage"),
       },
-      { path: "observability", ...lazyRoute(() => import("./components/ObservabilityPage"), "ObservabilityPage") },
-      { path: "observability/ai-agents", ...lazyRoute(() => import("./components/ObservabilityCategoryPage"), "ObservabilityCategoryPage") },
-      { path: "observability/ai-agents/settings", ...lazyRoute(() => import("./components/AIAgentsSettingsPage"), "AIAgentsSettingsPage") },
-      { path: "observability/ai-agents/:dashboardId", ...lazyRoute(() => import("./components/ObservabilityCategoryPage"), "ObservabilityCategoryPage") },
-      { path: "observability/copilot", element: <Navigate to={ROUTES.COPILOT_TAB("overview")} replace /> },
-      { path: "observability/copilot/overview", ...lazyRoute(() => import("./components/CopilotOverviewPage"), "CopilotOverviewPage") },
-      { path: "observability/copilot/auto-summary", ...lazyRoute(() => import("./components/CopilotAutoSummaryPage"), "CopilotAutoSummaryPage") },
-      { path: "observability/copilot/task-assist", ...lazyRoute(() => import("./components/CopilotTaskAssistPage"), "CopilotTaskAssistPage") },
-      { path: "observability/copilot/rules-engine", ...lazyRoute(() => import("./components/CopilotRulesEnginePage"), "CopilotRulesEnginePage") },
-      { path: "observability/copilot/real-time-summary", ...lazyRoute(() => import("./components/CopilotRealTimeSummaryPage"), "CopilotRealTimeSummaryPage") },
       {
-        path: "observability/copilot/generative-responses",
+        path: toChildPath(ROUTES.AUTOMATION_OPPORTUNITIES),
+        ...lazyRoute(
+          () => import("./components/AutomationOpportunitiesPage"),
+          "AutomationOpportunitiesPage",
+        ),
+      },
+      {
+        path: toChildPath(ROUTES.AUTOMATION_OPPORTUNITIES_SETTINGS),
+        ...lazyRoute(
+          () => import("./components/AutomationOpportunitiesSettingsPage"),
+          "AutomationOpportunitiesSettingsPage",
+        ),
+      },
+      {
+        path: toChildPath(ROUTES.AUTOMATION_OPPORTUNITIES_AGENT(":agentId")),
+        ...lazyRoute(
+          () => import("./components/AutomationOpportunitiesAgentPage"),
+          "AutomationOpportunitiesAgentPage",
+        ),
+      },
+      {
+        path: toChildPath(ROUTES.OBSERVABILITY),
+        ...lazyRoute(() => import("./components/ObservabilityPage"), "ObservabilityPage"),
+      },
+      {
+        path: toChildPath(ROUTES.AI_AGENTS),
+        ...lazyRoute(() => import("./components/ObservabilityCategoryPage"), "ObservabilityCategoryPage"),
+      },
+      {
+        path: toChildPath(ROUTES.AI_AGENTS_SETTINGS),
+        ...lazyRoute(() => import("./components/AIAgentsSettingsPage"), "AIAgentsSettingsPage"),
+      },
+      {
+        path: toChildPath(ROUTES.AI_AGENTS_DASHBOARD(":dashboardId")),
+        ...lazyRoute(() => import("./components/ObservabilityCategoryPage"), "ObservabilityCategoryPage"),
+      },
+      { path: toChildPath(ROUTES.COPILOT), element: <Navigate to={ROUTES.COPILOT_TAB("overview")} replace /> },
+      {
+        path: toChildPath(ROUTES.COPILOT_TAB("overview")),
+        ...lazyRoute(() => import("./components/CopilotOverviewPage"), "CopilotOverviewPage"),
+      },
+      {
+        path: toChildPath(ROUTES.COPILOT_TAB("auto-summary")),
+        ...lazyRoute(() => import("./components/CopilotAutoSummaryPage"), "CopilotAutoSummaryPage"),
+      },
+      {
+        path: toChildPath(ROUTES.COPILOT_TAB("task-assist")),
+        ...lazyRoute(() => import("./components/CopilotTaskAssistPage"), "CopilotTaskAssistPage"),
+      },
+      {
+        path: toChildPath(ROUTES.COPILOT_TAB("rules-engine")),
+        ...lazyRoute(() => import("./components/CopilotRulesEnginePage"), "CopilotRulesEnginePage"),
+      },
+      {
+        path: toChildPath(ROUTES.COPILOT_TAB("real-time-summary")),
+        ...lazyRoute(() => import("./components/CopilotRealTimeSummaryPage"), "CopilotRealTimeSummaryPage"),
+      },
+      {
+        path: toChildPath(ROUTES.COPILOT_TAB("generative-responses")),
         ...lazyRoute(() => import("./components/CopilotGenerativeResponsesPage"), "CopilotGenerativeResponsesPage"),
       },
-      { path: "observability/copilot/*", element: <Navigate to={ROUTES.COPILOT_TAB("overview")} replace /> },
-      { path: "observability/knowledge-performance", element: <Navigate to={ROUTES.KNOWLEDGE_PERFORMANCE_TAB("overview")} replace /> },
       {
-        path: "observability/knowledge-performance/overview",
+        path: `${toChildPath(ROUTES.COPILOT)}/*`,
+        element: <Navigate to={ROUTES.COPILOT_TAB("overview")} replace />,
+      },
+      {
+        path: toChildPath(ROUTES.KNOWLEDGE_PERFORMANCE),
+        element: <Navigate to={ROUTES.KNOWLEDGE_PERFORMANCE_TAB("overview")} replace />,
+      },
+      {
+        path: toChildPath(ROUTES.KNOWLEDGE_PERFORMANCE_TAB("overview")),
         ...lazyRoute(
           () => import("./components/KnowledgePerformanceOverviewPage"),
           "KnowledgePerformanceOverviewPage",
         ),
       },
       {
-        path: "observability/knowledge-performance/agent-user-feedback",
+        path: toChildPath(ROUTES.KNOWLEDGE_PERFORMANCE_TAB("agent-user-feedback")),
         ...lazyRoute(
           () => import("./components/KnowledgePerformanceAgentUserFeedbackPage"),
           "KnowledgePerformanceAgentUserFeedbackPage",
         ),
       },
       {
-        path: "observability/knowledge-performance/rag-evals",
+        path: toChildPath(ROUTES.KNOWLEDGE_PERFORMANCE_TAB("rag-evals")),
         ...lazyRoute(
           () => import("./components/KnowledgePerformanceRagEvalsPage"),
           "KnowledgePerformanceRagEvalsPage",
         ),
       },
       {
-        path: "observability/knowledge-performance/failed-query-patterns",
+        path: toChildPath(ROUTES.KNOWLEDGE_PERFORMANCE_TAB("failed-query-patterns")),
         ...lazyRoute(
           () => import("./components/KnowledgePerformanceFailedQueryPatternsPage"),
           "KnowledgePerformanceFailedQueryPatternsPage",
         ),
       },
       {
-        path: "observability/knowledge-performance/improve-knowledge",
+        path: toChildPath(ROUTES.KNOWLEDGE_PERFORMANCE_TAB("improve-knowledge")),
         ...lazyRoute(
           () => import("./components/KnowledgePerformanceImproveKnowledgePage"),
           "KnowledgePerformanceImproveKnowledgePage",
         ),
       },
       {
-        path: "observability/knowledge-performance/*",
+        path: `${toChildPath(ROUTES.KNOWLEDGE_PERFORMANCE)}/*`,
         element: <Navigate to={ROUTES.KNOWLEDGE_PERFORMANCE_TAB("overview")} replace />,
       },
-      { path: "saved", ...lazyRoute(() => import("./components/SavedFoldersPage"), "SavedFoldersPage") },
-      { path: "saved/:folderSlug/:dashboardSlug", ...lazyRoute(() => import("./components/DashboardPage"), "DashboardPage") },
-      { path: "saved/:savedSlug", ...lazyRoute(() => import("./components/SavedSlugResolverPage"), "SavedSlugResolverPage") },
-      { path: "recommended-actions", ...lazyRoute(() => import("./components/RecommendedActionsPage"), "RecommendedActionsPage") },
-      { path: "actions/history", ...lazyRoute(() => import("./components/ActionsHistoryPage"), "ActionsHistoryPage") },
-      { path: "insights", ...lazyRoute(() => import("./components/AllInsightsPage"), "AllInsightsPage") },
-      { path: "settings", ...lazyRoute(() => import("./components/SettingsPage"), "SettingsPage") },
-      { path: "dashboard/:dashboardId", ...lazyRoute(() => import("./components/DashboardPage"), "DashboardPage") },
+      {
+        path: toChildPath(ROUTES.SAVED),
+        ...lazyRoute(() => import("./components/SavedFoldersPage"), "SavedFoldersPage"),
+      },
+      {
+        path: toChildPath(ROUTES.SAVED_FOLDER_DASHBOARD(":folderSlug", ":dashboardSlug")),
+        ...lazyRoute(() => import("./components/DashboardPage"), "DashboardPage"),
+      },
+      {
+        path: toChildPath(ROUTES.SAVED_STANDALONE_DASHBOARD(":savedSlug")),
+        ...lazyRoute(() => import("./components/SavedSlugResolverPage"), "SavedSlugResolverPage"),
+      },
+      {
+        path: toChildPath(ROUTES.RECOMMENDED_ACTIONS),
+        ...lazyRoute(() => import("./components/RecommendedActionsPage"), "RecommendedActionsPage"),
+      },
+      {
+        path: toChildPath(ROUTES.ACTIONS_HISTORY),
+        ...lazyRoute(() => import("./components/ActionsHistoryPage"), "ActionsHistoryPage"),
+      },
+      { path: toChildPath(ROUTES.INSIGHTS), ...lazyRoute(() => import("./components/AllInsightsPage"), "AllInsightsPage") },
+      { path: toChildPath(ROUTES.SETTINGS), ...lazyRoute(() => import("./components/SettingsPage"), "SettingsPage") },
+      {
+        path: toChildPath(ROUTES.DASHBOARD(":dashboardId")),
+        ...lazyRoute(() => import("./components/DashboardPage"), "DashboardPage"),
+      },
       { path: "*", Component: NotFound },
     ],
   },

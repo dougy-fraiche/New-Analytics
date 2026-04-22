@@ -27,6 +27,11 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "./ui/breadcrumb";
+import { recommendedActionsData } from "../data/recommended-actions";
+import {
+  ACTION_STATUS_LABELS,
+  recommendedActionActivityById,
+} from "../data/action-activity";
 
 interface TopNavBarProps {
   onSearchClick?: () => void;
@@ -88,6 +93,17 @@ export function TopNavBar({
   }, [breadcrumbMeasureEl, breadcrumbViewportEl, canCollapseBreadcrumbs, breadcrumbs]);
 
   const currentBreadcrumb = breadcrumbs[breadcrumbs.length - 1];
+  const topRecommendedAction = recommendedActionsData[0];
+  const topRecommendedActionTitle =
+    topRecommendedAction?.title ?? "Deploy Account Verification AI Agent";
+  const topRecommendedActionPriority = topRecommendedAction?.priority ?? "High";
+  const topRecommendedActionActivity = topRecommendedAction
+    ? recommendedActionActivityById[topRecommendedAction.id]
+    : undefined;
+  const statusUpdateAction = recommendedActionsData.find((action) => action.id === 3);
+  const statusUpdateActionActivity = statusUpdateAction
+    ? recommendedActionActivityById[statusUpdateAction.id]
+    : undefined;
   const hiddenBreadcrumbs = useMemo(
     () => (breadcrumbsCollapsed ? breadcrumbs.slice(0, -1) : []),
     [breadcrumbs, breadcrumbsCollapsed],
@@ -248,9 +264,16 @@ export function TopNavBar({
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-normal text-foreground">New recommended action available</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Deploy Account Verification AI Agent - High Priority
+                      {topRecommendedActionTitle} - {topRecommendedActionPriority} Priority
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">2 minutes ago</p>
+                    {topRecommendedActionActivity ? (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {topRecommendedActionActivity.owner} · {ACTION_STATUS_LABELS[topRecommendedActionActivity.status]}
+                      </p>
+                    ) : null}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {topRecommendedActionActivity?.relativeTimeLabel ?? "2 minutes ago"}
+                    </p>
                   </div>
                 </div>
               </DropdownMenuItem>
@@ -270,11 +293,18 @@ export function TopNavBar({
                 <div className="flex items-start gap-2 w-full">
                   <div className="h-2 w-2 bg-muted-foreground/40 rounded-full mt-1.5 shrink-0" aria-hidden />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-normal text-foreground">Escalation rate alert</p>
+                    <p className="text-sm font-normal text-foreground">Action status update</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Escalation rate increased by 8% in the last 7 days
+                      {statusUpdateAction?.title ?? "Retrain Escalation Classifier"}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">3 hours ago</p>
+                    {statusUpdateActionActivity ? (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {statusUpdateActionActivity.owner} · {ACTION_STATUS_LABELS[statusUpdateActionActivity.status]}
+                      </p>
+                    ) : null}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {statusUpdateActionActivity?.relativeTimeLabel ?? "3 hours ago"}
+                    </p>
                   </div>
                 </div>
               </DropdownMenuItem>

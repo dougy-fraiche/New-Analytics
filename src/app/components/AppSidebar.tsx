@@ -334,9 +334,12 @@ export function AppSidebar() {
   const visibleConversations = activeConversations.slice(0, 5);
   const hasMore = activeConversations.length > 5;
   const previousConversationInFlightRef = useRef<Map<string, boolean>>(new Map());
+  const conversationPrefix = ROUTES.CONVERSATION("");
 
   const activeConversationId =
-    location.pathname.startsWith("/conversation/") ? location.pathname.replace("/conversation/", "") : null;
+    location.pathname.startsWith(conversationPrefix)
+      ? location.pathname.replace(conversationPrefix, "")
+      : null;
 
   const folderPath = (projectName: string) => ROUTES.SAVED_FOLDER(getProjectSlug({ name: projectName }));
   const folderDashboardPath = (projectName: string, dashboardName: string) =>
@@ -359,7 +362,7 @@ export function AppSidebar() {
           description: `"${conversation.name}" finished processing.`,
           action: {
             label: "Open",
-            onClick: () => navigate(`/conversation/${conversation.id}`),
+            onClick: () => navigate(ROUTES.CONVERSATION(conversation.id)),
           },
         });
       }
@@ -508,10 +511,10 @@ export function AppSidebar() {
           <CollapsibleSidebarSection
             icon={Compass}
             label="Explore"
-            path="/"
+            path={ROUTES.EXPLORE}
             open={exploreOpen}
             onToggle={setExploreOpen}
-            headerIsActive={location.pathname === "/"}
+            headerIsActive={location.pathname === ROUTES.EXPLORE}
           >
             {activeConversations.length === 0 ? (
               <SidebarMenuSubItem>
@@ -520,7 +523,8 @@ export function AppSidebar() {
             ) : (
               <>
                 {visibleConversations.map((conversation) => {
-                  const isActive = location.pathname === `/conversation/${conversation.id}`;
+                  const conversationPath = ROUTES.CONVERSATION(conversation.id);
+                  const isActive = location.pathname === conversationPath;
                   const assistantInFlight = isConversationAssistantInFlight(conversation);
                   return (
                     <SidebarMenuSubItem key={conversation.id}>
@@ -533,7 +537,7 @@ export function AppSidebar() {
                             assistantInFlight && "pr-8",
                           )}
                         >
-                          <Link to={`/conversation/${conversation.id}`}>
+                          <Link to={conversationPath}>
                             <span className="truncate">{conversation.name}</span>
                           </Link>
                         </SidebarMenuSubButton>
@@ -576,8 +580,8 @@ export function AppSidebar() {
                 })}
                 {hasMore && (
                   <SidebarMenuSubItem>
-                    <SidebarMenuSubButton asChild isActive={location.pathname === "/conversations"}>
-                      <Link to="/conversations" className="text-muted-foreground">
+                    <SidebarMenuSubButton asChild isActive={location.pathname === ROUTES.CONVERSATIONS}>
+                      <Link to={ROUTES.CONVERSATIONS} className="text-muted-foreground">
                         <span>View all →</span>
                       </Link>
                     </SidebarMenuSubButton>
@@ -591,8 +595,8 @@ export function AppSidebar() {
             <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">Actions</SidebarGroupLabel>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={location.pathname === "/actions/history"} tooltip="History">
-                  <Link to="/actions/history">
+                <SidebarMenuButton asChild isActive={location.pathname === ROUTES.ACTIONS_HISTORY} tooltip="History">
+                  <Link to={ROUTES.ACTIONS_HISTORY}>
                     <History />
                     <span>History</span>
                   </Link>
@@ -612,12 +616,12 @@ export function AppSidebar() {
                 <SidebarMenuButton
                   asChild
                   isActive={
-                    location.pathname === "/automation-opportunities" ||
-                    location.pathname.startsWith("/automation-opportunities/agent/")
+                    location.pathname === ROUTES.AUTOMATION_OPPORTUNITIES ||
+                    location.pathname.startsWith(ROUTES.AUTOMATION_OPPORTUNITIES_AGENT(""))
                   }
                   tooltip="Automation Opportunities"
                 >
-                  <Link to="/automation-opportunities">
+                  <Link to={ROUTES.AUTOMATION_OPPORTUNITIES}>
                     <Bot />
                     <span>Automation Opportunities</span>
                   </Link>
@@ -629,7 +633,7 @@ export function AppSidebar() {
           <CollapsibleSidebarSection
             icon={ChartLine}
             label="Observability"
-            path="/observability"
+            path={ROUTES.OBSERVABILITY}
             open={observabilityOpen}
             onToggle={setObservabilityOpen}
             headerIsActive={
@@ -689,7 +693,7 @@ export function AppSidebar() {
             <CollapsibleSidebarSection
               icon={Bookmark}
               label="Saved"
-              path="/saved"
+              path={ROUTES.SAVED}
               open={savedOpen}
               onToggle={setSavedOpen}
               headerIsActive={
@@ -1030,7 +1034,7 @@ export function AppSidebar() {
                   </UserDropdownMenuItem>
                   <UserDropdownMenuItem
                     onClick={() => {
-                      navigate("/settings");
+                      navigate(ROUTES.SETTINGS);
                       closeMobileSidebarIfOpen();
                     }}
                   >

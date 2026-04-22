@@ -38,6 +38,10 @@ const AI_ASSISTANT_OPEN_STORAGE_KEY = "ai-assistant-panel-open";
 const WIDGET_AI_MESSAGE_SENT_EVENT = "widget-ai-message-sent";
 /** Fallback until ResizeObserver runs; matches `CHAT_PANEL_DEFAULT_WIDTH_REM` in DashboardChatPanel (22 × 16px). */
 const CHAT_PANEL_FALLBACK_WIDTH_PX = 352;
+const CONVERSATION_PREFIX = ROUTES.CONVERSATION("");
+const ANOMALY_INVESTIGATION_PREFIX = ROUTES.ANOMALY_INVESTIGATION("");
+const DASHBOARD_PREFIX = ROUTES.DASHBOARD("");
+const SAVED_PREFIX = `${ROUTES.SAVED}/`;
 
 /** Inner layout — safely consumes all providers mounted by the outer RootLayout wrapper. */
 function RootLayoutInner() {
@@ -56,10 +60,10 @@ function RootLayoutInner() {
   const { projects, standaloneDashboards } = useProjects();
 
   /** Explore hero route (`/`). */
-  const isExploreHome = location.pathname === "/";
+  const isExploreHome = location.pathname === ROUTES.EXPLORE;
 
   /** Explore home (`/`) only — hero gradient sits on the page canvas; conversation + all other routes use white `main`. */
-  const isExploreRoute = location.pathname === "/";
+  const isExploreRoute = location.pathname === ROUTES.EXPLORE;
   const isCopilotRoute =
     location.pathname === ROUTES.COPILOT ||
     location.pathname.startsWith(`${ROUTES.COPILOT}/`);
@@ -99,7 +103,7 @@ function RootLayoutInner() {
 
   // Open the assistant automatically when viewing an Explore conversation thread.
   useEffect(() => {
-    if (location.pathname.startsWith("/conversation/")) {
+    if (location.pathname.startsWith(CONVERSATION_PREFIX)) {
       setAiAssistantOpen(true);
     }
   }, [location.pathname, setAiAssistantOpen]);
@@ -149,7 +153,7 @@ function RootLayoutInner() {
           key: "e",
           handler: (e: KeyboardEvent) => {
             e.preventDefault();
-            navigate("/");
+            navigate(ROUTES.EXPLORE);
             setTimeout(() => {
               window.dispatchEvent(new Event("focusExploreInput"));
             }, 50);
@@ -161,7 +165,7 @@ function RootLayoutInner() {
   // Generate breadcrumbs based on current route (memoized to avoid recomputation)
   const breadcrumbs = useMemo(() => {
     // Root pages — keep a single breadcrumb visible
-    if (location.pathname === "/") {
+    if (location.pathname === ROUTES.EXPLORE) {
       return [{ label: "Explore" }];
     }
 
@@ -225,34 +229,34 @@ function RootLayoutInner() {
       ];
     }
 
-    if (location.pathname === "/saved") {
+    if (location.pathname === ROUTES.SAVED) {
       return [{ label: "Saved" }];
     }
 
     // Recommended Actions
-    if (location.pathname === "/recommended-actions") {
+    if (location.pathname === ROUTES.RECOMMENDED_ACTIONS) {
       return [{ label: "Recommended Actions" }];
     }
 
     // Actions history
-    if (location.pathname === "/actions/history") {
+    if (location.pathname === ROUTES.ACTIONS_HISTORY) {
       return [{ label: "History" }];
     }
 
     // All Insights
-    if (location.pathname === "/insights") {
+    if (location.pathname === ROUTES.INSIGHTS) {
       return [{ label: "All Insights" }];
     }
 
     // Settings
-    if (location.pathname === "/settings") {
+    if (location.pathname === ROUTES.SETTINGS) {
       return [{ label: "Settings" }];
     }
 
     // Conversations list (sub of Explore)
-    if (location.pathname === "/conversations") {
+    if (location.pathname === ROUTES.CONVERSATIONS) {
       return [
-        { label: "Explore", href: "/" },
+        { label: "Explore", href: ROUTES.EXPLORE },
         { label: "Conversations" },
       ];
     }
@@ -262,13 +266,13 @@ function RootLayoutInner() {
       const conversation = conversations.find(c => c.id === params.conversationId);
       if (conversation) {
         return [
-          { label: "Explore", href: "/" },
+          { label: "Explore", href: ROUTES.EXPLORE },
           { label: conversation.name || "New Thread" },
         ];
       }
     }
 
-    if (location.pathname.startsWith("/anomaly-investigation/")) {
+    if (location.pathname.startsWith(ANOMALY_INVESTIGATION_PREFIX)) {
       const anomalyInsightId = Number.parseInt(params.insightId ?? "", 10);
       const anomalyInsightTitle = Number.isFinite(anomalyInsightId)
         ? topInsightsCards.find(
@@ -276,13 +280,13 @@ function RootLayoutInner() {
           )?.title
         : undefined;
       return [
-        { label: "Explore", href: "/" },
+        { label: "Explore", href: ROUTES.EXPLORE },
         { label: anomalyInsightTitle || "Anomaly Investigation" },
       ];
     }
 
     // Standalone OOTB dashboard URLs
-    if (location.pathname.startsWith("/dashboard/")) {
+    if (location.pathname.startsWith(DASHBOARD_PREFIX)) {
       const dashboardId = params.dashboardId;
       const ootbInfo = dashboardId ? findOotbDashboardById(dashboardId) : undefined;
       const dashboardName = ootbInfo?.name || "Dashboard";
@@ -296,7 +300,7 @@ function RootLayoutInner() {
       return [{ label: "Observability", href: ROUTES.OBSERVABILITY }, { label: dashboardName }];
     }
 
-    if (location.pathname.startsWith("/saved/") && params.folderSlug && params.dashboardSlug) {
+    if (location.pathname.startsWith(SAVED_PREFIX) && params.folderSlug && params.dashboardSlug) {
       const savedMatch = findProjectDashboardBySlugs(
         projects,
         params.folderSlug,
@@ -311,7 +315,7 @@ function RootLayoutInner() {
       }
     }
 
-    if (location.pathname.startsWith("/saved/") && params.savedSlug) {
+    if (location.pathname.startsWith(SAVED_PREFIX) && params.savedSlug) {
       const folder = findProjectBySlug(projects, params.savedSlug);
       if (folder) {
         return [
@@ -349,7 +353,7 @@ function RootLayoutInner() {
     let label: string | undefined;
     if (breadcrumbs.length > 0) {
       label = breadcrumbs[breadcrumbs.length - 1]!.label;
-    } else if (location.pathname === "/insights") {
+    } else if (location.pathname === ROUTES.INSIGHTS) {
       label = "All Insights";
     } else if (
       location.pathname === ROUTES.AUTOMATION_OPPORTUNITIES ||
@@ -376,13 +380,13 @@ function RootLayoutInner() {
       label = "Knowledge Performance";
     } else if (location.pathname === ROUTES.OBSERVABILITY) {
       label = "Observability";
-    } else if (location.pathname === "/saved") {
+    } else if (location.pathname === ROUTES.SAVED) {
       label = "Saved";
-    } else if (location.pathname === "/recommended-actions") {
+    } else if (location.pathname === ROUTES.RECOMMENDED_ACTIONS) {
       label = "Recommended Actions";
-    } else if (location.pathname === "/actions/history") {
+    } else if (location.pathname === ROUTES.ACTIONS_HISTORY) {
       label = "History";
-    } else if (location.pathname === "/settings") {
+    } else if (location.pathname === ROUTES.SETTINGS) {
       label = "Settings";
     }
 
@@ -396,7 +400,7 @@ function RootLayoutInner() {
   }, [breadcrumbs, location.pathname, params.dashboardId, params.agentId, getAgentById]);
 
   const isExploreConversationRoute =
-    location.pathname.startsWith("/conversation/") && Boolean(params.conversationId);
+    location.pathname.startsWith(CONVERSATION_PREFIX) && Boolean(params.conversationId);
   const assistantPersistKey =
     isExploreConversationRoute && params.conversationId
       ? getExploreConversationAssistantKey(params.conversationId)
@@ -404,21 +408,21 @@ function RootLayoutInner() {
   const showAssistantResetButton = !isExploreConversationRoute;
 
   const isSavedFolderDashboardRoute = Boolean(
-    location.pathname.startsWith("/saved/") && params.folderSlug && params.dashboardSlug,
+    location.pathname.startsWith(SAVED_PREFIX) && params.folderSlug && params.dashboardSlug,
   );
   const isSavedStandaloneDashboardRoute = Boolean(
-    location.pathname.startsWith("/saved/") &&
+    location.pathname.startsWith(SAVED_PREFIX) &&
       params.savedSlug &&
       findStandaloneDashboardBySlug(standaloneDashboards, params.savedSlug),
   );
 
   // Check if current route needs full-height layout (no outer scroll/padding — page manages its own)
   const isFullHeightPage =
-    location.pathname.includes("/dashboard") ||
-    location.pathname.startsWith("/conversation/") ||
-    location.pathname.startsWith("/anomaly-investigation/") ||
-    location.pathname === "/" ||
-    location.pathname === "/insights" ||
+    location.pathname.startsWith(DASHBOARD_PREFIX) ||
+    location.pathname.startsWith(CONVERSATION_PREFIX) ||
+    location.pathname.startsWith(ANOMALY_INVESTIGATION_PREFIX) ||
+    location.pathname === ROUTES.EXPLORE ||
+    location.pathname === ROUTES.INSIGHTS ||
     location.pathname === ROUTES.AUTOMATION_OPPORTUNITIES ||
     location.pathname === ROUTES.AUTOMATION_OPPORTUNITIES_SETTINGS ||
     location.pathname.startsWith(`${ROUTES.AUTOMATION_OPPORTUNITIES}/agent/`) ||
