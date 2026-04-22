@@ -445,7 +445,7 @@ export function ExplorePhase({
                   variant={card.severity === "Critical" ? "destructive" : "secondary"}
                   className={
                     card.severity === "High"
-                      ? "border-warning-border bg-warning-bg text-warning"
+                      ? "border-orange-200 bg-orange-100 text-orange-800"
                       : undefined
                   }
                 >
@@ -460,7 +460,7 @@ export function ExplorePhase({
                 </Badge>
                 <Badge
                   variant="outline"
-                  className="w-fit shrink-0 border-success-border bg-success-bg px-2 py-0.5 text-xs font-normal text-success"
+                  className="w-fit shrink-0 border-green-500/50 bg-emerald-50 px-2 py-0.5 text-xs font-normal text-emerald-800"
                 >
                   {card.annualSavingsBadge}
                 </Badge>
