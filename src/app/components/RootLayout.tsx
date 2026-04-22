@@ -38,6 +38,7 @@ const AI_ASSISTANT_OPEN_STORAGE_KEY = "ai-assistant-panel-open";
 const WIDGET_AI_MESSAGE_SENT_EVENT = "widget-ai-message-sent";
 /** Fallback until ResizeObserver runs; matches `CHAT_PANEL_DEFAULT_WIDTH_REM` in DashboardChatPanel (22 × 16px). */
 const CHAT_PANEL_FALLBACK_WIDTH_PX = 352;
+const APP_BROWSER_TITLE = "Agentic Analytics";
 const CONVERSATION_PREFIX = ROUTES.CONVERSATION("");
 const ANOMALY_INVESTIGATION_PREFIX = ROUTES.ANOMALY_INVESTIGATION("");
 const DASHBOARD_PREFIX = ROUTES.DASHBOARD("");
@@ -398,6 +399,13 @@ function RootLayoutInner() {
     const trimmed = label?.trim();
     return trimmed || undefined;
   }, [breadcrumbs, location.pathname, params.dashboardId, params.agentId, getAgentById]);
+
+  // Keep the browser tab title aligned with the current page context.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const pageTitle = aiPageContextLabel?.trim();
+    document.title = pageTitle ? `${pageTitle} | ${APP_BROWSER_TITLE}` : APP_BROWSER_TITLE;
+  }, [aiPageContextLabel]);
 
   const isExploreConversationRoute =
     location.pathname.startsWith(CONVERSATION_PREFIX) && Boolean(params.conversationId);
