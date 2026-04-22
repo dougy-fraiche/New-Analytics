@@ -3,6 +3,7 @@ import type { DashboardData, WidgetData } from "../contexts/ConversationContext"
 import { buildMockAssistantFields } from "../lib/mock-assistant-structure";
 import type { AssistantReplyPayload } from "../types/conversation-types";
 import type { AutomationScopeTab } from "./automation-opportunities-page";
+import { automationTopInsightReferenceOrder } from "./automation-opportunity-references";
 
 // ── Hero / Input constants ────────────────────────────────────────────
 
@@ -199,6 +200,24 @@ export type TopInsightCard =
       timestamp: string;
     };
 
+const topInsightOpportunityCards: TopInsightCard[] = automationTopInsightReferenceOrder.map(
+  (reference, index) => ({
+    id: index + 3,
+    segment: "opportunity",
+    showActionPill: true,
+    cardBody: reference.cardBody,
+    annualSavingsBadge: reference.annualSavingsBadge,
+    automationTarget: {
+      scope: reference.scope,
+      id: reference.id,
+    },
+    title: reference.title,
+    description: reference.description,
+    detail: reference.detail,
+    timestamp: "New",
+  }),
+);
+
 export const topInsightsCards: TopInsightCard[] = [
   {
     id: 1,
@@ -218,84 +237,7 @@ export const topInsightsCards: TopInsightCard[] = [
     detail: "AHT: 8.5 min (usually 6.0 min)",
     timestamp: "4h ago",
   },
-  {
-    id: 3,
-    segment: "opportunity",
-    showActionPill: true,
-    cardBody:
-      "Automating this topic could save $26K annually across 40.5K monthly interactions. Agents are commonly verifying account details, explaining posted charges, and routing payment resolutions.",
-    annualSavingsBadge: "$26K Annual Savings",
-    automationTarget: { scope: "categories", id: "billing-payments" },
-    title: "Billing & Payment Inquiries",
-    description: "High-volume category with repeatable verification and lookup steps.",
-    detail: "40.5K monthly interactions · strong automation potential",
-    timestamp: "New",
-  },
-  {
-    id: 4,
-    segment: "opportunity",
-    showActionPill: true,
-    cardBody:
-      "Automating this topic could save $13K annually across 1,620 interactions. Agents are commonly reviewing statement line items, validating fee logic, and clarifying due-date and balance changes.",
-    annualSavingsBadge: "$13K Annual Savings",
-    automationTarget: { scope: "topics", id: "topics-bill-explanation" },
-    title: "Bill Explanation",
-    description: "1,620 automatable calls · 3.6% of total mix.",
-    detail: "$13K annual savings · 4:00 avg duration",
-    timestamp: "New",
-  },
-  {
-    id: 5,
-    segment: "opportunity",
-    showActionPill: true,
-    cardBody:
-      "Automating this topic could save $7K annually across 9,420 interactions. Agents are commonly pulling line-item histories, validating charge legitimacy, and explaining clearance decisions.",
-    annualSavingsBadge: "$7K Annual Savings",
-    automationTarget: { scope: "subtopics", id: "subtopics-charge-breakdown" },
-    title: "Charge Breakdown",
-    description: "Repeat line-item and clearance questions fit deterministic triage.",
-    detail: "9.4K sub-topic volume · 2.4% automation potential",
-    timestamp: "New",
-  },
-  {
-    id: 6,
-    segment: "opportunity",
-    showActionPill: true,
-    cardBody:
-      "Automating this topic could save $27K annually across 3,230 interactions. Agents are commonly handling activation checks, limit validations, and replacement-card workflows.",
-    annualSavingsBadge: "$27K Annual Savings",
-    automationTarget: { scope: "categories", id: "card-services" },
-    title: "Card Services & Management",
-    description: "Highly standardized activation, limit, and replacement flows.",
-    detail: "3,230 automatable volume · $27K annual savings",
-    timestamp: "New",
-  },
-  {
-    id: 7,
-    segment: "opportunity",
-    showActionPill: true,
-    cardBody:
-      "Automating this topic could save $15K annually across 20,833 interactions. Agents are commonly confirming identity signals, walking activation steps, and handling PIN or lockout follow-ups.",
-    annualSavingsBadge: "$15K Annual Savings",
-    automationTarget: { scope: "topics", id: "topics-card-activation" },
-    title: "Card Activation",
-    description: "Activation and verification requests are ideal for guided self-serve.",
-    detail: "20,833 automatable volume · 6.4% automation potential",
-    timestamp: "New",
-  },
-  {
-    id: 8,
-    segment: "opportunity",
-    showActionPill: true,
-    cardBody:
-      "Automating this topic could save $6K annually across 5,356 interactions. Agents are commonly verifying funding credentials, validating account ownership, and confirming enrollment success.",
-    annualSavingsBadge: "$6K Annual Savings",
-    automationTarget: { scope: "subtopics", id: "subtopics-add-payment-method" },
-    title: "Add Payment Method",
-    description: "Predictable verification flow with strong deterministic coverage.",
-    detail: "5,356 automatable volume · 1.6% automation potential",
-    timestamp: "New",
-  },
+  ...topInsightOpportunityCards,
 ];
 
 // ── Title generation rules ────────────────────────────────────────────

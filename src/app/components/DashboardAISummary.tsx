@@ -28,6 +28,7 @@ import {
   type RecommendedAction,
 } from "../data/recommended-actions";
 import { copilotAiInsightsIds } from "../data/copilot-ai-insights";
+import { automationSummaryReference } from "../data/automation-opportunity-references";
 import { RecommendedActionSheet } from "./RecommendedActionSheet";
 import type { DashboardData } from "../contexts/ConversationContext";
 import { cn } from "./ui/utils";
@@ -713,14 +714,14 @@ const dashboardSummaries: Record<string, AISummaryData> = {
       "I analyzed 143,000 interactions across 3 major categories and identified opportunities to automate 3% of your workload, saving $39K annually. Here's what I found:",
     bullets: [
       {
-        label: "Billing & Payment Inquiries leads automation potential",
+        label: `${automationSummaryReference.primaryCategoryTitle} leads automation potential`,
         detail:
-          "This category accounts for 68% of total automatable volume with $33K in annual savings. The category includes high-volume topics like Bill Explanation, Payment Arrangement, and Refund Requests.",
+          `This category accounts for ${automationSummaryReference.primaryCategoryShare} of total automatable volume with ${automationSummaryReference.primaryCategoryAnnualSavings} in annual savings. The category includes high-volume topics like Bill Explanation, Payment Arrangement, and Refund Requests.`,
       },
       {
-        label: "Card Services & Management shows high efficiency",
+        label: `${automationSummaryReference.secondaryCategoryTitle} shows high efficiency`,
         detail:
-          "With a 90% automation rate and 4.2/5 sentiment score, this category demonstrates that card-related inquiries are well-suited for AI automation with positive customer experiences.",
+          `With a ${automationSummaryReference.secondaryCategoryAutomationRate} automation rate and ${automationSummaryReference.secondaryCategorySentiment} sentiment score, this category demonstrates that card-related inquiries are well-suited for AI automation with positive customer experiences.`,
       },
       {
         label: "Account Management & Support offers steady opportunity",
@@ -730,9 +731,9 @@ const dashboardSummaries: Record<string, AISummaryData> = {
     ],
     linkedActionId: 7,
     opportunity:
-      "Billing & Payment Inquiries accounts for 68% of automatable volume with $33K in annual savings — the highest-impact lever in this analysis window.",
+      `${automationSummaryReference.primaryCategoryTitle} accounts for ${automationSummaryReference.primaryCategoryShare} of automatable volume with ${automationSummaryReference.primaryCategoryAnnualSavings} in annual savings - the highest-impact lever in this analysis window.`,
     actionText:
-      "Prioritize Billing & Payment Inquiries automation to capture the majority of high-volume customer inquiries across billing topics.",
+      `Prioritize ${automationSummaryReference.primaryCategoryTitle} automation to capture the majority of high-volume customer inquiries across billing topics.`,
   },
   // ── Conversation-generated dashboards ──────────────────────────────────
   "mock-dash-escalation": {

@@ -1,4 +1,5 @@
 /** Page-specific data for Automation Opportunities (Figma: Auto-Insight UX). */
+import { automationOpportunityReferences } from "./automation-opportunity-references";
 
 export type AutomationScopeTab = "categories" | "topics" | "subtopics";
 
@@ -150,13 +151,20 @@ export type TopicsTabTopicRow = {
   sampleInteractionsLabel: string;
 };
 
+const billingPaymentsRef = automationOpportunityReferences.billingPayments;
+const billExplanationRef = automationOpportunityReferences.billExplanation;
+const chargeBreakdownRef = automationOpportunityReferences.chargeBreakdown;
+const cardServicesRef = automationOpportunityReferences.cardServices;
+const cardActivationRef = automationOpportunityReferences.cardActivation;
+const addPaymentMethodRef = automationOpportunityReferences.addPaymentMethod;
+
 export const automationTopicsTabTopicRows: TopicsTabTopicRow[] = [
   {
-    id: "topics-bill-explanation",
-    title: "Bill Explanation",
+    id: billExplanationRef.id,
+    title: billExplanationRef.title,
     description:
       "40,501 card clearance requests hit your team every month — most follow repetitive verification and document patterns.",
-    sampleInteractionsLabel: "Bill Explanation",
+    sampleInteractionsLabel: billExplanationRef.title,
     chipMetrics: [
       topicsTabChip("totalCalls", "Total Calls", "48,000"),
       topicsTabChip("categoryVolume", "Category Volume", "40,501"),
@@ -175,11 +183,11 @@ export const automationTopicsTabTopicRows: TopicsTabTopicRow[] = [
     },
   },
   {
-    id: "topics-card-activation",
-    title: "Card Activation",
+    id: cardActivationRef.id,
+    title: cardActivationRef.title,
     description:
       "24,509 activation and verification requests are highly standardized — strong fit for guided self-serve and AI assist steps.",
-    sampleInteractionsLabel: "Card Activation",
+    sampleInteractionsLabel: cardActivationRef.title,
     chipMetrics: [
       topicsTabChip("totalCalls", "Total Calls", "48,000"),
       topicsTabChip("categoryVolume", "Category Volume", "24,509"),
@@ -224,11 +232,11 @@ export const automationTopicsTabTopicRows: TopicsTabTopicRow[] = [
 /** Hand-authored rows for the Sub-topics tab (Figma: Sub-topics 1 / Sub-topics 2). */
 const automationSubtopicsHandAuthoredRows: TopicsTabTopicRow[] = [
   {
-    id: "subtopics-charge-breakdown",
-    title: "Charge Breakdown",
+    id: chargeBreakdownRef.id,
+    title: chargeBreakdownRef.title,
     description:
       "Line-item and clearance questions repeat the same authentication and document paths — a strong candidate for deterministic triage before agent review.",
-    sampleInteractionsLabel: "Charge Breakdown",
+    sampleInteractionsLabel: chargeBreakdownRef.title,
     chipMetrics: [
       topicsTabChip("totalCalls", "Total Calls", "48,000"),
       topicsTabChip("categoryVolume", "Sub-topic Volume", "9,420"),
@@ -247,11 +255,11 @@ const automationSubtopicsHandAuthoredRows: TopicsTabTopicRow[] = [
     },
   },
   {
-    id: "subtopics-add-payment-method",
-    title: "Add Payment Method",
+    id: addPaymentMethodRef.id,
+    title: addPaymentMethodRef.title,
     description:
       "Customers adding cards or bank accounts follow predictable verification flows; most steps are read-only confirmations in core banking systems.",
-    sampleInteractionsLabel: "Add Payment Method",
+    sampleInteractionsLabel: addPaymentMethodRef.title,
     chipMetrics: [
       topicsTabChip("totalCalls", "Total Calls", "48,000"),
       topicsTabChip("categoryVolume", "Sub-topic Volume", "6,110"),
@@ -420,8 +428,8 @@ export const automationSubtopicsTabTopicRows: TopicsTabTopicRow[] = [
 
 const topCategories: TopOpportunityCategory[] = [
   {
-    id: "billing-payments",
-    title: "Billing & Payment Inquiries",
+    id: billingPaymentsRef.id,
+    title: billingPaymentsRef.title,
     subtitle: "3 Related Topics",
     metrics: [
       metric("totalCalls", "45,000"),
@@ -676,8 +684,8 @@ const topCategories: TopOpportunityCategory[] = [
     ],
   },
   {
-    id: "card-services",
-    title: "Card Services & Management",
+    id: cardServicesRef.id,
+    title: cardServicesRef.title,
     subtitle: "2 Related Topics",
     metrics: [
       metric("totalCalls", "48,000"),
@@ -859,7 +867,7 @@ export const topOpportunitiesByScope: Record<AutomationScopeTab, TopOpportunityC
 const categoryOpportunities: AutomationOpportunityRow[] = [
   {
     id: "cat-billing",
-    title: "Billing & Payment Inquiries",
+    title: billingPaymentsRef.title,
     description:
       "40,501 card clearance and billing lookup requests hit your team every month — most follow repetitive verification and document patterns.",
     metrics: [
@@ -874,7 +882,7 @@ const categoryOpportunities: AutomationOpportunityRow[] = [
   },
   {
     id: "cat-card",
-    title: "Card Services & Management",
+    title: cardServicesRef.title,
     description:
       "Card activation, limits, and replacement flows are highly standardized — strong fit for end-to-end AI with minimal escalation.",
     metrics: [
@@ -892,7 +900,7 @@ const categoryOpportunities: AutomationOpportunityRow[] = [
 const topicOpportunities: AutomationOpportunityRow[] = [
   {
     id: "topic-bill-expl",
-    title: "Bill Explanation",
+    title: billExplanationRef.title,
     description:
       "Customers asking what charges mean cluster into a small set of line-item templates — ideal for scripted explanations plus PDF links.",
     metrics: [

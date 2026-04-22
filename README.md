@@ -32,7 +32,11 @@ Local dev server: `http://localhost:5173`
 ## Available Scripts
 
 - `npm run dev` - Start Vite dev server
+- `npm run preview` - Preview the built app
+- `npm run lint` - Run ESLint (Vite + React + TypeScript config)
+- `npm run check:routes` - Fail on hardcoded route strings outside route constants
 - `npm run typecheck` - Run TypeScript checks without emitting files
+- `npm run e2e:smoke` - Run route-level Playwright smoke tests
 - `npm run build` - Create production bundle in `dist/`
 
 ## App Sections (Route Overview)
@@ -85,3 +89,5 @@ src/
 public/            Static assets
 docs/              Project docs and audits
 ```
+
+Conventions and mock-data alignment rules: [docs/PROTOTYPE_CONVENTIONS.md](./docs/PROTOTYPE_CONVENTIONS.md)

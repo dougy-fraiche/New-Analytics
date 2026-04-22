@@ -7,8 +7,11 @@
     "prebuild": "npm run check:routes",
     "build": "vite build",
     "dev": "vite",
+    "preview": "vite preview",
+    "lint": "eslint src scripts tests playwright.smoke.config.ts vite.config.ts eslint.config.js",
     "check:routes": "node scripts/check-routes.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "e2e:smoke": "playwright test -c playwright.smoke.config.ts"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.8",
@@ -54,15 +57,22 @@
     "vaul": "^1.1.2"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@playwright/test": "^1.55.0",
     "@tailwindcss/vite": "4.1.12",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "4.7.0",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.0",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.4.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "shadcn": "^4.3.0",
     "tailwindcss": "4.1.12",
     "typescript": "~5.7.3",
+    "typescript-eslint": "^8.46.3",
     "vite": "6.3.5"
   },
   "peerDependencies": {

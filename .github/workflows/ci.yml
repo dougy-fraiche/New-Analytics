@@ -23,11 +23,20 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Lint
+        run: npm run lint
+
       - name: Route Check
         run: npm run check:routes
+
+      - name: Typecheck
+        run: npm run typecheck
 
       - name: Build
         run: npm run build
 
-      - name: Typecheck
-        run: npm run typecheck
+      - name: Install Playwright Browser
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E Route Smoke
+        run: npm run e2e:smoke
