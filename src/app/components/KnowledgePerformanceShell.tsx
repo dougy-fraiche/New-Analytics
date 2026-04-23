@@ -11,7 +11,7 @@ import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 import { PageTransition } from "./PageTransition";
 import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
 import { cn } from "./ui/utils";
-import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { ROUTES, type KnowledgePerformanceTabRoute } from "../routes";
 
 export const KNOWLEDGE_PERFORMANCE_TAB_META: {
@@ -154,6 +154,16 @@ export function KnowledgePerformanceShell({ activeTab, children }: KnowledgePerf
                 </TabsTrigger>
               ))}
             </TabsList>
+            <div className="sr-only">
+              {KNOWLEDGE_PERFORMANCE_TAB_META.map((tab) => (
+                <TabsContent
+                  key={`panel-${tab.value}`}
+                  value={tab.value}
+                  forceMount
+                  className="hidden"
+                />
+              ))}
+            </div>
           </PageHeader>
 
           <div className="flex-1 min-h-0 overflow-auto">

@@ -256,7 +256,12 @@ function OverflowActionsMenu({
       <Tooltip>
         <DropdownMenuTrigger asChild>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-9 w-9">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9"
+              aria-label={`Category options for ${categoryTitle}`}
+            >
               <MoreVertical className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
@@ -875,7 +880,7 @@ export function AutomationOpportunitiesPage() {
                   }
                 }}
               >
-                <SelectTrigger className="h-8 w-auto shrink-0">
+                <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by date range">
                   <LabeledFilterInline label="Date range">
                     {dateRange === DATE_RANGE_CUSTOM_OPTION && customRange?.from && customRange?.to
                       ? formatShortDateRange(customRange)
@@ -902,7 +907,7 @@ export function AutomationOpportunitiesPage() {
               </Select>
 
               <Select value={team} onValueChange={(v) => setTeam(v as typeof team)}>
-                <SelectTrigger className="h-8 w-auto shrink-0">
+                <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by team">
                   <LabeledSelectValue label="Team" />
                 </SelectTrigger>
                 <SelectContent>
@@ -913,7 +918,7 @@ export function AutomationOpportunitiesPage() {
               </Select>
 
               <Select value={skill} onValueChange={(v) => setSkill(v as typeof skill)}>
-                <SelectTrigger className="h-8 w-auto shrink-0">
+                <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by skill">
                   <LabeledSelectValue label="Skill" />
                 </SelectTrigger>
                 <SelectContent>
@@ -925,7 +930,7 @@ export function AutomationOpportunitiesPage() {
               </Select>
 
               <Select value={channel} onValueChange={(v) => setChannel(v as typeof channel)}>
-                <SelectTrigger className="h-8 w-auto shrink-0">
+                <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by channel">
                   <LabeledSelectValue label="Channel" />
                 </SelectTrigger>
                 <SelectContent>
@@ -937,7 +942,7 @@ export function AutomationOpportunitiesPage() {
               </Select>
 
               <Select value={category} onValueChange={(v) => setCategory(v as typeof category)}>
-                <SelectTrigger className="h-8 w-auto shrink-0">
+                <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by category">
                   <LabeledSelectValue label="Category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -949,7 +954,7 @@ export function AutomationOpportunitiesPage() {
               </Select>
 
               <Select value={direction} onValueChange={(v) => setDirection(v as typeof direction)}>
-                <SelectTrigger className="h-8 w-auto shrink-0">
+                <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by direction">
                   <LabeledSelectValue label="Direction" />
                 </SelectTrigger>
                 <SelectContent>

@@ -1103,6 +1103,7 @@ export function DashboardAISummary({
                   <Button
                     variant="outline"
                     size="icon-xs"
+                    aria-label="Refresh summary"
                     onClick={handleRegenerate}
                   >
                     <RefreshCw />
@@ -1114,7 +1115,12 @@ export function DashboardAISummary({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="icon" className="h-8 w-8">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        aria-label="Summary options"
+                      >
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -1179,6 +1185,7 @@ export function DashboardAISummary({
                       type="button"
                       variant="ghost"
                       size="icon-xs"
+                      aria-label="Refresh summary"
                       onClick={handleRegenerate}
                     >
                       <RefreshCw />
@@ -1210,6 +1217,7 @@ export function DashboardAISummary({
                               type="button"
                               variant="ghost"
                               size="icon-xs"
+                              aria-label="Refresh summary"
                               onClick={handleRegenerate}
                             >
                               <RefreshCw />
@@ -1352,7 +1360,11 @@ export function DashboardAISummary({
                                       >
                                         <DropdownMenu>
                                           <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon-xs">
+                                            <Button
+                                              variant="ghost"
+                                              size="icon-xs"
+                                              aria-label={`More options for ${action.title}`}
+                                            >
                                               <MoreVertical />
                                             </Button>
                                           </DropdownMenuTrigger>

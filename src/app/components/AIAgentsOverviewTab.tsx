@@ -666,7 +666,7 @@ export function AIAgentsOverviewTab({
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="relative max-w-sm">
               <Search className="pointer-events-none absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-              <Input className="h-8 pl-8" placeholder="Search" />
+              <Input className="h-8 pl-8" aria-label="Search sessions" placeholder="Search" />
             </div>
             <div className="flex items-center gap-2">
               <Button size="sm" variant="outline" className="h-8 gap-1.5">

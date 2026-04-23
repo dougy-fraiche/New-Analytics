@@ -74,6 +74,7 @@ export function WidgetOverflowMenu({
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Widget options"
               >
                 <MoreVertical className="h-3.5 w-3.5" />
               </Button>

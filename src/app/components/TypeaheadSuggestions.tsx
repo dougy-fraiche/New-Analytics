@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo, useDeferredValue } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, useDeferredValue, useId } from "react";
 import { Search } from "lucide-react";
 import { cn } from "./ui/utils";
 
@@ -136,6 +136,7 @@ export function TypeaheadSuggestions({
   forcedSuggestions = [],
 }: TypeaheadSuggestionsProps) {
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const listboxId = useId();
   const listRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -223,6 +224,20 @@ export function TypeaheadSuggestions({
     }
   }, [handleKeyDown, inputRef]);
 
+  // Mark suggestion visibility on the source input without attaching unsupported
+  // combobox-only ARIA attributes to a native textarea.
+  useEffect(() => {
+    const input = inputRef.current;
+    if (!input) return;
+
+    const hasSuggestions = visible && filtered.length > 0;
+    input.setAttribute("data-typeahead-open", hasSuggestions ? "true" : "false");
+
+    return () => {
+      input.removeAttribute("data-typeahead-open");
+    };
+  }, [filtered.length, inputRef, visible]);
+
   // Click outside to dismiss
   useEffect(() => {
     if (!visible) return;
@@ -247,6 +262,9 @@ export function TypeaheadSuggestions({
   return (
     <div
       ref={listRef}
+      id={listboxId}
+      role="listbox"
+      aria-label="Suggested prompts"
       className="absolute bottom-full left-0 right-0 z-50 mb-1 overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md"
     >
       <div className="p-1">
@@ -255,6 +273,7 @@ export function TypeaheadSuggestions({
           return (
             <div
               key={suggestion}
+              id={`${listboxId}-option-${index}`}
               ref={(el) => {
                 itemRefs.current[index] = el;
               }}

@@ -928,6 +928,7 @@ export function AIAgentsGoalsOutcomesTab({
               <Search className="pointer-events-none absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 className="h-8 pl-8"
+                aria-label="Search sessions"
                 placeholder="Search"
                 value={sessionSearch}
                 onChange={(e) => setSessionSearch(e.target.value)}

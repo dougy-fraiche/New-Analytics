@@ -1398,6 +1398,7 @@ export function DashboardChatPanel({
               <div className="p-2">
                 <div className="flex items-start gap-2">
                   <Textarea
+                    aria-label="Ask AI assistant a question"
                     placeholder={placeholder || "Ask a question\u2026"}
                     value={query}
                     onChange={(e) => {
@@ -1416,6 +1417,7 @@ export function DashboardChatPanel({
                     <TooltipTrigger asChild>
                       <Button
                         size="icon"
+                        aria-label={showComposerStop ? "Stop generating response" : "Send message"}
                         variant={
                           showComposerStop
                             ? "destructive"

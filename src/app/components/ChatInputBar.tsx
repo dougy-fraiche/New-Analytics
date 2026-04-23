@@ -69,6 +69,7 @@ export function ChatInputBar({
         <div className="flex items-end gap-3">
           <div className="min-w-0 flex-1">
             <Textarea
+              aria-label={isHero ? "Ask a question" : "Ask a follow-up question"}
               placeholder={placeholder}
               value={query}
               onChange={(e) => {
@@ -99,6 +100,7 @@ export function ChatInputBar({
               <TooltipTrigger asChild>
                 <Button
                   size="icon"
+                  aria-label="Send message"
                   variant={canSend ? "default" : "outline"}
                   disabled={!canSend}
                   className={`${isHero ? "h-9 w-9" : "h-8 w-8"} rounded-lg`}

@@ -606,6 +606,9 @@ function FlowCanvas({
         onNodeClick={(_, node) => {
           setSelectedNodeId(node.id);
         }}
+        onPaneClick={() => {
+          setSelectedNodeId(null);
+        }}
         noPanClassName="react-flow__node"
         minZoom={0.35}
         maxZoom={2}

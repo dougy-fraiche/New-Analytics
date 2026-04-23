@@ -372,7 +372,7 @@ export function ExplorePhase({
       key={card.id}
       className={cn(
         "group/widget relative flex h-auto shrink-0 flex-col overflow-hidden transition-[box-shadow,border-color] hover:border-primary/30 hover:shadow-md",
-        card.segment === "opportunity" ? "min-h-[10.5rem] sm:min-h-[11rem]" : "min-h-[8rem] sm:h-[8rem]",
+        card.segment === "opportunity" ? "min-h-[10.5rem] sm:min-h-[11rem]" : "min-h-[8rem]",
       )}
     >
       {card.segment === "anomaly" ? (
@@ -437,16 +437,18 @@ export function ExplorePhase({
             {card.segment === "opportunity" ? card.cardBody : card.description}
           </CardDescription>
         </CardHeader>
-        <div className="mt-auto flex w-full min-w-0 shrink-0 flex-wrap items-center gap-2 px-4 pb-3 pt-2">
+        <div className="mt-auto flex w-full min-w-0 shrink-0 flex-wrap items-center gap-2 px-4 pb-4 pt-2">
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
             {card.segment === "anomaly" ? (
               <>
                 <Badge
                   variant={card.severity === "Critical" ? "destructive" : "secondary"}
                   className={
-                    card.severity === "High"
-                      ? "border-orange-200 bg-orange-100 text-orange-800"
-                      : undefined
+                    card.severity === "Critical"
+                      ? "border-red-700 bg-red-700 text-white"
+                      : card.severity === "High"
+                        ? "border-orange-200 bg-orange-100 text-orange-800"
+                        : undefined
                   }
                 >
                   {card.severity}

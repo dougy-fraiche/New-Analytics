@@ -165,6 +165,7 @@ export function SettingsPage() {
               </p>
             </div>
             <Switch
+              aria-label="Toggle email notifications"
               checked={emailNotifications}
               onCheckedChange={setEmailNotifications}
             />
@@ -177,7 +178,11 @@ export function SettingsPage() {
                 Get a weekly summary of key metrics and actions
               </p>
             </div>
-            <Switch checked={weeklyDigest} onCheckedChange={setWeeklyDigest} />
+            <Switch
+              aria-label="Toggle weekly digest"
+              checked={weeklyDigest}
+              onCheckedChange={setWeeklyDigest}
+            />
           </div>
           <Separator />
           <div className="flex items-center justify-between">
@@ -187,7 +192,11 @@ export function SettingsPage() {
                 Be notified when deployed actions complete or fail
               </p>
             </div>
-            <Switch checked={actionAlerts} onCheckedChange={setActionAlerts} />
+            <Switch
+              aria-label="Toggle action alerts"
+              checked={actionAlerts}
+              onCheckedChange={setActionAlerts}
+            />
           </div>
           <div className="flex justify-end">
             <Button onClick={handleSaveNotifications}>Save Notifications</Button>
@@ -212,6 +221,7 @@ export function SettingsPage() {
               </p>
             </div>
             <Switch
+              aria-label="Toggle AI Copilot"
               checked={copilotEnabled}
               onCheckedChange={setCopilotEnabled}
             />
@@ -225,6 +235,7 @@ export function SettingsPage() {
               </p>
             </div>
             <Switch
+              aria-label="Toggle dashboard sharing"
               checked={dashboardSharing}
               onCheckedChange={setDashboardSharing}
             />

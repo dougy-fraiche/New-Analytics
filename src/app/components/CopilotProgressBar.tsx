@@ -9,11 +9,13 @@ function clampProgress(value: number): number {
 
 export function CopilotProgressBar({
   value,
+  ariaLabel,
   className,
   indicatorClassName,
   indicatorColor,
 }: {
   value: number;
+  ariaLabel?: string;
   className?: string;
   indicatorClassName?: string;
   indicatorColor?: string;
@@ -26,6 +28,7 @@ export function CopilotProgressBar({
   return (
     <Progress
       value={resolvedValue}
+      aria-label={ariaLabel}
       className={cn("bg-muted", className)}
       indicatorClassName={cn(
         indicatorColor ? "bg-[var(--copilot-progress-indicator)]" : undefined,

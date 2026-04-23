@@ -375,27 +375,30 @@ export function AutomationOpportunitiesAgentPage() {
               </h1>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleCancel}
-                disabled={!hasUnsavedChanges}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleSave}
-                disabled={!hasUnsavedChanges}
-              >
-                Save
-              </Button>
-              <Button type="button" variant="default" size="sm" onClick={handlePublish}>
-                Publish to Cognigy AI
-              </Button>
+              {hasUnsavedChanges ? (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCancel}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSave}
+                  >
+                    Save
+                  </Button>
+                </>
+              ) : (
+                <Button type="button" variant="default" size="sm" onClick={handlePublish}>
+                  Publish to Cognigy AI
+                </Button>
+              )}
             </div>
           </div>
 

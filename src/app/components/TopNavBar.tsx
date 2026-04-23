@@ -110,7 +110,7 @@ export function TopNavBar({
   );
 
   const renderCrumbTrail = useCallback(
-    (items: Array<{ label: string; href?: string }>) =>
+    (items: Array<{ label: string; href?: string }>, interactive: boolean = true) =>
       items.map((crumb, index) => {
         const isLast = index === items.length - 1;
         return (
@@ -118,7 +118,7 @@ export function TopNavBar({
             <BreadcrumbItem className="min-w-0">
               {isLast ? (
                 <BreadcrumbPage className="truncate">{crumb.label}</BreadcrumbPage>
-              ) : crumb.href ? (
+              ) : crumb.href && interactive ? (
                 <BreadcrumbLink asChild className="truncate">
                   <Link to={crumb.href} className="truncate">
                     {crumb.label}
@@ -211,7 +211,7 @@ export function TopNavBar({
               <div ref={breadcrumbMeasureRef} className="w-max">
                 <Breadcrumb aria-hidden="true">
                   <BreadcrumbList className="flex-nowrap whitespace-nowrap overflow-visible">
-                    {renderCrumbTrail(breadcrumbs)}
+                    {renderCrumbTrail(breadcrumbs, false)}
                   </BreadcrumbList>
                 </Breadcrumb>
               </div>

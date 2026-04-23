@@ -362,6 +362,8 @@ export function KnowledgePerformanceImproveKnowledgeTab() {
                           <img
                             src={integration.logoPath}
                             alt={`${integration.name} logo`}
+                            width={24}
+                            height={24}
                             className="h-full w-full object-contain object-center"
                           />
                         </span>

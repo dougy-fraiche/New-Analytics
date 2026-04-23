@@ -452,6 +452,17 @@ function RootLayoutInner() {
     <ChatPanelSlotContext.Provider value={chatPanelSlot}>
       <HeaderActionsSlotContext.Provider value={headerActionsSlot}>
         <AiAssistantPanelControlProvider openPanel={openPanel}>
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[10000] focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:shadow-md focus:outline-none focus:ring-2 focus:ring-ring"
+          onClick={() => {
+            if (typeof document === "undefined") return;
+            const main = document.getElementById("main-content");
+            main?.focus();
+          }}
+        >
+          Skip to main content
+        </a>
         <SidebarProvider className="h-screen w-full">
           <div className="relative flex h-full w-full min-h-0 min-w-0 flex-row">
             {/* AI assistant — fixed width, absolutely positioned; revealed when the shell above slides away (no panel entry animation). */}
@@ -459,9 +470,8 @@ function RootLayoutInner() {
               ref={setChatPanelSlot}
               className={cn(
                 "absolute inset-y-0 right-0 z-0 flex h-full min-h-0 shrink-0 transition-opacity duration-200 ease-linear",
-                aiAssistantOpen ? "opacity-100" : "pointer-events-none opacity-0",
+                aiAssistantOpen ? "visible opacity-100" : "pointer-events-none invisible opacity-0",
               )}
-              aria-hidden={!aiAssistantOpen}
             >
               <DashboardChatPanel
                 dashboardId={aiRouteContext.dashboardId}
@@ -506,6 +516,8 @@ function RootLayoutInner() {
                     aiAssistantDisabled={false}
                   />
                   <main
+                    id="main-content"
+                    tabIndex={-1}
                     className={cn(
                       "w-full min-h-0 flex-1",
                       isFullHeightPage ? "flex flex-col overflow-hidden" : "overflow-auto",

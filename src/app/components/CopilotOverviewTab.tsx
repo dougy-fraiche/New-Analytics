@@ -346,6 +346,7 @@ export function CopilotOverviewTab({
                 </div>
                 <CopilotProgressBar
                   value={row.adoptionRate}
+                  ariaLabel={`${row.label} copilot adoption rate`}
                   className="h-3"
                   indicatorColor="#9fa7b3"
                 />
@@ -427,6 +428,7 @@ export function CopilotOverviewTab({
               <Search className="pointer-events-none absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 className="h-8 pl-8"
+                aria-label="Search sessions"
                 placeholder="Search sessions..."
                 value={sessionSearch}
                 onChange={(event) => {

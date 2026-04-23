@@ -300,7 +300,7 @@ function isConversationAssistantInFlight(conversation: Conversation): boolean {
 export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isMobile, openMobile, setOpenMobile } = useSidebar();
+  const { isMobile, openMobile, setOpenMobile, state: sidebarState } = useSidebar();
   const { conversations } = useConversations();
   const {
     projects,
@@ -340,6 +340,26 @@ export function AppSidebar() {
     location.pathname.startsWith(conversationPrefix)
       ? location.pathname.replace(conversationPrefix, "")
       : null;
+  const isSidebarCollapsed = sidebarState === "collapsed";
+  const isExploreSectionRoute =
+    location.pathname === ROUTES.EXPLORE ||
+    location.pathname === ROUTES.CONVERSATIONS ||
+    location.pathname.startsWith(conversationPrefix);
+  const isObservabilitySectionRoute =
+    location.pathname === ROUTES.OBSERVABILITY ||
+    location.pathname.startsWith(`${ROUTES.OBSERVABILITY}/`);
+  const isSavedSectionRoute =
+    location.pathname === ROUTES.SAVED ||
+    location.pathname.startsWith(`${ROUTES.SAVED}/`);
+  const isExploreHeaderActive = isSidebarCollapsed
+    ? isExploreSectionRoute
+    : location.pathname === ROUTES.EXPLORE;
+  const isObservabilityHeaderActive = isSidebarCollapsed
+    ? isObservabilitySectionRoute
+    : location.pathname === ROUTES.OBSERVABILITY;
+  const isSavedHeaderActive = isSidebarCollapsed
+    ? isSavedSectionRoute
+    : location.pathname === ROUTES.SAVED;
 
   const folderPath = (projectName: string) => ROUTES.SAVED_FOLDER(getProjectSlug({ name: projectName }));
   const folderDashboardPath = (projectName: string, dashboardName: string) =>
@@ -466,6 +486,8 @@ export function AppSidebar() {
                     <img
                       src="/app-icon.svg"
                       alt="Agentic Analytics"
+                      width={32}
+                      height={32}
                       className="size-8 shrink-0 object-contain"
                     />
                     <span className="truncate flex-1 text-left text-sm font-medium leading-tight group-data-[collapsible=icon]:hidden">
@@ -514,7 +536,7 @@ export function AppSidebar() {
             path={ROUTES.EXPLORE}
             open={exploreOpen}
             onToggle={setExploreOpen}
-            headerIsActive={location.pathname === ROUTES.EXPLORE}
+            headerIsActive={isExploreHeaderActive}
           >
             {activeConversations.length === 0 ? (
               <SidebarMenuSubItem>
@@ -636,10 +658,7 @@ export function AppSidebar() {
             path={ROUTES.OBSERVABILITY}
             open={observabilityOpen}
             onToggle={setObservabilityOpen}
-            headerIsActive={
-              location.pathname === ROUTES.OBSERVABILITY ||
-              location.pathname.startsWith(`${ROUTES.OBSERVABILITY}/`)
-            }
+            headerIsActive={isObservabilityHeaderActive}
           >
             {(() => {
               const aiAgentsCategory = ootbCategories.find((c) => c.id === "ai-agents");
@@ -696,10 +715,7 @@ export function AppSidebar() {
               path={ROUTES.SAVED}
               open={savedOpen}
               onToggle={setSavedOpen}
-              headerIsActive={
-                location.pathname === ROUTES.SAVED ||
-                location.pathname.startsWith(`${ROUTES.SAVED}/`)
-              }
+              headerIsActive={isSavedHeaderActive}
               itemAction={
                 <Tooltip>
                   <TooltipTrigger asChild>

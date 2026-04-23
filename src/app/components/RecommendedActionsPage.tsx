@@ -234,6 +234,7 @@ export function RecommendedActionsPage() {
               <div className="relative flex-1 min-w-[200px] max-w-sm">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
+                  aria-label="Search actions"
                   placeholder="Search actions..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -241,7 +242,7 @@ export function RecommendedActionsPage() {
                 />
               </div>
               <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                <SelectTrigger className="h-8 w-auto shrink-0">
+                <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by priority">
                   <LabeledSelectValue label="Priority" />
                 </SelectTrigger>
                 <SelectContent>
@@ -252,7 +253,7 @@ export function RecommendedActionsPage() {
                 </SelectContent>
               </Select>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="h-8 w-auto shrink-0">
+                <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by type">
                   <LabeledSelectValue label="Type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -263,7 +264,7 @@ export function RecommendedActionsPage() {
                 </SelectContent>
               </Select>
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="h-8 w-auto shrink-0">
+                <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by category">
                   <LabeledSelectValue label="Category" />
                 </SelectTrigger>
                 <SelectContent>

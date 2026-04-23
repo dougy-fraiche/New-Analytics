@@ -29,7 +29,11 @@ export function TableRatingStars({
   const filledCount = parseFivePointRating(rating);
 
   return (
-    <span className={cn("inline-flex items-center gap-1", className)} aria-label={`${filledCount} out of 5 stars`}>
+    <span
+      className={cn("inline-flex items-center gap-1", className)}
+      role="img"
+      aria-label={`${filledCount} out of 5 stars`}
+    >
       {Array.from({ length: 5 }, (_, index) => {
         const filled = index < filledCount;
 

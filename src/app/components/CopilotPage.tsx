@@ -99,7 +99,7 @@ export function CopilotPage() {
             </section>
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRangeOption)}>
-                <SelectTrigger className="h-8 w-auto shrink-0">
+                <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by date range">
                   <LabeledFilterInline label="Date range">{DATE_RANGE_LABELS[dateRange]}</LabeledFilterInline>
                 </SelectTrigger>
                 <SelectContent>
@@ -122,7 +122,7 @@ export function CopilotPage() {
               </Select>
 
               <Select value={team} onValueChange={(v) => setTeam(v as DashboardTeamFilter)}>
-                <SelectTrigger className="h-8 w-auto shrink-0">
+                <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by team">
                   <LabeledSelectValue label="Team" />
                 </SelectTrigger>
                 <SelectContent>
@@ -134,7 +134,7 @@ export function CopilotPage() {
               </Select>
 
               <Select value={product} onValueChange={(v) => setProduct(v as DashboardProductFilter)}>
-                <SelectTrigger className="h-8 w-auto shrink-0">
+                <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by product">
                   <LabeledSelectValue label="Product" />
                 </SelectTrigger>
                 <SelectContent>

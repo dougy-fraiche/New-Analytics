@@ -121,6 +121,7 @@ export function SearchOverlay({ open, onOpenChange }: SearchOverlayProps) {
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
       <CommandInput
+        aria-label="Search dashboards, conversations, and pages"
         placeholder="Search dashboards, conversations, pages..."
         value={search}
         onValueChange={setSearch}

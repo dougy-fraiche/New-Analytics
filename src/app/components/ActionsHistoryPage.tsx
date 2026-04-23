@@ -195,6 +195,7 @@ export function ActionsHistoryPage() {
                 <div className="relative flex-1 min-w-[200px] max-w-sm">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
+                    aria-label="Search history"
                     placeholder="Search history..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -202,7 +203,7 @@ export function ActionsHistoryPage() {
                   />
                 </div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="h-8 w-auto shrink-0">
+                  <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by status">
                     <LabeledSelectValue label="Status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -215,7 +216,7 @@ export function ActionsHistoryPage() {
                   </SelectContent>
                 </Select>
                 <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger className="h-8 w-auto shrink-0">
+                  <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by type">
                     <LabeledSelectValue label="Type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -334,8 +335,10 @@ export function ActionsHistoryPage() {
                           className={cn(
                             "gap-1.5",
                             action.status === "completed"
-                              ? "border-transparent bg-emerald-600 text-white dark:bg-emerald-600 dark:text-white"
-                              : "",
+                              ? "border-transparent bg-emerald-700 text-white dark:bg-emerald-700 dark:text-white"
+                              : action.status === "failed"
+                                ? "border-red-700 bg-red-700 text-white hover:bg-red-700"
+                                : "",
                           )}
                         >
                           {action.status === "in_progress" ? (

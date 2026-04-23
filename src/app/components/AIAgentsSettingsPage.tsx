@@ -2052,10 +2052,11 @@ export function AIAgentsSettingsPage() {
 
                         <div className="space-y-4">
                         <div className="max-w-[400px] space-y-2">
-                          <Label>
+                          <Label htmlFor="custom-criterion-title">
                             Title <span className="text-destructive">*</span>
                           </Label>
                           <Input
+                            id="custom-criterion-title"
                             value={activeCustomCriterion.customConfig.title}
                             placeholder="e.g., Accuracy"
                             onChange={(event) => updateSelectedCustomTitle(event.target.value)}
@@ -2064,8 +2065,9 @@ export function AIAgentsSettingsPage() {
                         </div>
 
                         <div className="max-w-[400px] space-y-2">
-                          <Label>Description</Label>
+                          <Label htmlFor="custom-criterion-description">Description</Label>
                           <Textarea
+                            id="custom-criterion-description"
                             value={activeCustomCriterion.customConfig.description}
                             placeholder="Brief description of what this criterion measures"
                             onChange={(event) =>
@@ -2076,7 +2078,7 @@ export function AIAgentsSettingsPage() {
                         </div>
 
                         <div className="max-w-[720px] space-y-2">
-                          <Label>
+                          <Label htmlFor="custom-criterion-evaluation-instruction">
                             Evaluation Instruction <span className="text-destructive">*</span>
                           </Label>
                           <p className="text-sm text-muted-foreground">
@@ -2085,6 +2087,7 @@ export function AIAgentsSettingsPage() {
                             text is sent verbatim to the LLM for every conversation it evaluates.
                           </p>
                           <Textarea
+                            id="custom-criterion-evaluation-instruction"
                             value={activeCustomCriterion.customConfig.evaluationInstruction}
                             placeholder="Example: Evaluate whether the agent provided factually correct information. Score 3 (pass) if all facts are correct, 2 (partial) if mostly correct with minor errors, 1 (fail) if significant misinformation was provided."
                             onChange={(event) =>
@@ -2132,6 +2135,7 @@ export function AIAgentsSettingsPage() {
                                       variant="ghost"
                                       size="icon-xs"
                                       className="h-6 w-6"
+                                      aria-label={`Move ${outcome.label} up`}
                                       disabled={index === 0}
                                       onClick={() =>
                                         moveSelectedOutcomeClass(outcome.id, -1)
@@ -2144,6 +2148,7 @@ export function AIAgentsSettingsPage() {
                                       variant="ghost"
                                       size="icon-xs"
                                       className="h-6 w-6"
+                                      aria-label={`Move ${outcome.label} down`}
                                       disabled={
                                         index ===
                                         activeCustomCriterion.customConfig.outcomeClasses

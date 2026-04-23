@@ -34,7 +34,7 @@ import {
   type DashboardProductFilter,
   type DashboardTeamFilter,
 } from "../data/dashboard-filters";
-import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { ROUTES, type CopilotTabRoute } from "../routes";
 
 const COPILOT_HEADER_TABS: { value: CopilotTabRoute; label: string }[] = [
@@ -163,7 +163,7 @@ export function CopilotShell({ activeTab, children }: CopilotShellProps) {
                   setFilterParam("dateRange", value as DateRangeOption, DEFAULT_FILTERS.dateRange)
                 }
               >
-                <SelectTrigger className="h-8 w-auto shrink-0">
+                <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by date range">
                   <LabeledFilterInline label="Date range">{DATE_RANGE_LABELS[dateRange]}</LabeledFilterInline>
                 </SelectTrigger>
                 <SelectContent>
@@ -191,7 +191,7 @@ export function CopilotShell({ activeTab, children }: CopilotShellProps) {
                   setFilterParam("team", value as DashboardTeamFilter, DEFAULT_FILTERS.team)
                 }
               >
-                <SelectTrigger className="h-8 w-auto shrink-0">
+                <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by team">
                   <LabeledSelectValue label="Team" />
                 </SelectTrigger>
                 <SelectContent>
@@ -208,7 +208,7 @@ export function CopilotShell({ activeTab, children }: CopilotShellProps) {
                   setFilterParam("product", value as DashboardProductFilter, DEFAULT_FILTERS.product)
                 }
               >
-                <SelectTrigger className="h-8 w-auto shrink-0">
+                <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by product">
                   <LabeledSelectValue label="Product" />
                 </SelectTrigger>
                 <SelectContent>
@@ -234,6 +234,16 @@ export function CopilotShell({ activeTab, children }: CopilotShellProps) {
                   </TabsTrigger>
                 ))}
               </TabsList>
+            </div>
+            <div className="sr-only">
+              {COPILOT_HEADER_TABS.map((tab) => (
+                <TabsContent
+                  key={`panel-${tab.value}`}
+                  value={tab.value}
+                  forceMount
+                  className="hidden"
+                />
+              ))}
             </div>
           </PageHeader>
 

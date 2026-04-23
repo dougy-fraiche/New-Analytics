@@ -198,7 +198,6 @@ export function AutomationOpportunitiesSettingsPage() {
                   <Label htmlFor="company-name">Company Name</Label>
                   <Input
                     id="company-name"
-                    className="h-8"
                     value={draft.companyName}
                     onChange={(event) =>
                       setDraft((current) => ({ ...current, companyName: event.target.value }))
@@ -210,7 +209,6 @@ export function AutomationOpportunitiesSettingsPage() {
                   <Label htmlFor="company-description">Company Description</Label>
                   <Textarea
                     id="company-description"
-                    className="h-20 min-h-20"
                     value={draft.companyDescription}
                     onChange={(event) =>
                       setDraft((current) => ({ ...current, companyDescription: event.target.value }))
@@ -233,7 +231,7 @@ export function AutomationOpportunitiesSettingsPage() {
                       setDraft((current) => ({ ...current, analyzePeriod: next }))
                     }
                   >
-                    <SelectTrigger id="analyze-period" className="h-8">
+                    <SelectTrigger id="analyze-period">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -246,14 +244,14 @@ export function AutomationOpportunitiesSettingsPage() {
                 </Field>
 
                 <section className="space-y-4">
-                  <h2 className="text-lg font-bold leading-7">Automation Opportunities</h2>
+                  <h2 className="text-base font-medium leading-6">Automation Opportunities</h2>
                   <div className="flex flex-wrap items-start gap-3">
                     <Field className="w-[240px]">
                       <Label htmlFor="call-cost">Call cost (USD)</Label>
                       <div className="relative">
                         <Input
                           id="call-cost"
-                          className="h-8 pr-9"
+                          className="pr-9"
                           value={draft.callCost}
                           onChange={(event) =>
                             setDraft((current) => ({ ...current, callCost: event.target.value }))
@@ -271,7 +269,7 @@ export function AutomationOpportunitiesSettingsPage() {
                         value={draft.perUnit}
                         onValueChange={(next) => setDraft((current) => ({ ...current, perUnit: next }))}
                       >
-                        <SelectTrigger id="per-unit" className="h-8">
+                        <SelectTrigger id="per-unit">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -286,7 +284,7 @@ export function AutomationOpportunitiesSettingsPage() {
                     <div className="relative">
                       <Input
                         id="chat-cost"
-                        className="h-8 pr-9"
+                        className="pr-9"
                         value={draft.chatCost}
                         readOnly
                       />
@@ -301,7 +299,7 @@ export function AutomationOpportunitiesSettingsPage() {
                     <div className="relative">
                       <Input
                         id="target-containment"
-                        className="h-8 pr-9"
+                        className="pr-9"
                         value={draft.targetContainment}
                         onChange={(event) =>
                           setDraft((current) => ({
@@ -329,7 +327,6 @@ export function AutomationOpportunitiesSettingsPage() {
                     <Label htmlFor="cognigy-api-key">API key</Label>
                     <Input
                       id="cognigy-api-key"
-                      className="h-8"
                       value={apiKeyValue}
                       placeholder={apiKeyPlaceholder}
                       readOnly={draft.cognigyState === "verified"}
@@ -341,7 +338,6 @@ export function AutomationOpportunitiesSettingsPage() {
                     <Label htmlFor="cognigy-site-url">Site URL</Label>
                     <Input
                       id="cognigy-site-url"
-                      className="h-8"
                       value={draft.cognigySiteUrl}
                       placeholder={siteUrlPlaceholder}
                       onChange={(event) => handleSiteUrlChange(event.target.value)}
