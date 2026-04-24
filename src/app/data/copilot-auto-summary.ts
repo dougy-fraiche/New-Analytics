@@ -1,5 +1,9 @@
 import type { EChartsCoreOption } from "echarts";
 import {
+  buildTrendSparklineSeries,
+  type KpiSparklinePattern,
+} from "../lib/kpi-trend-sparkline";
+import {
   expandRowsForPagination,
   mutateContactId,
   shiftMinuteSecondDuration,
@@ -11,42 +15,57 @@ export type CopilotAutoSummaryKpi = {
   trend: string;
   caption: string;
   subcaption: string;
+  sparklinePattern: KpiSparklinePattern;
   sparkline: number[];
 };
 
+function createAutoSummaryKpi(
+  kpi: Omit<CopilotAutoSummaryKpi, "sparkline">,
+): CopilotAutoSummaryKpi {
+  return {
+    ...kpi,
+    sparkline: buildTrendSparklineSeries({
+      value: kpi.value,
+      trend: kpi.trend,
+      pattern: kpi.sparklinePattern,
+      seedKey: `copilot-auto-summary:${kpi.label}`,
+    }),
+  };
+}
+
 export const copilotAutoSummaryKpis: CopilotAutoSummaryKpi[] = [
-  {
+  createAutoSummaryKpi({
     label: "Acceptance Rate",
     value: "85%",
     trend: "+2.4%",
     caption: "Acceptance Rate",
     subcaption: "420 of 494",
-    sparkline: [79, 80, 81, 82, 83, 84, 85],
-  },
-  {
+    sparklinePattern: "steadyUp",
+  }),
+  createAutoSummaryKpi({
     label: "Edit Rate",
     value: "15.2%",
     trend: "-1.1%",
     caption: "Edit Rate",
     subcaption: "75 edited summaries",
-    sparkline: [19.1, 18.8, 18.2, 17.4, 16.6, 15.9, 15.2],
-  },
-  {
+    sparklinePattern: "steadyDown",
+  }),
+  createAutoSummaryKpi({
     label: "Average Similarity Score",
     value: "0.854",
     trend: "+0.03",
     caption: "Average Similarity Score",
     subcaption: "494 scored interactions",
-    sparkline: [0.81, 0.818, 0.826, 0.832, 0.839, 0.847, 0.854],
-  },
-  {
+    sparklinePattern: "smallDipRecovery",
+  }),
+  createAutoSummaryKpi({
     label: "Time Saved",
     value: "63.9 hrs",
     trend: "+6.8%",
     caption: "Time Saved",
     subcaption: "420 accepted summaries",
-    sparkline: [48.8, 51.6, 54.3, 56.9, 59.4, 61.8, 63.9],
-  },
+    sparklinePattern: "bigDipRecovery",
+  }),
 ];
 
 export const autoSummaryInsightParagraphs: string[] = [

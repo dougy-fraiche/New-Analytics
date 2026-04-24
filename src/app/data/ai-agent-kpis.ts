@@ -1,47 +1,67 @@
+import {
+  buildTrendSparklineSeries,
+  type KpiSparklinePattern,
+} from "../lib/kpi-trend-sparkline";
+
 export type AIAgentOverviewKpi = {
   label: string;
   value: string;
   trend: string;
+  sparklinePattern: KpiSparklinePattern;
   sparkline: number[];
 };
 
+function createOverviewKpi(
+  kpi: Omit<AIAgentOverviewKpi, "sparkline">,
+): AIAgentOverviewKpi {
+  return {
+    ...kpi,
+    sparkline: buildTrendSparklineSeries({
+      value: kpi.value,
+      trend: kpi.trend,
+      pattern: kpi.sparklinePattern,
+      seedKey: `ai-agent-overview:${kpi.label}`,
+    }),
+  };
+}
+
 export const aiAgentOverviewKpis: AIAgentOverviewKpi[] = [
-  {
+  createOverviewKpi({
     label: "Total Sessions",
     value: "12,847",
     trend: "+8.3%",
-    sparkline: [10200, 10800, 11200, 11650, 12000, 12400, 12847],
-  },
-  {
+    sparklinePattern: "smallDipRecovery",
+  }),
+  createOverviewKpi({
     label: "Active Sessions",
     value: "162",
     trend: "+5.2%",
-    sparkline: [118, 126, 132, 138, 144, 152, 162],
-  },
-  {
+    sparklinePattern: "steadyUp",
+  }),
+  createOverviewKpi({
     label: "Avg. Session Length",
     value: "3.2 min",
     trend: "-2.1%",
-    sparkline: [3.8, 3.7, 3.6, 3.45, 3.35, 3.28, 3.2],
-  },
-  {
+    sparklinePattern: "smallSpikePullback",
+  }),
+  createOverviewKpi({
     label: "Handovers (Escalations)",
     value: "342",
     trend: "-4.5%",
-    sparkline: [398, 384, 372, 362, 354, 348, 342],
-  },
-  {
+    sparklinePattern: "bigDipRecovery",
+  }),
+  createOverviewKpi({
     label: "Positive Ratings",
     value: "94.2%",
     trend: "+1.8%",
-    sparkline: [90.1, 91.0, 91.8, 92.4, 93.0, 93.6, 94.2],
-  },
-  {
+    sparklinePattern: "steadyUp",
+  }),
+  createOverviewKpi({
     label: "Unique Contacts",
     value: "10,456",
     trend: "+6.7%",
-    sparkline: [8450, 8760, 9020, 9420, 9730, 10080, 10456],
-  },
+    sparklinePattern: "smallDipRecovery",
+  }),
 ];
 
 export type AIAgentEvaluationKpi = {
@@ -49,15 +69,67 @@ export type AIAgentEvaluationKpi = {
   value: string;
   caption: string;
   badge: string;
+  sparklinePattern: KpiSparklinePattern;
+  sparkline: number[];
 };
 
+function createEvaluationKpi(
+  kpi: Omit<AIAgentEvaluationKpi, "sparkline">,
+): AIAgentEvaluationKpi {
+  return {
+    ...kpi,
+    sparkline: buildTrendSparklineSeries({
+      value: kpi.value,
+      trend: kpi.badge,
+      pattern: kpi.sparklinePattern,
+      seedKey: `ai-agent-evaluation:${kpi.label}`,
+    }),
+  };
+}
+
 export const aiAgentEvaluationKpis: AIAgentEvaluationKpi[] = [
-  { label: "Evaluated", value: "2,847", caption: "conversations", badge: "+3.2%" },
-  { label: "Success Rate", value: "68%", caption: "goal achieved", badge: "+1.4%" },
-  { label: "Containment", value: "73%", caption: "AI resolved", badge: "+2.0%" },
-  { label: "Positive Sent", value: "58%", caption: "good sentiment", badge: "−0.8%" },
-  { label: "Compliance", value: "89%", caption: "114 violations", badge: "−1.1%" },
-  { label: "Brand Aligned", value: "71%", caption: "fully aligned", badge: "+0.6%" },
+  createEvaluationKpi({
+    label: "Evaluated",
+    value: "2,847",
+    caption: "conversations",
+    badge: "+3.2%",
+    sparklinePattern: "steadyUp",
+  }),
+  createEvaluationKpi({
+    label: "Success Rate",
+    value: "68%",
+    caption: "goal achieved",
+    badge: "+1.4%",
+    sparklinePattern: "smallDipRecovery",
+  }),
+  createEvaluationKpi({
+    label: "Containment",
+    value: "73%",
+    caption: "AI resolved",
+    badge: "+2.0%",
+    sparklinePattern: "smallSpikePullback",
+  }),
+  createEvaluationKpi({
+    label: "Positive Sent",
+    value: "58%",
+    caption: "good sentiment",
+    badge: "−0.8%",
+    sparklinePattern: "smallDipRecovery",
+  }),
+  createEvaluationKpi({
+    label: "Compliance",
+    value: "89%",
+    caption: "114 violations",
+    badge: "−1.1%",
+    sparklinePattern: "steadyDown",
+  }),
+  createEvaluationKpi({
+    label: "Brand Aligned",
+    value: "71%",
+    caption: "fully aligned",
+    badge: "+0.6%",
+    sparklinePattern: "flat",
+  }),
 ];
 
 export type AIAgentProductivityRow = {

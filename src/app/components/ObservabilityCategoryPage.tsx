@@ -44,7 +44,7 @@ import {
   pageRootListScrollGutterClassName,
 } from "./PageChrome";
 import { PageTransition } from "./PageTransition";
-import { KpiSparkline, KPI_SPARKLINE_SERIES } from "./KpiSparkline";
+import { KpiSparkline } from "./KpiSparkline";
 import { KpiMetricValueTitle } from "./KpiMetricValueTitle";
 import { LabeledFilterInline, LabeledSelectValue } from "./HeaderFilters";
 import { TableAgentCell } from "./TableAgentCell";
@@ -68,6 +68,7 @@ import {
   type DashboardProductFilter,
   type DashboardTeamFilter,
 } from "../data/dashboard-filters";
+import { dashboardTrendBadgeKpiByKey } from "../data/dashboard-kpis";
 
 // Mock data for dashboard content (same as DashboardPage)
 const trendData = [
@@ -101,6 +102,11 @@ const comparisonData = [
   { week: "Week 5", thisPeriod: 1087, lastPeriod: 1014 },
   { week: "Week 6", thisPeriod: 1243, lastPeriod: 1078 },
 ];
+
+const TOTAL_ESCALATIONS_KPI = dashboardTrendBadgeKpiByKey.totalEscalations;
+const AVG_RESOLUTION_KPI = dashboardTrendBadgeKpiByKey.avgResolutionHours;
+const CUSTOMER_SATISFACTION_KPI = dashboardTrendBadgeKpiByKey.customerSatisfactionPct;
+const RESOLUTION_RATE_KPI = dashboardTrendBadgeKpiByKey.resolutionRatePct;
 
 const tableData = [
   { agent: "Sarah Johnson", escalations: 23, resolved: 187, avgTime: "4.2h", satisfaction: "94%" },
@@ -377,22 +383,22 @@ export function ObservabilityCategoryPage() {
                         />
                       </div>
                       <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
-                        <KpiMetricValueTitle value="260" />
+                        <KpiMetricValueTitle value={TOTAL_ESCALATIONS_KPI.value} />
                         <Badge
                           variant="secondary"
                           className="shrink-0 border-transparent bg-emerald-600 text-xs text-white dark:bg-emerald-600 dark:text-white"
                         >
                           <span className="inline-flex items-center gap-1">
                             <TrendingUp className="h-3 w-3" />
-                            +12%
+                            {TOTAL_ESCALATIONS_KPI.trend}
                           </span>
                         </Badge>
                       </div>
                     </CardHeader>
                     <CardContent className="pt-0">
                       <KpiSparkline
-                        values={[...KPI_SPARKLINE_SERIES.totalEscalations]}
-                        seriesName="Escalations"
+                        values={TOTAL_ESCALATIONS_KPI.sparkline}
+                        seriesName={TOTAL_ESCALATIONS_KPI.seriesName}
                         formatValue={(v) => v.toLocaleString()}
                       />
                     </CardContent>
@@ -409,22 +415,22 @@ export function ObservabilityCategoryPage() {
                         />
                       </div>
                       <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
-                        <KpiMetricValueTitle value="4.3h" />
+                        <KpiMetricValueTitle value={AVG_RESOLUTION_KPI.value} />
                         <Badge
                           variant="secondary"
                           className="shrink-0 border-transparent bg-red-600 text-xs text-white dark:bg-red-600 dark:text-white"
                         >
                           <span className="inline-flex items-center gap-1">
                             <TrendingDown className="h-3 w-3" />
-                            -8%
+                            {AVG_RESOLUTION_KPI.trend}
                           </span>
                         </Badge>
                       </div>
                     </CardHeader>
                     <CardContent className="pt-0">
                       <KpiSparkline
-                        values={[...KPI_SPARKLINE_SERIES.avgResolutionHours]}
-                        seriesName="Avg. resolution"
+                        values={AVG_RESOLUTION_KPI.sparkline}
+                        seriesName={AVG_RESOLUTION_KPI.seriesName}
                         formatValue={(v) => `${v.toFixed(1)} h`}
                       />
                     </CardContent>
@@ -441,22 +447,22 @@ export function ObservabilityCategoryPage() {
                         />
                       </div>
                       <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
-                        <KpiMetricValueTitle value="94%" />
+                        <KpiMetricValueTitle value={CUSTOMER_SATISFACTION_KPI.value} />
                         <Badge
                           variant="secondary"
                           className="shrink-0 border-transparent bg-emerald-600 text-xs text-white dark:bg-emerald-600 dark:text-white"
                         >
                           <span className="inline-flex items-center gap-1">
                             <TrendingUp className="h-3 w-3" />
-                            +2%
+                            {CUSTOMER_SATISFACTION_KPI.trend}
                           </span>
                         </Badge>
                       </div>
                     </CardHeader>
                     <CardContent className="pt-0">
                       <KpiSparkline
-                        values={[...KPI_SPARKLINE_SERIES.customerSatisfactionPct]}
-                        seriesName="Satisfaction"
+                        values={CUSTOMER_SATISFACTION_KPI.sparkline}
+                        seriesName={CUSTOMER_SATISFACTION_KPI.seriesName}
                         formatValue={(v) => `${v.toFixed(1)}%`}
                       />
                     </CardContent>
@@ -473,16 +479,16 @@ export function ObservabilityCategoryPage() {
                         />
                       </div>
                       <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
-                        <KpiMetricValueTitle value="87%" />
+                        <KpiMetricValueTitle value={RESOLUTION_RATE_KPI.value} />
                         <Badge variant="secondary" className="shrink-0 text-xs">
-                          No change
+                          {RESOLUTION_RATE_KPI.trend}
                         </Badge>
                       </div>
                     </CardHeader>
                     <CardContent className="pt-0">
                       <KpiSparkline
-                        values={[...KPI_SPARKLINE_SERIES.resolutionRatePct]}
-                        seriesName="Resolution rate"
+                        values={RESOLUTION_RATE_KPI.sparkline}
+                        seriesName={RESOLUTION_RATE_KPI.seriesName}
                         formatValue={(v) => `${v.toFixed(1)}%`}
                       />
                     </CardContent>

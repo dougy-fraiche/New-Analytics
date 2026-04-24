@@ -77,6 +77,10 @@ import {
   validateSavedFolderDashboardName,
   validateSavedStandaloneDashboardName,
 } from "../lib/saved-slugs";
+import {
+  buildSavedDashboardSnapshot,
+  deriveSavedDashboardKpiLabels,
+} from "../lib/saved-dashboard-snapshot";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -144,8 +148,10 @@ export function ConversationPhase({
     projects,
     standaloneDashboards,
     addDashboardToProject,
+    updateDashboardInProject,
     addProject,
     addStandaloneDashboard,
+    updateStandaloneDashboard,
   } = useProjects();
   const navigate = useNavigate();
   const headerActionsSlot = useHeaderActionsSlot();
@@ -359,6 +365,16 @@ export function ConversationPhase({
         return;
       }
       const newDb = addStandaloneDashboard(trimmedName, undefined, desc);
+      const snapshot = buildSavedDashboardSnapshot({
+        seed: `${newDb.id}|${trimmedName}|${desc ?? ""}|${latestDashboard.id}`,
+        title: trimmedName,
+        description: desc,
+        baseDashboard: latestDashboard,
+      });
+      updateStandaloneDashboard(newDb.id, {
+        snapshot,
+        kpis: deriveSavedDashboardKpiLabels(snapshot),
+      });
       savedPath = getSavedStandaloneDashboardPath(newDb);
     } else {
       const validationError = validateSavedFolderDashboardName(
@@ -376,6 +392,16 @@ export function ConversationPhase({
         return;
       }
       const newDb = addDashboardToProject(selectedProjectId, trimmedName, undefined, desc);
+      const snapshot = buildSavedDashboardSnapshot({
+        seed: `${newDb.id}|${trimmedName}|${desc ?? ""}|${latestDashboard.id}`,
+        title: trimmedName,
+        description: desc,
+        baseDashboard: latestDashboard,
+      });
+      updateDashboardInProject(selectedProjectId, newDb.id, {
+        snapshot,
+        kpis: deriveSavedDashboardKpiLabels(snapshot),
+      });
       savedPath = getSavedFolderDashboardPath(targetProject, newDb);
     }
 

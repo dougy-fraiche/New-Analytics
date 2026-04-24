@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useMemo, ReactNode } from "react";
+import type { SavedDashboardSnapshot } from "../types/saved-dashboard-snapshot";
 
 // Context for managing projects and dashboards across the app
 export interface Dashboard {
@@ -7,8 +8,14 @@ export interface Dashboard {
   description?: string;
   createdBy: string;
   kpis: string[];
+  snapshot?: SavedDashboardSnapshot;
   /** Optional reference to the source OOTB dashboard type (e.g. "agent-queries") for inheriting chat prompts */
   sourceOotbId?: string;
+}
+
+interface CreateDashboardOptions {
+  kpis?: string[];
+  snapshot?: SavedDashboardSnapshot;
 }
 
 export interface Project {
@@ -22,11 +29,19 @@ interface ProjectContextType {
   addProject: (name: string) => Project;
   renameProject: (projectId: string, newName: string) => void;
   deleteProject: (projectId: string) => void;
-  addDashboardToProject: (projectId: string, dashboardName: string, sourceOotbId?: string, description?: string) => Dashboard;
+  addDashboardToProject: (
+    projectId: string,
+    dashboardName: string,
+    sourceOotbId?: string,
+    description?: string,
+    options?: CreateDashboardOptions,
+  ) => Dashboard;
   updateDashboardInProject: (
     projectId: string,
     dashboardId: string,
-    updates: Partial<Pick<Dashboard, "name" | "description">>,
+    updates: Partial<
+      Pick<Dashboard, "name" | "description" | "kpis" | "snapshot" | "sourceOotbId">
+    >,
   ) => void;
   renameDashboardInProject: (projectId: string, dashboardId: string, newName: string) => void;
   deleteDashboardFromProject: (projectId: string, dashboardId: string) => void;
@@ -34,10 +49,17 @@ interface ProjectContextType {
   restoreProject: (project: Project) => void;
   restoreDashboardToProject: (projectId: string, dashboard: Dashboard) => void;
   standaloneDashboards: Dashboard[];
-  addStandaloneDashboard: (dashboardName: string, sourceOotbId?: string, description?: string) => Dashboard;
+  addStandaloneDashboard: (
+    dashboardName: string,
+    sourceOotbId?: string,
+    description?: string,
+    options?: CreateDashboardOptions,
+  ) => Dashboard;
   updateStandaloneDashboard: (
     dashboardId: string,
-    updates: Partial<Pick<Dashboard, "name" | "description">>,
+    updates: Partial<
+      Pick<Dashboard, "name" | "description" | "kpis" | "snapshot" | "sourceOotbId">
+    >,
   ) => void;
   renameStandaloneDashboard: (dashboardId: string, newName: string) => void;
   deleteStandaloneDashboard: (dashboardId: string) => void;
@@ -98,13 +120,20 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     setProjects((prev) => prev.filter((p) => p.id !== projectId));
   }, []);
 
-  const addDashboardToProject = useCallback((projectId: string, dashboardName: string, sourceOotbId?: string, description?: string): Dashboard => {
+  const addDashboardToProject = useCallback((
+    projectId: string,
+    dashboardName: string,
+    sourceOotbId?: string,
+    description?: string,
+    options?: CreateDashboardOptions,
+  ): Dashboard => {
     const newDashboard: Dashboard = {
       id: `dash-${Date.now()}`,
       name: dashboardName,
       description,
       createdBy: "User",
-      kpis: [],
+      kpis: options?.kpis ?? [],
+      snapshot: options?.snapshot,
       sourceOotbId,
     };
     setProjects((prev) =>
@@ -120,7 +149,9 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
   const updateDashboardInProject = useCallback((
     projectId: string,
     dashboardId: string,
-    updates: Partial<Pick<Dashboard, "name" | "description">>,
+    updates: Partial<
+      Pick<Dashboard, "name" | "description" | "kpis" | "snapshot" | "sourceOotbId">
+    >,
   ) => {
     setProjects((prev) =>
       prev.map((p) =>
@@ -184,13 +215,19 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
-  const addStandaloneDashboard = useCallback((dashboardName: string, sourceOotbId?: string, description?: string) => {
+  const addStandaloneDashboard = useCallback((
+    dashboardName: string,
+    sourceOotbId?: string,
+    description?: string,
+    options?: CreateDashboardOptions,
+  ) => {
     const newDashboard: Dashboard = {
       id: `dash-${Date.now()}`,
       name: dashboardName,
       description,
       createdBy: "User",
-      kpis: [],
+      kpis: options?.kpis ?? [],
+      snapshot: options?.snapshot,
       sourceOotbId,
     };
     setStandaloneDashboards((prev) => [...prev, newDashboard]);
@@ -199,7 +236,9 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
 
   const updateStandaloneDashboard = useCallback((
     dashboardId: string,
-    updates: Partial<Pick<Dashboard, "name" | "description">>,
+    updates: Partial<
+      Pick<Dashboard, "name" | "description" | "kpis" | "snapshot" | "sourceOotbId">
+    >,
   ) => {
     setStandaloneDashboards((prev) =>
       prev.map((d) => (d.id === dashboardId ? { ...d, ...updates } : d))

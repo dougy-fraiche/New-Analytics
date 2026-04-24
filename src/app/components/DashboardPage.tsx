@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   RotateCcw,
   Download,
@@ -54,7 +54,7 @@ import { GLOBAL_AI_ASSISTANT_KEY } from "../lib/ai-assistant-global";
 import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
 import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
 import { PageTransition } from "./PageTransition";
-import { KpiSparkline, KPI_SPARKLINE_SERIES } from "./KpiSparkline";
+import { KpiSparkline } from "./KpiSparkline";
 import { KpiMetricValueTitle } from "./KpiMetricValueTitle";
 import { TableAgentCell } from "./TableAgentCell";
 import { TableBadge } from "./TableBadge";
@@ -78,6 +78,7 @@ import { useContainerBreakpoint } from "../hooks/useContainerBreakpoint";
 import { cn } from "./ui/utils";
 import { showDeletedObjectToast } from "../lib/object-deletion-toast";
 import { EditDashboardDialog } from "./EditDashboardDialog";
+import { dashboardTrendBadgeKpiByKey } from "../data/dashboard-kpis";
 import { ROUTES } from "../routes";
 import {
   findProjectDashboardBySlugs,
@@ -87,6 +88,12 @@ import {
   validateSavedFolderName,
   validateSavedStandaloneDashboardName,
 } from "../lib/saved-slugs";
+import {
+  buildSavedDashboardSnapshot,
+  deriveSavedDashboardKpiLabels,
+} from "../lib/saved-dashboard-snapshot";
+import { formatSparklineValueFromReference, getTrendDirectionFromBadge } from "../lib/kpi-trend-sparkline";
+import type { SavedDashboardSnapshotKpi } from "../types/saved-dashboard-snapshot";
 
 // Build OOTB meta lookup
 const dashboardMeta: Record<string, { title: string; description: string }> = {};
@@ -130,6 +137,17 @@ const comparisonData = [
   { week: "Week 4", thisPeriod: 1156, lastPeriod: 952 },
   { week: "Week 5", thisPeriod: 1087, lastPeriod: 1014 },
   { week: "Week 6", thisPeriod: 1243, lastPeriod: 1078 },
+];
+
+const TOTAL_ESCALATIONS_KPI = dashboardTrendBadgeKpiByKey.totalEscalations;
+const AVG_RESOLUTION_KPI = dashboardTrendBadgeKpiByKey.avgResolutionHours;
+const CUSTOMER_SATISFACTION_KPI = dashboardTrendBadgeKpiByKey.customerSatisfactionPct;
+const RESOLUTION_RATE_KPI = dashboardTrendBadgeKpiByKey.resolutionRatePct;
+const DEFAULT_KPI_CARDS: SavedDashboardSnapshotKpi[] = [
+  TOTAL_ESCALATIONS_KPI,
+  AVG_RESOLUTION_KPI,
+  CUSTOMER_SATISFACTION_KPI,
+  RESOLUTION_RATE_KPI,
 ];
 
 const tableData = [
@@ -253,6 +271,55 @@ export function DashboardPage({ resolvedStandaloneDashboardId }: DashboardPagePr
         description: "User-generated analytics dashboard",
       }
     : { title: "Dashboard", description: "" };
+
+  useEffect(() => {
+    if (!isSavedDashboard || !savedDashboard || savedDashboard.snapshot) return;
+    const snapshot = buildSavedDashboardSnapshot({
+      seed: `${savedDashboard.id}|${savedDashboard.name}|${savedDashboard.description ?? ""}|${savedDashboard.sourceOotbId ?? ""}`,
+      title: savedDashboard.name,
+      description: savedDashboard.description,
+      sourceOotbId: savedDashboard.sourceOotbId,
+    });
+    const kpis = deriveSavedDashboardKpiLabels(snapshot);
+
+    if (sourceProjectId) {
+      updateDashboardInProject(sourceProjectId, savedDashboard.id, {
+        snapshot,
+        kpis,
+      });
+    } else {
+      updateStandaloneDashboard(savedDashboard.id, {
+        snapshot,
+        kpis,
+      });
+    }
+  }, [
+    isSavedDashboard,
+    savedDashboard,
+    sourceProjectId,
+    updateDashboardInProject,
+    updateStandaloneDashboard,
+  ]);
+
+  const activeSnapshot = isSavedDashboard ? savedDashboard?.snapshot : undefined;
+  const activeKpis = activeSnapshot?.kpis?.length ? activeSnapshot.kpis : DEFAULT_KPI_CARDS;
+  const activeTrendDataset = activeSnapshot?.datasets.trend ?? {
+    data: trendData,
+    xKey: "date",
+    yKey: "conversations",
+  };
+  const activeCategoryDataset = activeSnapshot?.datasets.category ?? {
+    data: categoryData,
+    xKey: "category",
+    yKey: "tickets",
+  };
+  const activeComparisonDataset = activeSnapshot?.datasets.comparison ?? {
+    data: comparisonData,
+    xKey: "week",
+    yKey: "thisPeriod",
+    y2Key: "lastPeriod",
+  };
+  const activeTableRows = activeSnapshot?.table?.length ? activeSnapshot.table : tableData;
 
   const handleStartEdit = () => {
     setShowEditDialog(true);
@@ -586,119 +653,52 @@ export function DashboardPage({ resolvedStandaloneDashboardId }: DashboardPagePr
                 : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
             }`}
           >
-              <Card
-                className={`group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30 ${highlightedKpiCards.has(0) ? anomalyCardClass : ""}`}
-              >
-                <CardHeader className="pb-0">
-                  <div className="flex items-center gap-2">
-                    <CardDescription className="flex-1">Total Escalations</CardDescription>
-                    <WidgetAskAIAndOverflow widgetTitle="Total Escalations" chartType="metric" />
-                  </div>
-                  <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
-                    <KpiMetricValueTitle value="260" />
-                    <Badge
-                      variant="secondary"
-                      className="shrink-0 border-transparent bg-emerald-600 text-xs text-white dark:bg-emerald-600 dark:text-white"
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        <TrendingUp className="h-3 w-3" />
-                        +12%
-                      </span>
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <KpiSparkline
-                    values={[...KPI_SPARKLINE_SERIES.totalEscalations]}
-                    seriesName="Escalations"
-                    formatValue={(v) => v.toLocaleString()}
-                  />
-                </CardContent>
-              </Card>
+            {activeKpis.map((kpi, index) => {
+              const direction = getTrendDirectionFromBadge(kpi.trend);
+              const TrendIcon = direction === "up" ? TrendingUp : TrendingDown;
+              const badgeToneClass =
+                direction === "up"
+                  ? "border-transparent bg-emerald-600 text-xs text-white dark:bg-emerald-600 dark:text-white"
+                  : direction === "down"
+                    ? "border-transparent bg-red-600 text-xs text-white dark:bg-red-600 dark:text-white"
+                    : "text-xs";
 
-              <Card
-                className={`group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30 ${highlightedKpiCards.has(1) ? anomalyCardClass : ""}`}
-              >
-                <CardHeader className="pb-0">
-                  <div className="flex items-center gap-2">
-                    <CardDescription className="flex-1">Avg Resolution Time</CardDescription>
-                    <WidgetAskAIAndOverflow widgetTitle="Avg Resolution Time" chartType="metric" />
-                  </div>
-                  <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
-                    <KpiMetricValueTitle value="4.3h" />
-                    <Badge
-                      variant="secondary"
-                      className="shrink-0 border-transparent bg-red-600 text-xs text-white dark:bg-red-600 dark:text-white"
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        <TrendingDown className="h-3 w-3" />
-                        -8%
-                      </span>
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <KpiSparkline
-                    values={[...KPI_SPARKLINE_SERIES.avgResolutionHours]}
-                    seriesName="Avg. resolution"
-                    formatValue={(v) => `${v.toFixed(1)} h`}
-                  />
-                </CardContent>
-              </Card>
-
-              <Card
-                className={`group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30 ${highlightedKpiCards.has(2) ? anomalyCardClass : ""}`}
-              >
-                <CardHeader className="pb-0">
-                  <div className="flex items-center gap-2">
-                    <CardDescription className="flex-1">Customer Satisfaction</CardDescription>
-                    <WidgetAskAIAndOverflow widgetTitle="Customer Satisfaction" chartType="metric" />
-                  </div>
-                  <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
-                    <KpiMetricValueTitle value="94%" />
-                    <Badge
-                      variant="secondary"
-                      className="shrink-0 border-transparent bg-emerald-600 text-xs text-white dark:bg-emerald-600 dark:text-white"
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        <TrendingUp className="h-3 w-3" />
-                        +2%
-                      </span>
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <KpiSparkline
-                    values={[...KPI_SPARKLINE_SERIES.customerSatisfactionPct]}
-                    seriesName="Satisfaction"
-                    formatValue={(v) => `${v.toFixed(1)}%`}
-                  />
-                </CardContent>
-              </Card>
-
-              <Card
-                className={`group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30 ${highlightedKpiCards.has(3) ? anomalyCardClass : ""}`}
-              >
-                <CardHeader className="pb-0">
-                  <div className="flex items-center gap-2">
-                    <CardDescription className="flex-1">Resolution Rate</CardDescription>
-                    <WidgetAskAIAndOverflow widgetTitle="Resolution Rate" chartType="metric" />
-                  </div>
-                  <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
-                    <KpiMetricValueTitle value="87%" />
-                    <Badge variant="secondary" className="shrink-0 text-xs">
-                      No change
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <KpiSparkline
-                    values={[...KPI_SPARKLINE_SERIES.resolutionRatePct]}
-                    seriesName="Resolution rate"
-                    formatValue={(v) => `${v.toFixed(1)}%`}
-                  />
-                </CardContent>
-              </Card>
+              return (
+                <Card
+                  key={`${kpi.label}-${index}`}
+                  className={`group/widget transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30 ${
+                    highlightedKpiCards.has(index) ? anomalyCardClass : ""
+                  }`}
+                >
+                  <CardHeader className="pb-0">
+                    <div className="flex items-center gap-2">
+                      <CardDescription className="flex-1">{kpi.label}</CardDescription>
+                      <WidgetAskAIAndOverflow widgetTitle={kpi.label} chartType="metric" />
+                    </div>
+                    <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
+                      <KpiMetricValueTitle value={kpi.value} />
+                      <Badge variant="secondary" className={`shrink-0 ${badgeToneClass}`}>
+                        {direction === "neutral" ? (
+                          kpi.trend
+                        ) : (
+                          <span className="inline-flex items-center gap-1">
+                            <TrendIcon className="h-3 w-3" />
+                            {kpi.trend}
+                          </span>
+                        )}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <KpiSparkline
+                      values={kpi.sparkline}
+                      seriesName={kpi.seriesName}
+                      formatValue={(v) => formatSparklineValueFromReference(kpi.value, v)}
+                    />
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
 
           <h3 className="!mt-8 flex items-center gap-2 tracking-tight">
@@ -709,14 +709,9 @@ export function DashboardPage({ resolvedStandaloneDashboardId }: DashboardPagePr
           {/* Randomized Chart Grid */}
           <DashboardChartGrid
             dashboardId={chartLayoutId}
-            trend={{ data: trendData, xKey: "date", yKey: "conversations" }}
-            category={{ data: categoryData, xKey: "category", yKey: "tickets" }}
-            comparison={{
-              data: comparisonData,
-              xKey: "week",
-              yKey: "thisPeriod",
-              y2Key: "lastPeriod",
-            }}
+            trend={activeTrendDataset}
+            category={activeCategoryDataset}
+            comparison={activeComparisonDataset}
             highlightedPanelIndices={highlightedChartPanels}
             anomalyClassName={anomalyCardClass}
             expandSingletonRows
@@ -735,7 +730,7 @@ export function DashboardPage({ resolvedStandaloneDashboardId }: DashboardPagePr
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {tableData.map((row) => (
+                {activeTableRows.map((row) => (
                   <TableRow key={row.agent}>
                     <TableCell className="font-medium">
                       <TableAgentCell name={row.agent} />
@@ -803,6 +798,8 @@ export function DashboardPage({ resolvedStandaloneDashboardId }: DashboardPagePr
         sourceOotbId={
           isSavedDashboard ? savedDashboardSourceOotbId ?? activeDashboardId : activeDashboardId
         }
+        kpis={savedDashboard?.kpis}
+        snapshot={savedDashboard?.snapshot}
       />
     </WidgetAIProvider>
   );

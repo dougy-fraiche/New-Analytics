@@ -15,6 +15,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Separator } from "./ui/separator";
 import { useProjects } from "../contexts/ProjectContext";
 import { toast } from "sonner";
+import type { SavedDashboardSnapshot } from "../types/saved-dashboard-snapshot";
+import { cloneSavedDashboardSnapshot } from "../lib/saved-dashboard-snapshot";
 
 interface DuplicateDashboardDialogProps {
   open: boolean;
@@ -27,6 +29,10 @@ interface DuplicateDashboardDialogProps {
   initialLocationProjectId?: string | null;
   /** Optional sourceOotbId to carry over to the duplicate */
   sourceOotbId?: string;
+  /** Optional KPI labels to carry over to the duplicate */
+  kpis?: string[];
+  /** Optional frozen snapshot to carry over to the duplicate */
+  snapshot?: SavedDashboardSnapshot;
 }
 
 const ROOT_LOCATION_ID = "__root__";
@@ -63,6 +69,8 @@ export function DuplicateDashboardDialog({
   dashboardDescription,
   initialLocationProjectId = null,
   sourceOotbId,
+  kpis,
+  snapshot,
 }: DuplicateDashboardDialogProps) {
   const {
     projects,
@@ -125,13 +133,25 @@ export function DuplicateDashboardDialog({
         : projects.find((p) => p.id === destinationProjectId)?.name || "folder";
 
     if (destinationProjectId === null) {
-      addStandaloneDashboard(trimmed, sourceOotbId, trimmedDescription || undefined);
+      addStandaloneDashboard(
+        trimmed,
+        sourceOotbId,
+        trimmedDescription || undefined,
+        {
+          kpis: [...(kpis ?? [])],
+          snapshot: cloneSavedDashboardSnapshot(snapshot),
+        },
+      );
     } else {
       addDashboardToProject(
         destinationProjectId,
         trimmed,
         sourceOotbId,
         trimmedDescription || undefined,
+        {
+          kpis: [...(kpis ?? [])],
+          snapshot: cloneSavedDashboardSnapshot(snapshot),
+        },
       );
     }
 

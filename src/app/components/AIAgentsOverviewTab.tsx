@@ -37,6 +37,7 @@ import type { ChartType } from "./ChartVariants";
 import { fromAIAgentsOverviewSessionRow } from "../data/ai-agent-session-transcript";
 import { aiAgentOverviewKpis } from "../data/ai-agent-kpis";
 import type { CopilotTranscriptSessionContext } from "../data/copilot-session-transcript";
+import { formatSparklineValueFromReference } from "../lib/kpi-trend-sparkline";
 
 function getTrendDirection(trend: string): "up" | "down" | "neutral" {
   const normalized = trend.trim();
@@ -582,7 +583,7 @@ export function AIAgentsOverviewTab({
             <CardContent className="pt-0">
               <KpiSparkline
                 values={kpi.sparkline}
-                formatValue={(v) => `${v}`}
+                formatValue={(v) => formatSparklineValueFromReference(kpi.value, v)}
                 seriesName={kpi.label}
               />
             </CardContent>

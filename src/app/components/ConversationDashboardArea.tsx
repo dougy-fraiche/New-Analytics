@@ -76,6 +76,7 @@ import {
 } from "../data/dashboard-filters";
 import { LabeledFilterInline, LabeledSelectValue } from "./HeaderFilters";
 import type { ChartRow } from "../types/conversation-types";
+import { dashboardTrendBadgeKpiByKey } from "../data/dashboard-kpis";
 
 /** Stable fallbacks so chart datasets stay referentially stable across parent re-renders (e.g. Explore typewriter). */
 const DEFAULT_CONVERSATION_TREND: ChartRow[] = [
@@ -101,10 +102,15 @@ const DEFAULT_CONVERSATION_BREAKDOWN: ChartRow[] = [
   { category: "Returns & Refunds", volume: 623 },
 ];
 import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
-import { KpiSparkline, KPI_SPARKLINE_SERIES } from "./KpiSparkline";
+import { KpiSparkline } from "./KpiSparkline";
 import { KpiMetricValueTitle } from "./KpiMetricValueTitle";
 import type { PrimaryFindingViewModel } from "../lib/anomaly-primary-finding";
 import { recommendedActionsData } from "../data/recommended-actions";
+
+const TOTAL_ESCALATIONS_KPI = dashboardTrendBadgeKpiByKey.totalEscalations;
+const AVG_RESOLUTION_KPI = dashboardTrendBadgeKpiByKey.avgResolutionHours;
+const CUSTOMER_SATISFACTION_KPI = dashboardTrendBadgeKpiByKey.customerSatisfactionPct;
+const RESOLUTION_RATE_KPI = dashboardTrendBadgeKpiByKey.resolutionRatePct;
 
 interface ConversationDashboardAreaProps {
   isThinking: boolean;
@@ -790,22 +796,22 @@ function DashboardContent({
                 />
               </div>
               <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
-                <KpiMetricValueTitle value="260" />
+                <KpiMetricValueTitle value={TOTAL_ESCALATIONS_KPI.value} />
                 <Badge
                   variant="secondary"
                   className="shrink-0 border-transparent bg-emerald-600 text-xs text-white dark:bg-emerald-600 dark:text-white"
                 >
                   <span className="inline-flex items-center gap-1">
                     <TrendingUp className="h-3 w-3" />
-                    +12%
+                    {TOTAL_ESCALATIONS_KPI.trend}
                   </span>
                 </Badge>
               </div>
             </CardHeader>
             <CardContent className="pt-0">
               <KpiSparkline
-                values={[...KPI_SPARKLINE_SERIES.totalEscalations]}
-                seriesName="Escalations"
+                values={TOTAL_ESCALATIONS_KPI.sparkline}
+                seriesName={TOTAL_ESCALATIONS_KPI.seriesName}
                 formatValue={(v) => v.toLocaleString()}
               />
             </CardContent>
@@ -823,22 +829,22 @@ function DashboardContent({
                 />
               </div>
               <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
-                <KpiMetricValueTitle value="4.3h" />
+                <KpiMetricValueTitle value={AVG_RESOLUTION_KPI.value} />
                 <Badge
                   variant="secondary"
                   className="shrink-0 border-transparent bg-red-600 text-xs text-white dark:bg-red-600 dark:text-white"
                 >
                   <span className="inline-flex items-center gap-1">
                     <TrendingDown className="h-3 w-3" />
-                    -8%
+                    {AVG_RESOLUTION_KPI.trend}
                   </span>
                 </Badge>
               </div>
             </CardHeader>
             <CardContent className="pt-0">
               <KpiSparkline
-                values={[...KPI_SPARKLINE_SERIES.avgResolutionHours]}
-                seriesName="Avg. resolution"
+                values={AVG_RESOLUTION_KPI.sparkline}
+                seriesName={AVG_RESOLUTION_KPI.seriesName}
                 formatValue={(v) => `${v.toFixed(1)} h`}
               />
             </CardContent>
@@ -856,22 +862,22 @@ function DashboardContent({
                 />
               </div>
               <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
-                <KpiMetricValueTitle value="94%" />
+                <KpiMetricValueTitle value={CUSTOMER_SATISFACTION_KPI.value} />
                 <Badge
                   variant="secondary"
                   className="shrink-0 border-transparent bg-emerald-600 text-xs text-white dark:bg-emerald-600 dark:text-white"
                 >
                   <span className="inline-flex items-center gap-1">
                     <TrendingUp className="h-3 w-3" />
-                    +2%
+                    {CUSTOMER_SATISFACTION_KPI.trend}
                   </span>
                 </Badge>
               </div>
             </CardHeader>
             <CardContent className="pt-0">
               <KpiSparkline
-                values={[...KPI_SPARKLINE_SERIES.customerSatisfactionPct]}
-                seriesName="Satisfaction"
+                values={CUSTOMER_SATISFACTION_KPI.sparkline}
+                seriesName={CUSTOMER_SATISFACTION_KPI.seriesName}
                 formatValue={(v) => `${v.toFixed(1)}%`}
               />
             </CardContent>
@@ -889,16 +895,16 @@ function DashboardContent({
                 />
               </div>
               <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
-                <KpiMetricValueTitle value="87%" />
+                <KpiMetricValueTitle value={RESOLUTION_RATE_KPI.value} />
                 <Badge variant="secondary" className="shrink-0 text-xs">
-                  No change
+                  {RESOLUTION_RATE_KPI.trend}
                 </Badge>
               </div>
             </CardHeader>
             <CardContent className="pt-0">
               <KpiSparkline
-                values={[...KPI_SPARKLINE_SERIES.resolutionRatePct]}
-                seriesName="Resolution rate"
+                values={RESOLUTION_RATE_KPI.sparkline}
+                seriesName={RESOLUTION_RATE_KPI.seriesName}
                 formatValue={(v) => `${v.toFixed(1)}%`}
               />
             </CardContent>

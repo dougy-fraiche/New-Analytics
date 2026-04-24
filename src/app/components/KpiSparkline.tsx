@@ -213,22 +213,3 @@ export function KpiSparkline({
     />
   );
 }
-
-/** Mock trend data for each dashboard KPI (deterministic, decorative). */
-export const KPI_SPARKLINE_SERIES = {
-  totalEscalations: [
-    208, 212, 215, 219, 222, 226, 230, 233, 237, 241, 245, 250, 255, 260,
-  ],
-  avgResolutionHours: [
-    5.15, 5.05, 4.95, 4.88, 4.8, 4.72, 4.65, 4.58, 4.52, 4.47, 4.42, 4.38,
-    4.34, 4.3,
-  ],
-  customerSatisfactionPct: [
-    87.2, 87.8, 88.4, 89.0, 89.6, 90.1, 90.6, 91.0, 91.5, 92.0, 92.6, 93.0,
-    93.5, 94.0,
-  ],
-  resolutionRatePct: [
-    81.5, 82.0, 82.6, 83.2, 83.8, 84.2, 84.8, 85.2, 85.6, 86.0, 86.4, 86.6,
-    86.8, 87.0,
-  ],
-} as const;

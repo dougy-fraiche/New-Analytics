@@ -55,6 +55,7 @@ import {
   validateSavedFolderName,
   validateSavedStandaloneDashboardName,
 } from "../lib/saved-slugs";
+import type { SavedDashboardSnapshot } from "../types/saved-dashboard-snapshot";
 
 const DRAG_TYPE_DASHBOARD = "CUSTOM_DASHBOARD";
 
@@ -160,6 +161,8 @@ export function SavedFoldersPage({ resolvedFolderId }: { resolvedFolderId?: stri
     dashboardDescription: string;
     projectId: string | null;
     sourceOotbId?: string;
+    kpis?: string[];
+    snapshot?: SavedDashboardSnapshot;
   } | null>(null);
 
   const selectedFolder = resolvedFolderId
@@ -729,6 +732,8 @@ export function SavedFoldersPage({ resolvedFolderId }: { resolvedFolderId?: stri
                                     dashboardDescription: dashboard.description || "",
                                     projectId: selectedFolder.id,
                                     sourceOotbId: dashboard.sourceOotbId,
+                                    kpis: dashboard.kpis,
+                                    snapshot: dashboard.snapshot,
                                   });
                                 }}
                               >
@@ -862,6 +867,8 @@ export function SavedFoldersPage({ resolvedFolderId }: { resolvedFolderId?: stri
           dashboardDescription={duplicateDashboardDialog?.dashboardDescription || ""}
           initialLocationProjectId={duplicateDashboardDialog?.projectId ?? null}
           sourceOotbId={duplicateDashboardDialog?.sourceOotbId}
+          kpis={duplicateDashboardDialog?.kpis}
+          snapshot={duplicateDashboardDialog?.snapshot}
         />
 
         {/* Rename Folder Dialog (folder detail view) */}
@@ -1282,6 +1289,8 @@ export function SavedFoldersPage({ resolvedFolderId }: { resolvedFolderId?: stri
                                   dashboardDescription: item.dashboard.description || "",
                                   projectId: item.projectId,
                                   sourceOotbId: item.dashboard.sourceOotbId,
+                                  kpis: item.dashboard.kpis,
+                                  snapshot: item.dashboard.snapshot,
                                 });
                               }}
                             >
@@ -1521,6 +1530,8 @@ export function SavedFoldersPage({ resolvedFolderId }: { resolvedFolderId?: stri
         dashboardDescription={duplicateDashboardDialog?.dashboardDescription || ""}
         initialLocationProjectId={duplicateDashboardDialog?.projectId ?? null}
         sourceOotbId={duplicateDashboardDialog?.sourceOotbId}
+        kpis={duplicateDashboardDialog?.kpis}
+        snapshot={duplicateDashboardDialog?.snapshot}
       />
     </>
   );

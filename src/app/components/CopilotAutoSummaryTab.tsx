@@ -16,6 +16,7 @@ import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMe
 import { EChartsCanvas } from "./EChartsCanvas";
 import { InsetMetricTile } from "./InsetMetricTile";
 import { Input } from "./ui/input";
+import { KpiSparkline } from "./KpiSparkline";
 import { KpiMetricValueTitle } from "./KpiMetricValueTitle";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "./ui/pagination";
 import { ScrollArea } from "./ui/scroll-area";
@@ -61,6 +62,7 @@ import {
   fromCopilotAutoSummaryRow,
   type CopilotTranscriptSessionContext,
 } from "../data/copilot-session-transcript";
+import { formatSparklineValueFromReference } from "../lib/kpi-trend-sparkline";
 
 function trendBadgeClass(trend: string): string {
   if (trend.trim().startsWith("-")) {
@@ -106,13 +108,18 @@ function KpiCard({
         </div>
       </CardHeader>
 
-      <CardContent className="pt-0">
+      <CardContent className="space-y-2 pt-0">
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm text-muted-foreground">{kpi.subcaption}</p>
           <Badge variant="secondary" className={cn("shrink-0", trendBadgeClass(kpi.trend))}>
             {kpi.trend}
           </Badge>
         </div>
+        <KpiSparkline
+          values={kpi.sparkline}
+          seriesName={kpi.label}
+          formatValue={(value) => formatSparklineValueFromReference(kpi.value, value)}
+        />
       </CardContent>
     </Card>
   );

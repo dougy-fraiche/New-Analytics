@@ -35,12 +35,14 @@ import { TableAgentCell } from "./TableAgentCell";
 import { TableBadge } from "./TableBadge";
 import { TableChannelCell } from "./TableChannelCell";
 import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
+import { KpiSparkline } from "./KpiSparkline";
 import { KpiMetricValueTitle } from "./KpiMetricValueTitle";
 import { WidgetAIExplanation } from "./WidgetAIExplanation";
 import type { ChartType } from "./ChartVariants";
 import { fromAIAgentsEvaluationSessionRow } from "../data/ai-agent-session-transcript";
 import { aiAgentEvaluationKpis } from "../data/ai-agent-kpis";
 import type { CopilotTranscriptSessionContext } from "../data/copilot-session-transcript";
+import { formatSparklineValueFromReference } from "../lib/kpi-trend-sparkline";
 
 const weekLabels = ["W1", "W2", "W3", "W4", "W5", "W6", "W7"];
 
@@ -955,8 +957,13 @@ export function AIAgentsEvaluationTab({
                 </Badge>
               </div>
             </CardHeader>
-            <CardContent className="pt-2">
+            <CardContent className="space-y-1.5 pt-0">
               <p className="text-xs text-muted-foreground">{kpi.caption}</p>
+              <KpiSparkline
+                values={kpi.sparkline}
+                seriesName={kpi.label}
+                formatValue={(value) => formatSparklineValueFromReference(kpi.value, value)}
+              />
             </CardContent>
           </Card>
             );
