@@ -185,8 +185,10 @@ export type TopInsightCard =
       segment: "opportunity";
       /** Shows an Action pill alongside Opportunity (automations, recommended actions, etc.). */
       showActionPill: boolean;
-      /** Primary body copy rendered on Explore top recommended action cards. */
-      cardBody: string;
+      /** Display-ready interaction volume used in Explore KPI sentence. */
+      interactionsAnnual: string;
+      /** Percentage of total call volume used in Explore KPI sentence. */
+      totalCallVolumePercent: string;
       /** Footer badge text showing annualized savings estimate. */
       annualSavingsBadge: string;
       /** Deterministic deep-link target in Automation Opportunities. */
@@ -205,7 +207,8 @@ const topInsightOpportunityCards: TopInsightCard[] = automationTopInsightReferen
     id: index + 3,
     segment: "opportunity",
     showActionPill: true,
-    cardBody: reference.cardBody,
+    interactionsAnnual: reference.interactionsAnnual,
+    totalCallVolumePercent: reference.totalCallVolumePercent,
     annualSavingsBadge: reference.annualSavingsBadge,
     automationTarget: {
       scope: reference.scope,

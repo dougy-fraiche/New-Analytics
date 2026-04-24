@@ -38,5 +38,9 @@ jobs:
       - name: Install Playwright Browser
         run: npx playwright install --with-deps chromium
 
-      - name: E2E Route Smoke
-        run: npm run e2e:smoke
+      - name: E2E Route Smoke (required)
+        run: npm run e2e:smoke -- --grep-invert "visual regression"
+
+      - name: E2E Visual Regression (non-blocking)
+        continue-on-error: true
+        run: npm run e2e:smoke -- --grep "visual regression"

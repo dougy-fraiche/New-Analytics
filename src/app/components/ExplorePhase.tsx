@@ -34,6 +34,8 @@ const footerPromptChips = [
   "What tasks are my human agents spending extra time on?",
 ];
 const KPI_SPARKLINE_POINTS = 14;
+const PERCENT_TOKEN_PATTERN = /(\d+(?:\.\d+)?%)/g;
+const PERCENT_ONLY_PATTERN = /^\d+(?:\.\d+)?%$/;
 
 function hashSeed(input: string): number {
   let hash = 2166136261;
@@ -110,6 +112,19 @@ function buildDeterministicSparkline(
 
   values.push(normalizedTarget);
   return values;
+}
+
+function renderWithEmphasizedPercentages(text: string) {
+  const parts = text.split(PERCENT_TOKEN_PATTERN);
+  return parts.map((part, index) =>
+    PERCENT_ONLY_PATTERN.test(part) ? (
+      <span key={`${part}-${index}`} className="font-semibold">
+        {part}
+      </span>
+    ) : (
+      part
+    ),
+  );
 }
 
 interface ExplorePhaseProps {
@@ -372,7 +387,7 @@ export function ExplorePhase({
       key={card.id}
       className={cn(
         "group/widget relative flex h-auto shrink-0 flex-col overflow-hidden transition-[box-shadow,border-color] hover:border-primary/30 hover:shadow-md",
-        card.segment === "opportunity" ? "min-h-[10.5rem] sm:min-h-[11rem]" : "min-h-[8rem]",
+        "min-h-[8rem]",
       )}
     >
       {card.segment === "anomaly" ? (
@@ -434,7 +449,16 @@ export function ExplorePhase({
                 : "line-clamp-2 text-xs leading-snug"
             }
           >
-            {card.segment === "opportunity" ? card.cardBody : card.description}
+            {card.segment === "opportunity" ? (
+              <>
+                Save{" "}
+                <span className="font-semibold">{card.interactionsAnnual} interactions</span>{" "}
+                annually — <span className="font-semibold">{card.totalCallVolumePercent}%</span> of
+                {" "}total call volume.
+              </>
+            ) : (
+              renderWithEmphasizedPercentages(card.description)
+            )}
           </CardDescription>
         </CardHeader>
         <div className="mt-auto flex w-full min-w-0 shrink-0 flex-wrap items-center gap-2 px-4 pb-4 pt-2">
