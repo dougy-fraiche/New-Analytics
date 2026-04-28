@@ -13,10 +13,6 @@ import {
   ChartLine,
   ChevronRight,
   Settings,
-  LogOut,
-  User,
-  ChevronsUpDown,
-  ChevronDown,
   BarChart2,
   PhoneForwarded,
   Headset,
@@ -51,8 +47,6 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarMenuAction,
-  SidebarHeader,
-  SidebarFooter,
 } from "./ui/sidebar";
 import { Collapsible, CollapsibleContent } from "./ui/collapsible";
 import {
@@ -74,20 +68,10 @@ import { SidebarDialogs } from "./SidebarDialogs";
 import { useSidebarDialogs } from "../hooks/useSidebarDialogs";
 import { usePersistedState } from "../hooks/usePersistedState";
 import { useKeyboardShortcut } from "../hooks/useKeyboardShortcuts";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { useSidebar } from "./ui/sidebar";
 import { ROUTES } from "../routes";
-import {
-  DropdownMenu as UserDropdownMenu,
-  DropdownMenuContent as UserDropdownMenuContent,
-  DropdownMenuItem as UserDropdownMenuItem,
-  DropdownMenuLabel as UserDropdownMenuLabel,
-  DropdownMenuSeparator as UserDropdownMenuSeparator,
-  DropdownMenuTrigger as UserDropdownMenuTrigger,
-} from "./ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { cn } from "./ui/utils";
-import { currentUserProfile, getInitials } from "../data/user-profile";
 import {
   getDashboardSlug,
   getProjectSlug,
@@ -454,12 +438,6 @@ export function AppSidebar() {
     });
   };
 
-  const closeMobileSidebarIfOpen = useCallback(() => {
-    if (isMobile && openMobile) {
-      setOpenMobile(false);
-    }
-  }, [isMobile, openMobile, setOpenMobile]);
-
   const handleSidebarContentClickCapture = useCallback((event: MouseEvent<HTMLDivElement>) => {
     if (!isMobile || !openMobile) return;
     const target = event.target;
@@ -470,63 +448,12 @@ export function AppSidebar() {
 
   return (
     <>
-      <Sidebar collapsible="icon">
-        <SidebarHeader className="pt-4 pb-2">
-          {/* App switcher dropdown */}
-          <SidebarMenu className="mb-0">
-            <SidebarMenuItem>
-              {/* Keep the dropdown trigger affordance visible, but disable opening the app menu for now. */}
-              <DropdownMenu open={false}>
-                <DropdownMenuTrigger asChild>
-                  <SidebarMenuButton
-                    size="lg"
-                    className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground group-data-[collapsible=icon]:justify-center"
-                    tooltip="Switch application"
-                  >
-                    <img
-                      src="/app-icon.svg"
-                      alt="Agentic Analytics"
-                      width={32}
-                      height={32}
-                      className="size-8 shrink-0 object-contain"
-                    />
-                    <span className="truncate flex-1 text-left text-sm font-medium leading-tight group-data-[collapsible=icon]:hidden">
-                      Agentic Analytics
-                    </span>
-                    <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 text-muted-foreground group-data-[collapsible=icon]:hidden" />
-                  </SidebarMenuButton>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  side="bottom"
-                  align="start"
-                  className="w-56 max-h-[70vh] overflow-y-auto"
-                >
-                  {APP_CATEGORIES.map((category, catIdx) => (
-                    <DropdownMenuGroup key={category.label}>
-                      {catIdx > 0 && <DropdownMenuSeparator />}
-                      <DropdownMenuLabel className="text-xs uppercase tracking-wider">
-                        {category.label}
-                      </DropdownMenuLabel>
-                      {category.items.map((app) => {
-                        return (
-                          <DropdownMenuItem
-                            key={app.name}
-                            className={app.active ? "bg-accent text-accent-foreground" : ""}
-                          >
-                            <span className="truncate">{app.name}</span>
-                          </DropdownMenuItem>
-                        );
-                      })}
-                    </DropdownMenuGroup>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarHeader>
-
+      <Sidebar
+        collapsible="icon"
+        className="group-data-[side=left]:border-r-0 group-data-[side=right]:border-l-0 [&_[data-slot=sidebar-inner]]:bg-transparent"
+      >
         <SidebarContent
-          className="gap-1 pt-2 group-data-[collapsible=icon]:pt-4"
+          className="gap-1 pt-4 group-data-[collapsible=icon]:pt-4"
           onClickCapture={handleSidebarContentClickCapture}
         >
           {/* Explore — collapsible conversation threads (`E` still navigates to Explore via RootLayout) */}
@@ -1006,67 +933,6 @@ export function AppSidebar() {
           </DroppableSavedRootWrapper>
         </SidebarContent>
 
-        {/* User avatar footer */}
-        <SidebarFooter className="border-t border-sidebar-border">
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <UserDropdownMenu>
-                <UserDropdownMenuTrigger asChild>
-                  <SidebarMenuButton
-                    size="lg"
-                    className="font-normal data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                  >
-                    <Avatar className="h-8 w-8 rounded-full">
-                      <AvatarFallback
-                        delayMs={0}
-                        className="rounded-full bg-primary text-primary-foreground text-xs"
-                      >
-                        {getInitials(currentUserProfile.displayName)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-medium">{currentUserProfile.displayName}</span>
-                      <span className="truncate text-xs font-normal text-muted-foreground">{currentUserProfile.email}</span>
-                    </div>
-                    <ChevronDown className="ml-auto size-4" />
-                  </SidebarMenuButton>
-                </UserDropdownMenuTrigger>
-                <UserDropdownMenuContent
-                  side="top"
-                  align="start"
-                  className="w-56"
-                  sideOffset={4}
-                >
-                  <UserDropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm" style={{ fontWeight: 500 }}>{currentUserProfile.displayName}</p>
-                      <p className="text-xs text-muted-foreground">{currentUserProfile.email}</p>
-                    </div>
-                  </UserDropdownMenuLabel>
-                  <UserDropdownMenuSeparator />
-                  <UserDropdownMenuItem>
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
-                  </UserDropdownMenuItem>
-                  <UserDropdownMenuItem
-                    onClick={() => {
-                      navigate(ROUTES.SETTINGS);
-                      closeMobileSidebarIfOpen();
-                    }}
-                  >
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
-                  </UserDropdownMenuItem>
-                  <UserDropdownMenuSeparator />
-                  <UserDropdownMenuItem>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
-                  </UserDropdownMenuItem>
-                </UserDropdownMenuContent>
-              </UserDropdownMenu>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarFooter>
       </Sidebar>
 
       {/* All dialogs extracted into a dedicated component */}

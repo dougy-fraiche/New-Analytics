@@ -1,12 +1,14 @@
 import {
-  PanelLeftClose,
-  PanelLeftOpen,
   Bell,
+  ChevronDown,
+  CircleHelp,
   Search,
   Sparkles,
+  LogOut,
+  Settings,
+  User,
 } from "lucide-react";
-import { Fragment, useCallback, useLayoutEffect, useMemo, useState } from "react";
-import { Link } from "react-router";
+import { useNavigate } from "react-router";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,83 +18,84 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { Button } from "./ui/button";
-import { useSidebar } from "./ui/sidebar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbEllipsis,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "./ui/breadcrumb";
 import { recommendedActionsData } from "../data/recommended-actions";
 import {
   ACTION_STATUS_LABELS,
   recommendedActionActivityById,
 } from "../data/action-activity";
+import { Avatar, AvatarFallback } from "./ui/avatar";
+import { currentUserProfile, getInitials } from "../data/user-profile";
+import { ROUTES } from "../routes";
 
 interface TopNavBarProps {
   onSearchClick?: () => void;
-  breadcrumbs?: Array<{ label: string; href?: string }>;
-  onActionsSlotRef?: (el: HTMLDivElement | null) => void;
   aiAssistantOpen?: boolean;
   onAiAssistantOpenChange?: (open: boolean) => void;
   /** When true (e.g. Explore routes), hide toggle / show disabled control */
   aiAssistantDisabled?: boolean;
 }
 
+interface AppCategory {
+  label: string;
+  items: Array<{ name: string; active?: boolean }>;
+}
+
+const APP_CATEGORIES: AppCategory[] = [
+  {
+    label: "General",
+    items: [{ name: "Admin" }],
+  },
+  {
+    label: "Omnichannel Routing",
+    items: [
+      { name: "ACD" },
+      { name: "Agent" },
+      { name: "Supervisor" },
+      { name: "Studio" },
+    ],
+  },
+  {
+    label: "Workforce Engagement",
+    items: [
+      { name: "Workforce Management" },
+      { name: "QM Analytics" },
+      { name: "inView PM" },
+      { name: "Coaching" },
+      { name: "Interactions" },
+      { name: "My Zone" },
+    ],
+  },
+  {
+    label: "Data & Analytics",
+    items: [
+      { name: "Analytics", active: true },
+      { name: "Dashboard" },
+      { name: "Reporting" },
+      { name: "Self-Service Analytics" },
+    ],
+  },
+  {
+    label: "Automation",
+    items: [{ name: "Workforce Intelligence" }],
+  },
+  {
+    label: "Partner",
+    items: [
+      { name: "Adapters" },
+      { name: "Partner Hub" },
+    ],
+  },
+];
+
 export function TopNavBar({
   onSearchClick,
-  breadcrumbs = [],
-  onActionsSlotRef,
   aiAssistantOpen = false,
   onAiAssistantOpenChange,
   aiAssistantDisabled = false,
 }: TopNavBarProps) {
-  const { state: sidebarState, toggleSidebar, isMobile, openMobile } = useSidebar();
-  const isNavigationVisible = isMobile ? openMobile : sidebarState !== "collapsed";
-  const sidebarToggleLabel = isMobile
-    ? (isNavigationVisible ? "Hide navigation" : "Show navigation")
-    : (isNavigationVisible ? "Collapse sidebar" : "Expand sidebar");
-  const hasBreadcrumbs = breadcrumbs.length > 0;
-  const canCollapseBreadcrumbs = breadcrumbs.length > 1;
+  const navigate = useNavigate();
 
-  const [breadcrumbViewportEl, setBreadcrumbViewportEl] = useState<HTMLDivElement | null>(null);
-  const [breadcrumbMeasureEl, setBreadcrumbMeasureEl] = useState<HTMLDivElement | null>(null);
-  const [breadcrumbsCollapsed, setBreadcrumbsCollapsed] = useState(false);
-
-  const breadcrumbViewportRef = useCallback((el: HTMLDivElement | null) => {
-    setBreadcrumbViewportEl(el);
-  }, []);
-
-  const breadcrumbMeasureRef = useCallback((el: HTMLDivElement | null) => {
-    setBreadcrumbMeasureEl(el);
-  }, []);
-
-  useLayoutEffect(() => {
-    if (!canCollapseBreadcrumbs || !breadcrumbViewportEl || !breadcrumbMeasureEl) {
-      setBreadcrumbsCollapsed(false);
-      return;
-    }
-
-    const update = () => {
-      const availableWidth = breadcrumbViewportEl.clientWidth;
-      const neededWidth = breadcrumbMeasureEl.scrollWidth;
-      setBreadcrumbsCollapsed(neededWidth - availableWidth > 1);
-    };
-
-    update();
-
-    const observer = new ResizeObserver(update);
-    observer.observe(breadcrumbViewportEl);
-    observer.observe(breadcrumbMeasureEl);
-
-    return () => observer.disconnect();
-  }, [breadcrumbMeasureEl, breadcrumbViewportEl, canCollapseBreadcrumbs, breadcrumbs]);
-
-  const currentBreadcrumb = breadcrumbs[breadcrumbs.length - 1];
   const topRecommendedAction = recommendedActionsData[0];
   const topRecommendedActionTitle =
     topRecommendedAction?.title ?? "Deploy Account Verification AI Agent";
@@ -104,134 +107,67 @@ export function TopNavBar({
   const statusUpdateActionActivity = statusUpdateAction
     ? recommendedActionActivityById[statusUpdateAction.id]
     : undefined;
-  const hiddenBreadcrumbs = useMemo(
-    () => (breadcrumbsCollapsed ? breadcrumbs.slice(0, -1) : []),
-    [breadcrumbs, breadcrumbsCollapsed],
-  );
 
-  const renderCrumbTrail = useCallback(
-    (items: Array<{ label: string; href?: string }>, interactive: boolean = true) =>
-      items.map((crumb, index) => {
-        const isLast = index === items.length - 1;
-        return (
-          <Fragment key={`${crumb.label}-${index}`}>
-            <BreadcrumbItem className="min-w-0">
-              {isLast ? (
-                <BreadcrumbPage className="truncate">{crumb.label}</BreadcrumbPage>
-              ) : crumb.href && interactive ? (
-                <BreadcrumbLink asChild className="truncate">
-                  <Link to={crumb.href} className="truncate">
-                    {crumb.label}
-                  </Link>
-                </BreadcrumbLink>
-              ) : (
-                <BreadcrumbPage className="truncate">{crumb.label}</BreadcrumbPage>
-              )}
-            </BreadcrumbItem>
-            {!isLast && <BreadcrumbSeparator />}
-          </Fragment>
-        );
-      }),
-    [],
-  );
+  const notificationCount = 5;
 
   return (
-    <header className="flex h-16 w-full items-center border-b border-border bg-background shrink-0 z-50 px-4">
-      {/* Sidebar toggle */}
-      <div className="flex items-center h-full">
-        <Tooltip>
-          <TooltipTrigger asChild>
+    <header
+      data-slot="top-nav"
+      className="z-40 flex h-14 w-full items-center justify-between bg-transparent px-5"
+    >
+      <div className="flex min-w-0 items-center gap-1">
+        <img
+          src="/app-icon.svg"
+          alt="Agentic Analytics"
+          width={32}
+          height={32}
+          className="size-8 shrink-0 object-contain"
+        />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              size="icon"
-              className="size-8"
-              onClick={toggleSidebar}
+              className="h-10 min-w-0 gap-1.5 rounded-md px-2 text-[color:var(--lyra-neutral-n800)] hover:bg-[color:var(--lyra-neutral-n100)]"
+              aria-label="Switch application"
             >
-              {isNavigationVisible ? (
-                <PanelLeftClose className="size-4" />
-              ) : (
-                <PanelLeftOpen className="size-4" />
-              )}
-              <span className="sr-only">{sidebarToggleLabel}</span>
+              <span className="truncate text-sm font-medium leading-tight">
+                Agentic Analytics
+              </span>
+              <ChevronDown className="size-4 shrink-0 text-[color:var(--lyra-neutral-n500)]" />
             </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">{sidebarToggleLabel}</TooltipContent>
-        </Tooltip>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            side="bottom"
+            align="start"
+            className="w-56 max-h-[70vh] overflow-y-auto"
+          >
+            {APP_CATEGORIES.map((category, catIdx) => (
+              <div key={category.label}>
+                {catIdx > 0 ? <DropdownMenuSeparator /> : null}
+                <DropdownMenuLabel className="text-xs uppercase tracking-wider">
+                  {category.label}
+                </DropdownMenuLabel>
+                {category.items.map((app) => (
+                  <DropdownMenuItem
+                    key={app.name}
+                    className={app.active ? "bg-accent text-accent-foreground" : ""}
+                  >
+                    <span className="truncate">{app.name}</span>
+                  </DropdownMenuItem>
+                ))}
+              </div>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      {/* Breadcrumbs */}
-      {hasBreadcrumbs && (
-        <div className="relative flex min-w-0 flex-1 items-center px-3">
-          <div ref={breadcrumbViewportRef} className="min-w-0 w-full">
-            <Breadcrumb>
-              <BreadcrumbList className="min-w-0 flex-nowrap overflow-hidden whitespace-nowrap">
-                {breadcrumbsCollapsed && currentBreadcrumb ? (
-                  <>
-                    <BreadcrumbItem>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button
-                            type="button"
-                            className="inline-flex items-center rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
-                            aria-label="Show previous breadcrumb levels"
-                          >
-                            <BreadcrumbEllipsis className="size-4" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start">
-                          {hiddenBreadcrumbs.map((crumb, index) =>
-                            crumb.href ? (
-                              <DropdownMenuItem key={`${crumb.label}-${index}`} asChild>
-                                <Link to={crumb.href}>{crumb.label}</Link>
-                              </DropdownMenuItem>
-                            ) : (
-                              <DropdownMenuItem key={`${crumb.label}-${index}`} disabled>
-                                {crumb.label}
-                              </DropdownMenuItem>
-                            ),
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator />
-                    <BreadcrumbItem className="min-w-0">
-                      <BreadcrumbPage className="truncate">{currentBreadcrumb.label}</BreadcrumbPage>
-                    </BreadcrumbItem>
-                  </>
-                ) : (
-                  renderCrumbTrail(breadcrumbs)
-                )}
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-
-          {/* Hidden measurement row for overflow detection */}
-          {canCollapseBreadcrumbs && (
-            <div className="pointer-events-none absolute inset-y-0 left-0 -z-10 h-0 overflow-hidden opacity-0">
-              <div ref={breadcrumbMeasureRef} className="w-max">
-                <Breadcrumb aria-hidden="true">
-                  <BreadcrumbList className="flex-nowrap whitespace-nowrap overflow-visible">
-                    {renderCrumbTrail(breadcrumbs, false)}
-                  </BreadcrumbList>
-                </Breadcrumb>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Page-level actions slot (portaled into by child pages) + global actions */}
-      <div className="ml-auto flex shrink-0 items-center gap-2">
-        {/* Page-level actions slot */}
-        <div ref={onActionsSlotRef} className="flex items-center gap-1" />
-
-        {/* Search Button */}
+      <div className="flex items-center gap-1.5">
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant="ghost"
               size="icon"
-              className="size-8"
+              className="size-8 text-[color:var(--lyra-neutral-n600)] hover:bg-[color:var(--lyra-neutral-n100)]"
               onClick={onSearchClick}
             >
               <Search className="h-4 w-4" />
@@ -241,13 +177,35 @@ export function TopNavBar({
           <TooltipContent side="bottom">Search</TooltipContent>
         </Tooltip>
 
-        {/* Notifications */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8 text-[color:var(--lyra-neutral-n600)] hover:bg-[color:var(--lyra-neutral-n100)]"
+            >
+              <CircleHelp className="h-4 w-4" />
+              <span className="sr-only">Help</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Help</TooltipContent>
+        </Tooltip>
+
         <DropdownMenu>
           <Tooltip>
             <DropdownMenuTrigger asChild>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="size-8">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative size-8 text-[color:var(--lyra-neutral-n600)] hover:bg-[color:var(--lyra-neutral-n100)]"
+                >
                   <Bell className="h-4 w-4" />
+                  {notificationCount > 0 ? (
+                    <span className="absolute -top-1 -right-1 inline-flex min-w-4 items-center justify-center rounded-full bg-[#d13030] px-1 text-[10px] font-semibold leading-4 text-white">
+                      {notificationCount}
+                    </span>
+                  ) : null}
                   <span className="sr-only">Notifications</span>
                 </Button>
               </TooltipTrigger>
@@ -316,7 +274,6 @@ export function TopNavBar({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Global AI Assistant toggle (single thread — not used on Explore) */}
         <Tooltip>
           <TooltipTrigger asChild>
             <span className="inline-flex">
@@ -324,9 +281,8 @@ export function TopNavBar({
                 variant="outline"
                 size="sm"
                 className={[
-                  "h-8 gap-2",
-                  "border-primary/40 text-primary hover:bg-primary/5 hover:text-primary",
-                  aiAssistantOpen ? "bg-primary/10 border-primary/60" : "",
+                  "h-8 gap-2 border-[color:var(--lyra-primary-p300)] text-[color:var(--lyra-primary-p700)] hover:bg-[color:var(--lyra-primary-p25)] hover:text-[color:var(--lyra-primary-p700)]",
+                  aiAssistantOpen ? "bg-[color:var(--lyra-primary-p50)] border-[color:var(--lyra-primary-p400)]" : "",
                 ].join(" ")}
                 disabled={aiAssistantDisabled}
                 aria-pressed={aiAssistantOpen}
@@ -348,6 +304,49 @@ export function TopNavBar({
                 : "AI assistant closed"}
           </TooltipContent>
         </Tooltip>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              aria-label="User menu"
+              className="h-8 gap-2 rounded-full px-1 text-[color:var(--lyra-neutral-n700)] hover:bg-[color:var(--lyra-neutral-n100)]"
+            >
+              <Avatar className="size-8 rounded-full">
+                <AvatarFallback
+                  delayMs={0}
+                  className="rounded-full bg-[color:var(--lyra-neutral-n500)] text-white text-xs"
+                >
+                  {getInitials(currentUserProfile.displayName)}
+                </AvatarFallback>
+              </Avatar>
+              <ChevronDown className="size-3.5" />
+              <span className="sr-only">Open user menu</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm" style={{ fontWeight: 500 }}>{currentUserProfile.displayName}</p>
+                <p className="text-xs text-muted-foreground">{currentUserProfile.email}</p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>
+              <User className="mr-2 h-4 w-4" />
+              <span>Profile</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate(ROUTES.SETTINGS)}>
+              <Settings className="mr-2 h-4 w-4" />
+              <span>Settings</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Log out</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );

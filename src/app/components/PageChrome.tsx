@@ -1,4 +1,15 @@
 import type { ReactNode } from "react";
+import { Link } from "react-router";
+
+import { usePageBreadcrumbs } from "../contexts/PageBreadcrumbsContext";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "./ui/breadcrumb";
 
 import { cn } from "./ui/utils";
 
@@ -74,10 +85,46 @@ export function PageHeader({
   children: ReactNode;
   className?: string;
 }) {
+  const breadcrumbs = usePageBreadcrumbs();
+
   return (
-    <header className={pageHeaderClassName}>
+    <header data-slot="page-header" className={pageHeaderClassName}>
       <div className={cn("w-full min-w-0 px-8 pt-8 pb-8", className)}>
-        <div className={pageMainColumnClassName}>{children}</div>
+        <div className={cn(pageMainColumnClassName, "space-y-3")}>
+          {breadcrumbs.length > 0 ? (
+            <Breadcrumb>
+              <BreadcrumbList className="min-w-0 flex-nowrap overflow-hidden whitespace-nowrap">
+                {breadcrumbs.flatMap((crumb, index) => {
+                  const isLast = index === breadcrumbs.length - 1;
+                  const item = (
+                    <BreadcrumbItem key={`item-${crumb.label}-${index}`} className="min-w-0">
+                      {isLast ? (
+                        <BreadcrumbPage className="truncate text-[color:var(--lyra-primary-p500)]">
+                          {crumb.label}
+                        </BreadcrumbPage>
+                      ) : crumb.href ? (
+                        <BreadcrumbLink asChild className="truncate text-[color:var(--lyra-primary-p500)]">
+                          <Link to={crumb.href} className="truncate">
+                            {crumb.label}
+                          </Link>
+                        </BreadcrumbLink>
+                      ) : (
+                        <BreadcrumbPage className="truncate text-[color:var(--lyra-primary-p500)]">
+                          {crumb.label}
+                        </BreadcrumbPage>
+                      )}
+                    </BreadcrumbItem>
+                  );
+
+                  return isLast
+                    ? [item]
+                    : [item, <BreadcrumbSeparator key={`sep-${crumb.label}-${index}`} className="text-[color:var(--lyra-neutral-n500)]" />];
+                })}
+              </BreadcrumbList>
+            </Breadcrumb>
+          ) : null}
+          {children}
+        </div>
       </div>
     </header>
   );

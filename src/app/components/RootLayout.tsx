@@ -1,6 +1,7 @@
 import { Outlet, useLocation, useParams, useNavigate } from "react-router";
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { SidebarProvider } from "./ui/sidebar";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { SidebarProvider, useSidebar } from "./ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { TopNavBar } from "./TopNavBar";
 import { SearchOverlay } from "./SearchOverlay";
@@ -13,6 +14,7 @@ import { HTML5Backend } from "react-dnd-html5-backend";
 import { findOotbDashboardById } from "../data/ootb-dashboards";
 import { ChatPanelSlotContext } from "../contexts/ChatPanelSlotContext";
 import { HeaderActionsSlotContext } from "../contexts/HeaderActionsSlotContext";
+import { PageBreadcrumbsContext } from "../contexts/PageBreadcrumbsContext";
 import { Toaster } from "./ui/sonner";
 import { KeyboardShortcutProvider, useKeyboardShortcut } from "../hooks/useKeyboardShortcuts";
 import { PortalContainerContext } from "../contexts/PortalContainerContext";
@@ -26,6 +28,8 @@ import {
 import { AiAssistantPanelControlProvider } from "../contexts/AiAssistantPanelControlContext";
 import { ROUTES } from "../routes";
 import { cn } from "./ui/utils";
+import { Button } from "./ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { topInsightsCards } from "../data/explore-data";
 import {
   findProjectBySlug,
@@ -38,11 +42,47 @@ const AI_ASSISTANT_OPEN_STORAGE_KEY = "ai-assistant-panel-open";
 const WIDGET_AI_MESSAGE_SENT_EVENT = "widget-ai-message-sent";
 /** Fallback until ResizeObserver runs; matches `CHAT_PANEL_DEFAULT_WIDTH_REM` in DashboardChatPanel (22 × 16px). */
 const CHAT_PANEL_FALLBACK_WIDTH_PX = 352;
+const CARD_LANE_GAP_PX = 16;
 const APP_BROWSER_TITLE = "Agentic Analytics";
 const CONVERSATION_PREFIX = ROUTES.CONVERSATION("");
 const ANOMALY_INVESTIGATION_PREFIX = ROUTES.ANOMALY_INVESTIGATION("");
 const DASHBOARD_PREFIX = ROUTES.DASHBOARD("");
 const SAVED_PREFIX = `${ROUTES.SAVED}/`;
+
+function SidebarSeamToggle() {
+  const { state: sidebarState, toggleSidebar, isMobile, openMobile } = useSidebar();
+  const isNavigationVisible = isMobile ? openMobile : sidebarState !== "collapsed";
+  const sidebarToggleLabel = isMobile
+    ? (isNavigationVisible ? "Hide navigation" : "Show navigation")
+    : (isNavigationVisible ? "Collapse sidebar" : "Expand sidebar");
+  const seamOffset = isMobile
+    ? "0px"
+    : sidebarState === "collapsed"
+      ? "var(--sidebar-width-icon)"
+      : "var(--sidebar-width)";
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="outline"
+          size="icon"
+          className="absolute top-3 z-30 size-6 -translate-x-1/2 rounded-full border-[color:var(--lyra-neutral-n200)] bg-[color:var(--lyra-neutral-n0)] text-[color:var(--lyra-neutral-n500)] shadow-sm transition-[left,background-color] duration-200 ease-linear hover:bg-[color:var(--lyra-neutral-n25)]"
+          style={{ left: seamOffset }}
+          onClick={toggleSidebar}
+        >
+          {isNavigationVisible ? (
+            <ChevronLeft className="size-3.5" />
+          ) : (
+            <ChevronRight className="size-3.5" />
+          )}
+          <span className="sr-only">{sidebarToggleLabel}</span>
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="right">{sidebarToggleLabel}</TooltipContent>
+    </Tooltip>
+  );
+}
 
 /** Inner layout — safely consumes all providers mounted by the outer RootLayout wrapper. */
 function RootLayoutInner() {
@@ -51,7 +91,6 @@ function RootLayoutInner() {
   const [chatPanelWidthPx, setChatPanelWidthPx] = useState(0);
   /** When true, main shell width tracks the panel immediately (no CSS transition lag). */
   const [assistantPanelResizing, setAssistantPanelResizing] = useState(false);
-  const [headerActionsSlot, setHeaderActionsSlot] = useState<HTMLDivElement | null>(null);
   const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(null);
   const location = useLocation();
   const params = useParams();
@@ -165,13 +204,13 @@ function RootLayoutInner() {
 
   // Generate breadcrumbs based on current route (memoized to avoid recomputation)
   const breadcrumbs = useMemo(() => {
-    // Root pages — keep a single breadcrumb visible
+    // Root pages intentionally have no breadcrumbs.
     if (location.pathname === ROUTES.EXPLORE) {
-      return [{ label: "Explore" }];
+      return [];
     }
 
     if (location.pathname === ROUTES.AUTOMATION_OPPORTUNITIES) {
-      return [{ label: "Automation Opportunities" }];
+      return [];
     }
 
     if (location.pathname === ROUTES.AUTOMATION_OPPORTUNITIES_SETTINGS) {
@@ -182,7 +221,7 @@ function RootLayoutInner() {
     }
 
     if (location.pathname === ROUTES.OBSERVABILITY) {
-      return [{ label: "Observability" }];
+      return [];
     }
 
     if (
@@ -231,17 +270,17 @@ function RootLayoutInner() {
     }
 
     if (location.pathname === ROUTES.SAVED) {
-      return [{ label: "Saved" }];
+      return [];
     }
 
     // Recommended Actions
     if (location.pathname === ROUTES.RECOMMENDED_ACTIONS) {
-      return [{ label: "Recommended Actions" }];
+      return [];
     }
 
     // Actions history
     if (location.pathname === ROUTES.ACTIONS_HISTORY) {
-      return [{ label: "History" }];
+      return [];
     }
 
     // All Insights
@@ -251,7 +290,7 @@ function RootLayoutInner() {
 
     // Settings
     if (location.pathname === ROUTES.SETTINGS) {
-      return [{ label: "Settings" }];
+      return [];
     }
 
     // Conversations list (sub of Explore)
@@ -441,7 +480,6 @@ function RootLayoutInner() {
     isSavedFolderDashboardRoute ||
     isSavedStandaloneDashboardRoute;
 
-  const assistantLayoutInset = aiAssistantOpen;
   const assistantChromeWidthPx =
     !aiAssistantOpen
       ? 0
@@ -450,7 +488,8 @@ function RootLayoutInner() {
   return (
     <PortalContainerContext.Provider value={portalContainer}>
     <ChatPanelSlotContext.Provider value={chatPanelSlot}>
-      <HeaderActionsSlotContext.Provider value={headerActionsSlot}>
+      <HeaderActionsSlotContext.Provider value={null}>
+        <PageBreadcrumbsContext.Provider value={breadcrumbs}>
         <AiAssistantPanelControlProvider openPanel={openPanel}>
         <a
           href="#main-content"
@@ -463,70 +502,71 @@ function RootLayoutInner() {
         >
           Skip to main content
         </a>
-        <SidebarProvider className="h-screen w-full">
-          <div className="relative flex h-full w-full min-h-0 min-w-0 flex-row">
-            {/* AI assistant — fixed width, absolutely positioned; revealed when the shell above slides away (no panel entry animation). */}
+        <SidebarProvider className="h-screen w-full bg-[color:var(--lyra-neutral-n50)]">
+          <div className="flex h-full w-full min-h-0 min-w-0 flex-col">
+            <TopNavBar
+              onSearchClick={() => setSearchOpen(true)}
+              aiAssistantOpen={aiAssistantOpen}
+              onAiAssistantOpenChange={handleTopNavAskAiToggle}
+              aiAssistantDisabled={false}
+            />
             <div
-              ref={setChatPanelSlot}
-              className={cn(
-                "absolute inset-y-0 right-0 z-0 flex h-full min-h-0 shrink-0 transition-opacity duration-200 ease-linear",
-                aiAssistantOpen ? "visible opacity-100" : "pointer-events-none invisible opacity-0",
-              )}
+              data-slot="app-body-row"
+              className="relative flex min-h-0 min-w-0 flex-1 bg-[color:var(--lyra-neutral-n50)]"
             >
-              <DashboardChatPanel
-                dashboardId={aiRouteContext.dashboardId}
-                sourceOotbId={aiRouteContext.sourceOotbId}
-                assistantPersistKey={assistantPersistKey}
-                showResetButton={showAssistantResetButton}
-                pageContextLabel={aiPageContextLabel}
-                onAssistantPanelResizeStart={() => setAssistantPanelResizing(true)}
-                onAssistantPanelResizeEnd={() => setAssistantPanelResizing(false)}
-              />
-            </div>
-            {/* App shell — sits above the assistant; width + padding animate to expose the panel behind */}
-            <div
-              className={cn(
-                "relative z-10 flex h-full min-h-0 min-w-0 flex-row",
-                !assistantPanelResizing &&
-                  "transition-[padding,width] duration-200 ease-linear",
-                assistantLayoutInset && "bg-page pt-4 pl-4 pb-4",
-              )}
-                style={{
-                width: !aiAssistantOpen ? "100%" : `calc(100% - ${assistantChromeWidthPx}px)`,
-              }}
-            >
-              <div
-                className={cn(
-                  "relative flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden transition-[border-radius,box-shadow] duration-200 ease-linear",
-                  assistantLayoutInset ? "rounded-xl shadow-md" : "rounded-none shadow-none",
-                )}
-              >
-                <AppSidebar />
+              <SidebarSeamToggle />
+              <AppSidebar />
+              <div className="flex min-h-0 min-w-0 flex-1 flex-row pr-4 pb-4">
                 <div
-                  data-panel-container
-                  className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
-                  style={{ minWidth: "min(420px, 100%)" }}
+                  data-slot="main-app-card-shell"
+                  className={cn(
+                    "flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-xl bg-background shadow-md",
+                    !assistantPanelResizing && "transition-[width] duration-200 ease-linear",
+                  )}
+                  style={{
+                    width: !aiAssistantOpen
+                      ? "100%"
+                      : `calc(100% - ${assistantChromeWidthPx + CARD_LANE_GAP_PX}px)`,
+                  }}
                 >
-                  <TopNavBar
-                    onSearchClick={() => setSearchOpen(true)}
-                    breadcrumbs={breadcrumbs}
-                    onActionsSlotRef={setHeaderActionsSlot}
-                    aiAssistantOpen={aiAssistantOpen}
-                    onAiAssistantOpenChange={handleTopNavAskAiToggle}
-                    aiAssistantDisabled={false}
-                  />
-                  <main
-                    id="main-content"
-                    tabIndex={-1}
+                  <div
+                    data-panel-container
+                    className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+                    style={{ minWidth: "min(420px, 100%)" }}
+                  >
+                    <main
+                      id="main-content"
+                      tabIndex={-1}
+                      className={cn(
+                        "w-full min-h-0 flex-1",
+                        isFullHeightPage ? "flex flex-col overflow-hidden" : "overflow-auto",
+                        !isExploreRoute && "bg-background",
+                      )}
+                    >
+                      <Outlet />
+                    </main>
+                  </div>
+                </div>
+                {aiAssistantOpen ? (
+                  <div
+                    data-slot="assistant-card-shell"
+                    ref={setChatPanelSlot}
                     className={cn(
-                      "w-full min-h-0 flex-1",
-                      isFullHeightPage ? "flex flex-col overflow-hidden" : "overflow-auto",
-                      !isExploreRoute && "bg-background",
+                      "ml-4 flex h-full min-h-0 shrink-0 overflow-hidden rounded-xl bg-white shadow-md",
+                      !assistantPanelResizing && "transition-[opacity] duration-200 ease-linear",
                     )}
                   >
-                    <Outlet />
-                  </main>
-                </div>
+                    <DashboardChatPanel
+                      dashboardId={aiRouteContext.dashboardId}
+                      sourceOotbId={aiRouteContext.sourceOotbId}
+                      assistantPersistKey={assistantPersistKey}
+                      showResetButton={showAssistantResetButton}
+                      pageContextLabel={aiPageContextLabel}
+                      onAssistantPanelResizeStart={() => setAssistantPanelResizing(true)}
+                      onAssistantPanelResizeEnd={() => setAssistantPanelResizing(false)}
+                    />
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
@@ -542,6 +582,7 @@ function RootLayoutInner() {
           className="fixed inset-0 pointer-events-none overflow-visible z-[9999] [&>*]:pointer-events-auto"
         />
         </AiAssistantPanelControlProvider>
+        </PageBreadcrumbsContext.Provider>
       </HeaderActionsSlotContext.Provider>
     </ChatPanelSlotContext.Provider>
     </PortalContainerContext.Provider>

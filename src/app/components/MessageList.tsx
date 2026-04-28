@@ -144,7 +144,7 @@ export const MessageList = memo(function MessageList({
             className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
             {msg.role === "user" ? (
-              <div className="max-w-[85%] rounded-2xl bg-neutral-0 px-4 py-3 text-neutral-800 shadow-sm">
+              <div className="max-w-[85%] rounded-2xl bg-[color:var(--lyra-primary-p500)] px-4 py-3 text-white shadow-sm">
                 {msg.widgetRef && (
                   <span className="mb-1.5 inline-flex max-w-full flex-col items-start gap-0.5 rounded-md bg-neutral-50 px-1.5 py-0.5 text-left text-xs text-neutral-800">
                     <span className="inline-flex min-w-0 items-center gap-1">

@@ -781,7 +781,7 @@ function ThreadView({
           className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
         >
           {msg.role === "user" ? (
-            <div className="max-w-[85%] rounded-lg bg-neutral-0 px-3 py-2 text-neutral-800 shadow-sm">
+            <div className="max-w-[85%] rounded-lg bg-[color:var(--lyra-primary-p500)] px-3 py-2 text-white shadow-sm">
               {msg.widgetRef ? (
                 <Badge
                   asChild
@@ -1313,7 +1313,7 @@ export function DashboardChatPanel({
   return (
     <div
       data-chat-panel-root="true"
-      className="h-full flex flex-col bg-page relative shrink-0"
+      className="h-full flex flex-col bg-white relative shrink-0"
       style={{ width: `${panelWidthRem}rem`, transition: isResizing ? 'none' : 'width 200ms ease' }}
     >
       {/* Resize handle on left edge */}
@@ -1325,8 +1325,8 @@ export function DashboardChatPanel({
         onResizeEnd={handleResizeEnd}
       />
 
-      <div className="flex-1 min-h-0 flex flex-col min-w-0 pt-4">
-        <div className="shrink-0 px-4 flex items-center justify-between gap-2 h-[60px] min-w-0 bg-page relative z-30">
+      <div className="flex-1 min-h-0 flex flex-col min-w-0">
+        <div className="shrink-0 px-4 flex items-center justify-between gap-2 h-[60px] min-w-0 bg-white relative z-30">
           <div className="min-w-0 flex-1 flex items-center gap-2">
             <Sparkles className="h-4 w-4 shrink-0 text-primary" aria-hidden />
             <h2 className="truncate text-sm font-semibold text-foreground">AI Assistant</h2>
@@ -1354,16 +1354,16 @@ export function DashboardChatPanel({
             <ThreadView messages={messages} isThinking={isThinking} />
           </div>
           <div
-            className={`pointer-events-none absolute inset-x-0 top-0 z-10 h-16 bg-gradient-to-b from-page from-[10%] via-page/85 via-40% to-page/0 to-100% transition-opacity ${chatFade.top ? "opacity-100" : "opacity-0"}`}
+            className={`pointer-events-none absolute inset-x-0 top-0 z-10 h-16 bg-gradient-to-b from-white from-[10%] via-white/85 via-40% to-white/0 to-100% transition-opacity ${chatFade.top ? "opacity-100" : "opacity-0"}`}
             aria-hidden
           />
           <div
-            className={`pointer-events-none absolute inset-x-0 bottom-0 z-10 h-20 bg-gradient-to-t from-page from-[10%] via-page/85 via-40% to-page/0 to-100% transition-opacity ${chatFade.bottom ? "opacity-100" : "opacity-0"}`}
+            className={`pointer-events-none absolute inset-x-0 bottom-0 z-10 h-20 bg-gradient-to-t from-white from-[10%] via-white/85 via-40% to-white/0 to-100% transition-opacity ${chatFade.bottom ? "opacity-100" : "opacity-0"}`}
             aria-hidden
           />
         </div>
 
-        <div className="shrink-0 bg-page p-4 relative z-30">
+        <div className="shrink-0 bg-white p-4 relative z-30">
             {showSuggestedPromptChips && suggestedQuestions.length > 0 ? (
               <div
                 className="mb-2 flex flex-wrap gap-2"

@@ -208,58 +208,98 @@
     --rounded-xl: 1rem;
     --rounded-full: 9999px;
 
-    /* —— C26 Figma: Primary —— */
-    --primary-0: oklch(1 0 0);
-    --primary-25: oklch(0.9531 0.0269 295.32);
-    --primary-50: oklch(0.8878 0.0712 294.5);
-    --primary-100: oklch(0.8008 0.1372 293.26);
-    --primary-200: oklch(0.6864 0.2332 293.5);
-    --primary-300: oklch(0.5744 0.3272 292.62);
-    --primary-400: oklch(0.5076 0.3634 289.46);
-    --primary-500: oklch(0.4683 0.3581 288.03);
-    --primary-600: oklch(0.3994 0.3437 286.95);
-    --primary-700: oklch(0.3271 0.3236 285.85);
-    --primary-800: oklch(0.2514 0.2893 285.42);
-    --primary-900: oklch(0.1815 0.248 285.03);
-    --primary-default: #6E56CF;
-    --primary-secondary: #E0DBF5;
-    --primary-disabled: rgba(110, 86, 207, 0.5);
-    --primary-secondary-disabled: rgba(242, 240, 250, 0.5);
-    --primary-0-disabled: rgba(255, 255, 255, 0.5);
-    --primary-900-disabled: rgba(42, 27, 102, 0.5);
+    /* —— Lyra namespace (source-of-truth color tokens) —— */
+    --lyra-primary-p0: #ffffff;
+    --lyra-primary-p25: #ecf5fe;
+    --lyra-primary-p50: #e5f2ff;
+    --lyra-primary-p100: #d2e7fe;
+    --lyra-primary-p200: #a7d0fe;
+    --lyra-primary-p300: #5ea9fd;
+    --lyra-primary-p400: #308ff8;
+    --lyra-primary-p500: #126bce;
+    --lyra-primary-p600: #17569b;
+    --lyra-primary-p700: #164479;
+    --lyra-primary-p800: #0e2d4e;
+    --lyra-primary-p900: #0b233d;
 
-    /* —— C26 Figma: Neutrals —— */
-    --neutral-0: oklch(1 0 0);
-    --neutral-25: oklch(0.9822 0.0034 247.84);
-    --neutral-50: oklch(0.9617 0.0057 264.54);
-    --neutral-100: oklch(0.916 0.0116 264.53);
-    --neutral-200: oklch(0.8512 0.0187 258.34);
-    --neutral-300: oklch(0.6678 0.0384 261.32);
-    --neutral-400: oklch(0.4792 0.0467 264.36);
-    --neutral-500: oklch(0.3575 0.0526 256.8);
-    --neutral-600: oklch(0.2726 0.0612 259.73);
-    --neutral-700: oklch(0.1626 0.0592 256.85);
-    --neutral-800: oklch(0.0837 0.0635 264.66);
-    --neutral-900: oklch(0 0 0);
+    --lyra-neutral-n0: #ffffff;
+    --lyra-neutral-n25: #fafafa;
+    --lyra-neutral-n50: #f5f5f5;
+    --lyra-neutral-n100: #ededed;
+    --lyra-neutral-n200: #e0e0e0;
+    --lyra-neutral-n300: #c7c7c7;
+    --lyra-neutral-n400: #a8a8a8;
+    --lyra-neutral-n500: #868686;
+    --lyra-neutral-n600: #626262;
+    --lyra-neutral-n700: #4a4a4a;
+    --lyra-neutral-n800: #383838;
+    --lyra-neutral-n900: #222222;
 
-    /* —— C26 Figma: Success / Warning / Error —— */
-    --success-bg: oklch(0.9726 0.0365 150.56);
-    --success-border: oklch(0.5202 0.3165 146.95);
-    --success: oklch(0.4629 0.2872 147.05);
-    --success-hover: oklch(0.4077 0.2597 147.08);
-    --success-disabled: rgba(40, 167, 69, 0.5);
+    --lyra-success-bg: #ebfaed;
+    --lyra-success-border: #24943e;
+    --lyra-success-default: #21742c;
+    --lyra-success-hover: #1c7330;
 
-    --warning-bg: oklch(0.9703 0.0608 88.37);
-    --warning-border: oklch(0.5401 0.2474 84.92);
-    --warning: oklch(0.7995 0.3421 80.53);
-    --warning-hover: oklch(0.7673 0.3315 79.65);
-    --warning-disabled: rgba(255, 184, 0, 0.5);
+    --lyra-warning-bg: #fffae0;
+    --lyra-warning-border: #8e6800;
+    --lyra-warning-default: #ffe680;
+    --lyra-warning-hover: #f5af00;
 
-    --error-bg: oklch(0.9445 0.0414 17.52);
-    --error-border: oklch(0.5456 0.418 27.03);
-    --error: oklch(0.5263 0.4392 27.81);
-    --error-hover: oklch(0.4573 0.4053 28.25);
-    --error-disabled: rgba(227, 41, 38, 0.5);
+    --lyra-error-bg: #fff0f0;
+    --lyra-error-border: #e53935;
+    --lyra-error-default: #bf2323;
+    --lyra-error-hover: #c71d1a;
+
+    /* —— Back-compat aliases (legacy token names now point to Lyra) —— */
+    --primary-0: var(--lyra-primary-p0);
+    --primary-25: var(--lyra-primary-p25);
+    --primary-50: var(--lyra-primary-p50);
+    --primary-100: var(--lyra-primary-p100);
+    --primary-200: var(--lyra-primary-p200);
+    --primary-300: var(--lyra-primary-p300);
+    --primary-400: var(--lyra-primary-p400);
+    --primary-500: var(--lyra-primary-p500);
+    --primary-600: var(--lyra-primary-p600);
+    --primary-700: var(--lyra-primary-p700);
+    --primary-800: var(--lyra-primary-p800);
+    --primary-900: var(--lyra-primary-p900);
+    --primary-default: var(--lyra-primary-p500);
+    --primary-secondary: var(--lyra-primary-p50);
+    --primary-disabled: color-mix(in srgb, var(--lyra-primary-p500) 50%, transparent);
+    --primary-secondary-disabled: color-mix(in srgb, var(--lyra-primary-p50) 50%, transparent);
+    --primary-0-disabled: color-mix(in srgb, var(--lyra-primary-p0) 50%, transparent);
+    --primary-900-disabled: color-mix(in srgb, var(--lyra-primary-p900) 50%, transparent);
+
+    --neutral-0: var(--lyra-neutral-n0);
+    --neutral-25: var(--lyra-neutral-n25);
+    --neutral-50: var(--lyra-neutral-n50);
+    --neutral-100: var(--lyra-neutral-n100);
+    --neutral-200: var(--lyra-neutral-n200);
+    --neutral-300: var(--lyra-neutral-n300);
+    --neutral-400: var(--lyra-neutral-n400);
+    --neutral-500: var(--lyra-neutral-n500);
+    --neutral-600: var(--lyra-neutral-n600);
+    --neutral-700: var(--lyra-neutral-n700);
+    --neutral-800: var(--lyra-neutral-n800);
+    --neutral-900: var(--lyra-neutral-n900);
+
+    --success-bg: var(--lyra-success-bg);
+    --success-border: var(--lyra-success-border);
+    --success: var(--lyra-success-default);
+    --success-hover: var(--lyra-success-hover);
+    --success-disabled: color-mix(in srgb, var(--lyra-success-default) 50%, transparent);
+
+    --warning-bg: var(--lyra-warning-bg);
+    --warning-border: var(--lyra-warning-border);
+    --warning: var(--lyra-warning-default);
+    --warning-hover: var(--lyra-warning-hover);
+    --warning-disabled: color-mix(in srgb, var(--lyra-warning-default) 50%, transparent);
+
+    --error-bg: var(--lyra-error-bg);
+    --error-border: var(--lyra-error-border);
+    --error: var(--lyra-error-default);
+    --error-hover: var(--lyra-error-hover);
+    --error-disabled: color-mix(in srgb, var(--lyra-error-default) 50%, transparent);
 
     /* —— C26 Figma: Accent ramps —— */
     --accent-yellow-25: oklch(0.9765 0.0496 89.21);
@@ -295,8 +335,8 @@
     --accent-teal-500: oklch(0.4634 0.1951 179.98);
 
     /* Aliases: soft primary (tags, active nav, icon wells) */
-    --primary-soft: var(--primary-50);
-    --primary-soft-foreground: var(--primary-900);
+    --primary-soft: var(--primary-100);
+    --primary-soft-foreground: var(--primary-700);
 
     /* —— shadcn bridge (C26 roles) —— */
     --background: var(--neutral-0);
@@ -329,17 +369,17 @@
     /**
      * KPI mini line / area charts — Figma AI Agent (node 1:8029), Color/Primary/P500.
      */
-    --kpi-line: #6e56cf;
+    --kpi-line: var(--lyra-primary-p500);
     --radius: 0.5rem;
-    --sidebar: var(--neutral-0);
-    --sidebar-foreground: var(--neutral-800);
+    --sidebar: var(--neutral-50);
+    --sidebar-foreground: var(--neutral-700);
     --sidebar-primary: var(--primary-600);
     --sidebar-primary-foreground: var(--primary-0);
-    --sidebar-accent: var(--primary-50);
-    --sidebar-accent-foreground: var(--primary-900);
-    --sidebar-border: var(--neutral-100);
-    --sidebar-ring: var(--neutral-400);
-    --page-background: var(--neutral-50);
+    --sidebar-accent: var(--primary-100);
+    --sidebar-accent-foreground: var(--primary-700);
+    --sidebar-border: var(--neutral-200);
+    --sidebar-ring: var(--primary-300);
+    --page-background: var(--neutral-100);
 }
 
 .dark {
@@ -369,7 +409,7 @@
     --chart-3: var(--accent-yellow-400);
     --chart-4: var(--accent-magenta-300);
     --chart-5: var(--primary-400);
-    --kpi-line: #6e56cf;
+    --kpi-line: var(--lyra-primary-p500);
     --sidebar: oklch(0.205 0 0);
     --sidebar-foreground: oklch(0.985 0 0);
     --sidebar-primary: var(--primary-400);
