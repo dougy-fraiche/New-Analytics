@@ -522,13 +522,21 @@
   * {
     @apply border-border outline-ring/50;
     }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
   body {
     @apply text-foreground;
+    margin: 0;
+    overflow: hidden;
     background-color: var(--page-background);
     }
   html {
     @apply font-sans;
     font-size: var(--font-size);
+    overflow: hidden;
     }
 
   /**

@@ -45,6 +45,7 @@ import { DeleteDashboardDialog } from "./DeleteDashboardDialog";
 import { DuplicateDashboardDialog } from "./DuplicateDashboardDialog";
 import {
   PageHeader,
+  PageHeaderPrimaryRow,
   pageMainColumnClassName,
   pageRootListScrollGutterClassName,
 } from "./PageChrome";
@@ -487,28 +488,28 @@ export function DashboardPage({ resolvedStandaloneDashboardId }: DashboardPagePr
   return (
     <WidgetAIProvider persistKey={GLOBAL_AI_ASSISTANT_KEY} ootbTypeId={chatSourceOotbId}>
       <div className="flex flex-col h-full min-h-0">
-        {/* Fixed header: title, description, global buttons */}
+        {/* Fixed header: title and global buttons */}
         <PageHeader>
-          <section className="flex items-center gap-2">
-            <h1 className="text-3xl tracking-tight">{meta.title}</h1>
-            <div className="ml-auto flex items-center gap-2">
-                <DropdownMenu>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-8 w-8"
-                          aria-label="Dashboard options"
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">Dashboard options</TooltipContent>
-                  </Tooltip>
-                  <DropdownMenuContent align="end">
+          <PageHeaderPrimaryRow
+            title={<h1 className="text-3xl tracking-tight">{meta.title}</h1>}
+            actions={(
+              <DropdownMenu>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        aria-label="Dashboard options"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">Dashboard options</TooltipContent>
+                </Tooltip>
+                <DropdownMenuContent align="end">
                   {!isSavedDashboard && (
                     <>
                       <DropdownMenuItem>
@@ -548,10 +549,26 @@ export function DashboardPage({ resolvedStandaloneDashboardId }: DashboardPagePr
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
-            </div>
-          </section>
-          <p className="text-muted-foreground mt-1">{meta.description}</p>
-          <div className="mt-4 flex flex-wrap items-center gap-2">
+            )}
+          />
+        </PageHeader>
+
+        {/* Scrollable content */}
+        <div className="flex-1 min-h-0 overflow-auto">
+          <div className={cn(pageRootListScrollGutterClassName, "pb-4 md:pb-8")}>
+          <PageTransition className={pageMainColumnClassName}>
+          <div ref={dashboardContentRef} className="space-y-4">
+          {activeDashboardId ? (
+            <HeaderAIInsightsRow
+              dashboardId={activeDashboardId}
+              dashboardData={{
+                id: activeDashboardId,
+                title: meta.title,
+                description: meta.description,
+              }}
+            />
+          ) : null}
+          <div className="flex flex-wrap items-center gap-2">
             <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRangeOption)}>
               <SelectTrigger className="h-8 w-auto shrink-0">
                 <LabeledFilterInline label="Date range">{DATE_RANGE_LABELS[dateRange]}</LabeledFilterInline>
@@ -615,23 +632,6 @@ export function DashboardPage({ resolvedStandaloneDashboardId }: DashboardPagePr
               </Button>
             )}
           </div>
-        </PageHeader>
-
-        {/* Scrollable content */}
-        <div className="flex-1 min-h-0 overflow-auto">
-          <div className={cn(pageRootListScrollGutterClassName, "pb-4 md:pb-8")}>
-          <PageTransition className={pageMainColumnClassName}>
-          <div ref={dashboardContentRef} className="space-y-4">
-          {activeDashboardId ? (
-            <HeaderAIInsightsRow
-              dashboardId={activeDashboardId}
-              dashboardData={{
-                id: activeDashboardId,
-                title: meta.title,
-                description: meta.description,
-              }}
-            />
-          ) : null}
           {/* Section heading — 2rem below AI insights only (avoid space-y-4 + mt-8 stacking) */}
           <div
             className={cn(

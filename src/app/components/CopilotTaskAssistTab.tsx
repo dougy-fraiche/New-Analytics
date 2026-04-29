@@ -1,5 +1,5 @@
 import type { EChartsCoreOption } from "echarts";
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import {
   ChevronDown,
   CircleGauge,
@@ -43,6 +43,7 @@ import {
 export interface CopilotTaskAssistTabProps {
   isCompactDashboard: boolean;
   showWidgetOverflowMenu?: boolean;
+  copilotFilters?: ReactNode;
 }
 
 type SessionColumnId =
@@ -360,6 +361,7 @@ function rankRate(rate: number) {
 export function CopilotTaskAssistTab({
   isCompactDashboard,
   showWidgetOverflowMenu = true,
+  copilotFilters,
 }: CopilotTaskAssistTabProps) {
   const [sessionSearch, setSessionSearch] = useState("");
   const [sessionPage, setSessionPage] = useState(1);
@@ -402,6 +404,7 @@ export function CopilotTaskAssistTab({
   return (
     <div className="space-y-4">
       <HeaderAIInsightsRow dashboardId={copilotAiInsightsIds.taskAssist} />
+      {copilotFilters}
 
       <h3 className="mt-8 flex items-center gap-2 tracking-tight">
         <CircleGauge className="h-4 w-4 shrink-0 text-primary" aria-hidden />

@@ -3,7 +3,6 @@ import {
   ChevronDown,
   CircleHelp,
   Search,
-  Sparkles,
   LogOut,
   Settings,
   User,
@@ -30,10 +29,6 @@ import { ROUTES } from "../routes";
 
 interface TopNavBarProps {
   onSearchClick?: () => void;
-  aiAssistantOpen?: boolean;
-  onAiAssistantOpenChange?: (open: boolean) => void;
-  /** When true (e.g. Explore routes), hide toggle / show disabled control */
-  aiAssistantDisabled?: boolean;
 }
 
 interface AppCategory {
@@ -90,9 +85,6 @@ const APP_CATEGORIES: AppCategory[] = [
 
 export function TopNavBar({
   onSearchClick,
-  aiAssistantOpen = false,
-  onAiAssistantOpenChange,
-  aiAssistantDisabled = false,
 }: TopNavBarProps) {
   const navigate = useNavigate();
 
@@ -113,16 +105,18 @@ export function TopNavBar({
   return (
     <header
       data-slot="top-nav"
-      className="z-40 flex h-14 w-full items-center justify-between bg-transparent px-5"
+      className="z-40 flex h-14 w-full items-center justify-between bg-transparent p-2"
     >
       <div className="flex min-w-0 items-center gap-1">
-        <img
-          src="/app-icon.svg"
-          alt="Agentic Analytics"
-          width={32}
-          height={32}
-          className="size-8 shrink-0 object-contain"
-        />
+        <div className="size-10 shrink-0 p-1">
+          <img
+            src="/app-icon.svg"
+            alt="Agentic Analytics"
+            width={32}
+            height={32}
+            className="block size-full object-contain"
+          />
+        </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -130,7 +124,7 @@ export function TopNavBar({
               className="h-10 min-w-0 gap-1.5 rounded-md px-2 text-[color:var(--lyra-neutral-n800)] hover:bg-[color:var(--lyra-neutral-n100)]"
               aria-label="Switch application"
             >
-              <span className="truncate text-sm font-medium leading-tight">
+              <span className="truncate text-base font-medium leading-tight">
                 Agentic Analytics
               </span>
               <ChevronDown className="size-4 shrink-0 text-[color:var(--lyra-neutral-n500)]" />
@@ -166,8 +160,8 @@ export function TopNavBar({
           <TooltipTrigger asChild>
             <Button
               variant="ghost"
-              size="icon"
-              className="size-8 text-[color:var(--lyra-neutral-n600)] hover:bg-[color:var(--lyra-neutral-n100)]"
+              size="icon-lg"
+              className="text-[color:var(--lyra-neutral-n600)] hover:bg-[color:var(--lyra-neutral-n100)]"
               onClick={onSearchClick}
             >
               <Search className="h-4 w-4" />
@@ -181,8 +175,8 @@ export function TopNavBar({
           <TooltipTrigger asChild>
             <Button
               variant="ghost"
-              size="icon"
-              className="size-8 text-[color:var(--lyra-neutral-n600)] hover:bg-[color:var(--lyra-neutral-n100)]"
+              size="icon-lg"
+              className="text-[color:var(--lyra-neutral-n600)] hover:bg-[color:var(--lyra-neutral-n100)]"
             >
               <CircleHelp className="h-4 w-4" />
               <span className="sr-only">Help</span>
@@ -197,8 +191,8 @@ export function TopNavBar({
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="relative size-8 text-[color:var(--lyra-neutral-n600)] hover:bg-[color:var(--lyra-neutral-n100)]"
+                  size="icon-lg"
+                  className="relative text-[color:var(--lyra-neutral-n600)] hover:bg-[color:var(--lyra-neutral-n100)]"
                 >
                   <Bell className="h-4 w-4" />
                   {notificationCount > 0 ? (
@@ -274,45 +268,15 @@ export function TopNavBar({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex">
-              <Button
-                variant="outline"
-                size="sm"
-                className={[
-                  "h-8 gap-2 border-[color:var(--lyra-primary-p300)] text-[color:var(--lyra-primary-p700)] hover:bg-[color:var(--lyra-primary-p25)] hover:text-[color:var(--lyra-primary-p700)]",
-                  aiAssistantOpen ? "bg-[color:var(--lyra-primary-p50)] border-[color:var(--lyra-primary-p400)]" : "",
-                ].join(" ")}
-                disabled={aiAssistantDisabled}
-                aria-pressed={aiAssistantOpen}
-                onClick={() => onAiAssistantOpenChange?.(!aiAssistantOpen)}
-              >
-                <Sparkles className="h-4 w-4" />
-                <span>Ask AI</span>
-                <span className="sr-only">
-                  {aiAssistantDisabled ? "AI assistant — not available on Explore" : aiAssistantOpen ? "Close AI assistant" : "Open AI assistant"}
-                </span>
-              </Button>
-            </span>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            {aiAssistantDisabled
-              ? "AI assistant is available on dashboard pages — use Explore chat here"
-              : aiAssistantOpen
-                ? "AI assistant open"
-                : "AI assistant closed"}
-          </TooltipContent>
-        </Tooltip>
-
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
+              size="lg"
               aria-label="User menu"
-              className="h-8 gap-2 rounded-full px-1 text-[color:var(--lyra-neutral-n700)] hover:bg-[color:var(--lyra-neutral-n100)]"
+              className="gap-2 rounded-full px-1.5 text-[color:var(--lyra-neutral-n700)] hover:bg-[color:var(--lyra-neutral-n100)]"
             >
-              <Avatar className="size-8 rounded-full">
+              <Avatar className="size-10 rounded-full">
                 <AvatarFallback
                   delayMs={0}
                   className="rounded-full bg-[color:var(--lyra-neutral-n500)] text-white text-xs"
@@ -320,7 +284,7 @@ export function TopNavBar({
                   {getInitials(currentUserProfile.displayName)}
                 </AvatarFallback>
               </Avatar>
-              <ChevronDown className="size-3.5" />
+              <ChevronDown className="size-4" />
               <span className="sr-only">Open user menu</span>
             </Button>
           </DropdownMenuTrigger>

@@ -42,7 +42,7 @@ const AI_ASSISTANT_OPEN_STORAGE_KEY = "ai-assistant-panel-open";
 const WIDGET_AI_MESSAGE_SENT_EVENT = "widget-ai-message-sent";
 /** Fallback until ResizeObserver runs; matches `CHAT_PANEL_DEFAULT_WIDTH_REM` in DashboardChatPanel (22 × 16px). */
 const CHAT_PANEL_FALLBACK_WIDTH_PX = 352;
-const CARD_LANE_GAP_PX = 16;
+const CARD_LANE_GAP_PX = 8;
 const APP_BROWSER_TITLE = "Agentic Analytics";
 const CONVERSATION_PREFIX = ROUTES.CONVERSATION("");
 const ANOMALY_INVESTIGATION_PREFIX = ROUTES.ANOMALY_INVESTIGATION("");
@@ -67,7 +67,7 @@ function SidebarSeamToggle() {
         <Button
           variant="outline"
           size="icon"
-          className="absolute top-3 z-30 size-6 -translate-x-1/2 rounded-full border-[color:var(--lyra-neutral-n200)] bg-[color:var(--lyra-neutral-n0)] text-[color:var(--lyra-neutral-n500)] shadow-sm transition-[left,background-color] duration-200 ease-linear hover:bg-[color:var(--lyra-neutral-n25)]"
+          className="absolute top-3 z-30 size-5 -translate-x-1/2 rounded-full border-[color:var(--lyra-neutral-n200)] bg-[color:var(--lyra-neutral-n0)] text-[color:var(--lyra-neutral-n500)] shadow-sm transition-[left,background-color] duration-200 ease-linear hover:bg-[color:var(--lyra-neutral-n25)]"
           style={{ left: seamOffset }}
           onClick={toggleSidebar}
         >
@@ -98,9 +98,6 @@ function RootLayoutInner() {
   const { getAgentById } = useCreateAIAgentJobs();
   const { conversations } = useConversations();
   const { projects, standaloneDashboards } = useProjects();
-
-  /** Explore hero route (`/`). */
-  const isExploreHome = location.pathname === ROUTES.EXPLORE;
 
   /** Explore home (`/`) only — hero gradient sits on the page canvas; conversation + all other routes use white `main`. */
   const isExploreRoute = location.pathname === ROUTES.EXPLORE;
@@ -137,9 +134,9 @@ function RootLayoutInner() {
     setAiAssistantOpen(true);
   }, [setAiAssistantOpen]);
 
-  const handleTopNavAskAiToggle = useCallback((open: boolean) => {
-    setAiAssistantOpen(open);
-  }, [setAiAssistantOpen]);
+  const togglePanel = useCallback(() => {
+    setAiAssistantOpen(!aiAssistantOpen);
+  }, [aiAssistantOpen, setAiAssistantOpen]);
 
   // Open the assistant automatically when viewing an Explore conversation thread.
   useEffect(() => {
@@ -490,7 +487,12 @@ function RootLayoutInner() {
     <ChatPanelSlotContext.Provider value={chatPanelSlot}>
       <HeaderActionsSlotContext.Provider value={null}>
         <PageBreadcrumbsContext.Provider value={breadcrumbs}>
-        <AiAssistantPanelControlProvider openPanel={openPanel}>
+        <AiAssistantPanelControlProvider
+          isOpen={aiAssistantOpen}
+          setOpen={setAiAssistantOpen}
+          togglePanel={togglePanel}
+          openPanel={openPanel}
+        >
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[10000] focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:shadow-md focus:outline-none focus:ring-2 focus:ring-ring"
@@ -502,13 +504,10 @@ function RootLayoutInner() {
         >
           Skip to main content
         </a>
-        <SidebarProvider className="h-screen w-full bg-[color:var(--lyra-neutral-n50)]">
+        <SidebarProvider className="h-full w-full bg-[color:var(--lyra-neutral-n50)]">
           <div className="flex h-full w-full min-h-0 min-w-0 flex-col">
             <TopNavBar
               onSearchClick={() => setSearchOpen(true)}
-              aiAssistantOpen={aiAssistantOpen}
-              onAiAssistantOpenChange={handleTopNavAskAiToggle}
-              aiAssistantDisabled={false}
             />
             <div
               data-slot="app-body-row"
@@ -516,11 +515,11 @@ function RootLayoutInner() {
             >
               <SidebarSeamToggle />
               <AppSidebar />
-              <div className="flex min-h-0 min-w-0 flex-1 flex-row pr-4 pb-4">
+              <div className="flex min-h-0 min-w-0 flex-1 flex-row pr-3 pb-3">
                 <div
                   data-slot="main-app-card-shell"
                   className={cn(
-                    "flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-xl bg-background shadow-md",
+                    "flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-[12px] border border-[color:var(--lyra-neutral-n200)] bg-background shadow-md",
                     !assistantPanelResizing && "transition-[width] duration-200 ease-linear",
                   )}
                   style={{
@@ -552,7 +551,7 @@ function RootLayoutInner() {
                     data-slot="assistant-card-shell"
                     ref={setChatPanelSlot}
                     className={cn(
-                      "ml-4 flex h-full min-h-0 shrink-0 overflow-hidden rounded-xl bg-white shadow-md",
+                      "ml-2 flex h-full min-h-0 shrink-0 overflow-visible rounded-[12px] border border-[color:var(--lyra-neutral-n200)] bg-white shadow-md",
                       !assistantPanelResizing && "transition-[opacity] duration-200 ease-linear",
                     )}
                   >

@@ -10,13 +10,13 @@ import {
 } from "react";
 import {
   RotateCcw,
-  ArrowUp,
+  Send,
   Square,
   Loader2,
   ChevronDown,
   Check,
-  Sparkles,
   Bot,
+  X,
 } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
@@ -63,6 +63,8 @@ import { syntheticAssistantReasoningText } from "../lib/assistant-synthetic-reas
 import { runPhasedAssistantReply } from "../lib/run-phased-assistant-reply";
 import type { AssistantReplyPayload } from "../types/conversation-types";
 import { normalizeAskAiWidgetTitle } from "../lib/normalize-ask-ai-widget-title";
+import { currentUserProfile, getFirstName } from "../data/user-profile";
+import { useOptionalAiAssistantPanelControl } from "../contexts/AiAssistantPanelControlContext";
 
 interface DashboardChatPanelProps {
   /** Route / page context id (saved id, OOTB id, etc.) — not used for message persistence in global mode */
@@ -186,6 +188,8 @@ const defaultSuggestedQuestions = [
   "What changed recently?",
   "What actions do you recommend?",
 ];
+const FIGMA_AI_ASSISTANT_EMPTY_ICON_URL =
+  "https://www.figma.com/api/mcp/asset/91641539-6c78-4ba8-991b-6e10a070deaf";
 
 // ─── Dashboard-specific AI response handlers ─────────────────────────────────
 
@@ -582,11 +586,16 @@ function messageStreamScrollSignature(msg: ChatMessage): string {
   return `a:${msg.id}:${msg.content.length}:${msg.reasoning?.length ?? 0}:${stepSig}:${msg.sources?.length ?? 0}:ty${msg.isTypingContent ? 1 : 0}:ag:${agentKey}`;
 }
 
-function AssistantEmptyTypingHint() {
+function AssistantEmptyStateIcon() {
   return (
-    <p className="mt-2 max-w-[28rem] text-sm text-muted-foreground">
-      Ask about agent performance, trends, anomalies, automation opportunities, or how to get started.
-    </p>
+    <div className="flex size-16 items-center justify-center rounded-full bg-[conic-gradient(from_90deg,#7640FF_-28.365%,#6D5EFF_-16.346%,#637BFF_-4.3269%,#50B6FF_19.712%,#637BFF_45.673%,#6D5EFF_58.654%,#7640FF_71.635%,#6D5EFF_83.654%,#637BFF_95.673%,#50B6FF_119.71%)] shadow-[0_0_18px_rgba(25,140,255,0.41)]">
+      <img
+        src={FIGMA_AI_ASSISTANT_EMPTY_ICON_URL}
+        alt=""
+        aria-hidden
+        className="size-8"
+      />
+    </div>
   );
 }
 
@@ -611,6 +620,10 @@ function ThreadView({
   const bottomRef = useRef<HTMLDivElement>(null);
   const SOURCE_JUMP_PENDING_KEY = "ai-source-jump-pending";
   const currentRoutePath = `${location.pathname}${location.search}${location.hash}`;
+  const assistantFirstName = useMemo(
+    () => getFirstName(currentUserProfile.displayName),
+    [],
+  );
 
   const resolveSourceElement = useCallback((widgetRef: string, anchorId?: string): HTMLElement | null => {
     if (anchorId) {
@@ -764,11 +777,11 @@ function ThreadView({
   if (displayMessages.length === 0 && !isThinking) {
     return (
       <div className="h-full min-h-0 p-4 flex flex-col items-center justify-center text-center">
-        <Sparkles className="h-12 w-12 shrink-0 text-primary" aria-hidden />
-        <h3 className="mt-6 max-w-[28rem] text-lg font-semibold text-foreground">
-          How can I help you today?
-        </h3>
-        <AssistantEmptyTypingHint />
+        <AssistantEmptyStateIcon />
+        <div className="mt-4 max-w-[28rem] text-foreground">
+          <p className="text-sm">Hi {assistantFirstName},</p>
+          <h3 className="text-base font-medium">How can I help?</h3>
+        </div>
       </div>
     );
   }
@@ -781,7 +794,7 @@ function ThreadView({
           className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
         >
           {msg.role === "user" ? (
-            <div className="max-w-[85%] rounded-lg bg-[color:var(--lyra-primary-p500)] px-3 py-2 text-white shadow-sm">
+            <div className="max-w-[85%] rounded-lg bg-[color:var(--lyra-primary-p100)] px-3 py-2 text-[color:var(--lyra-neutral-n900)]">
               {msg.widgetRef ? (
                 <Badge
                   asChild
@@ -861,6 +874,7 @@ export function DashboardChatPanel({
   onAssistantPanelResizeEnd,
 }: DashboardChatPanelProps) {
   const dashboardChat = useDashboardChat();
+  const aiAssistantPanelControl = useOptionalAiAssistantPanelControl();
   const location = useLocation();
   const isExploreHome = location.pathname === "/";
   const {
@@ -1313,36 +1327,50 @@ export function DashboardChatPanel({
   return (
     <div
       data-chat-panel-root="true"
-      className="h-full flex flex-col bg-white relative shrink-0"
+      className="h-full flex flex-col bg-white relative shrink-0 overflow-visible rounded-[12px]"
       style={{ width: `${panelWidthRem}rem`, transition: isResizing ? 'none' : 'width 200ms ease' }}
     >
-      {/* Resize handle on left edge */}
+      {/* Resize handle centered in the lane between the page and assistant panel */}
       <ResizeHandle
         side="left"
+        className="-left-1 z-[200] w-3"
         onResize={handleResize}
         onReset={handleResizeReset}
         onResizeStart={handleResizeStart}
         onResizeEnd={handleResizeEnd}
       />
 
-      <div className="flex-1 min-h-0 flex flex-col min-w-0">
+      <div className="flex-1 min-h-0 flex flex-col min-w-0 rounded-[12px] overflow-hidden">
         <div className="shrink-0 px-4 flex items-center justify-between gap-2 h-[60px] min-w-0 bg-white relative z-30">
           <div className="min-w-0 flex-1 flex items-center gap-2">
-            <Sparkles className="h-4 w-4 shrink-0 text-primary" aria-hidden />
             <h2 className="truncate text-sm font-semibold text-foreground">AI Assistant</h2>
           </div>
+          <div className="flex items-center gap-0.5 shrink-0">
             {showResetButton ? (
-              <div className="flex items-center gap-0.5 shrink-0">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleResetChat} aria-label="Reset Chat">
-                      <RotateCcw className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">Reset Chat</TooltipContent>
-                </Tooltip>
-              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleResetChat} aria-label="Reset Chat">
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Reset Chat</TooltipContent>
+              </Tooltip>
             ) : null}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => aiAssistantPanelControl?.setOpen(false)}
+                  aria-label="Close AI Assistant"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Close AI Assistant</TooltipContent>
+            </Tooltip>
+          </div>
         </div>
 
         <div className="flex-1 min-h-0 relative overflow-hidden min-w-0">
@@ -1416,7 +1444,7 @@ export function DashboardChatPanel({
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
-                        size="icon"
+                        size="icon-xs"
                         aria-label={showComposerStop ? "Stop generating response" : "Send message"}
                         variant={
                           showComposerStop
@@ -1438,7 +1466,7 @@ export function DashboardChatPanel({
                         {showComposerStop ? (
                           <Square className="h-4 w-4" />
                         ) : (
-                          <ArrowUp className="h-4 w-4" />
+                          <Send className="h-3.5 w-3.5" />
                         )}
                       </Button>
                     </TooltipTrigger>

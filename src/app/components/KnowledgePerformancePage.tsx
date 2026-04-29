@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import {
   PageHeader,
+  PageHeaderPrimaryRow,
   pageHeaderTabsFooterClassName,
   pageMainColumnClassName,
   pageRootListScrollGutterClassName,
@@ -138,22 +139,18 @@ export function KnowledgePerformancePage() {
       >
         <div className="flex flex-col h-full min-h-0">
           <PageHeader className={pageHeaderTabsFooterClassName}>
-            <section>
-              <section className="flex items-center gap-2">
-                <h1 className="text-3xl tracking-tight">Knowledge Performance</h1>
-              </section>
-              <p className="text-muted-foreground mt-1">
-                Monitor knowledge effectiveness, evaluation quality, and improvement opportunities across your AI
-                support experience.
-              </p>
-            </section>
-            <TabsList variant="line" className="mt-4">
-              {KNOWLEDGE_PERFORMANCE_TABS.map((tab) => (
-                <TabsTrigger key={tab.value} value={tab.value}>
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+            <PageHeaderPrimaryRow
+              title={<h1 className="text-3xl tracking-tight">Knowledge Performance</h1>}
+              tabs={(
+                <TabsList variant="line">
+                  {KNOWLEDGE_PERFORMANCE_TABS.map((tab) => (
+                    <TabsTrigger key={tab.value} value={tab.value}>
+                      {tab.label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              )}
+            />
           </PageHeader>
 
           <div className="flex-1 min-h-0 overflow-auto">

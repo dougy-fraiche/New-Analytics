@@ -1,17 +1,21 @@
 import type { ReactNode } from "react";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
+import { Sparkles } from "lucide-react";
 
 import { usePageBreadcrumbs } from "../contexts/PageBreadcrumbsContext";
+import { useOptionalAiAssistantPanelControl } from "../contexts/AiAssistantPanelControlContext";
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
-  BreadcrumbPage,
   BreadcrumbSeparator,
 } from "./ui/breadcrumb";
+import { Button } from "./ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 import { cn } from "./ui/utils";
+import { ROUTES } from "../routes";
 
 /**
  * Layout patterns aligned with C26 / token-based UI (see `src/styles/tailwind.css`).
@@ -77,6 +81,95 @@ export function PageContent({
   );
 }
 
+export interface PageHeaderPrimaryRowProps {
+  title: ReactNode;
+  actions?: ReactNode;
+  tabs?: ReactNode;
+  className?: string;
+}
+
+/**
+ * Standardized page-header primary layout:
+ * - Left: breadcrumb + title stacked (4px gap)
+ * - Right: Ask AI + page actions
+ * - Optional tabs row below
+ */
+export function PageHeaderPrimaryRow({
+  title,
+  actions,
+  tabs,
+  className,
+}: PageHeaderPrimaryRowProps) {
+  const breadcrumbs = usePageBreadcrumbs();
+  const jumpableBreadcrumbs = breadcrumbs.slice(0, -1).filter((crumb) => Boolean(crumb.href));
+  const location = useLocation();
+  const aiAssistantPanelControl = useOptionalAiAssistantPanelControl();
+  const isExploreHome = location.pathname === ROUTES.EXPLORE;
+  const showAskAiButton = !isExploreHome && aiAssistantPanelControl !== undefined;
+  const showActions = showAskAiButton || actions !== undefined;
+
+  return (
+    <div className={cn("w-full", className)}>
+      <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 flex-col gap-1">
+            {jumpableBreadcrumbs.length > 0 ? (
+              <Breadcrumb>
+                <BreadcrumbList className="min-w-0 flex-nowrap overflow-hidden whitespace-nowrap">
+                  {jumpableBreadcrumbs.flatMap((crumb, index) => {
+                    const isLast = index === jumpableBreadcrumbs.length - 1;
+                    return [
+                      <BreadcrumbItem key={`item-${crumb.label}-${crumb.href}-${index}`} className="min-w-0">
+                        <BreadcrumbLink asChild className="truncate text-[color:var(--lyra-primary-p500)]">
+                          <Link to={crumb.href!} className="truncate">
+                            {crumb.label}
+                          </Link>
+                        </BreadcrumbLink>
+                      </BreadcrumbItem>,
+                      !isLast ? (
+                        <BreadcrumbSeparator key={`sep-${crumb.label}-${crumb.href}-${index}`} className="text-[color:var(--lyra-neutral-n500)]" />
+                      ) : null,
+                    ];
+                  })}
+                </BreadcrumbList>
+              </Breadcrumb>
+            ) : null}
+            <div className="min-w-0">{title}</div>
+          </div>
+        </div>
+        {showActions ? (
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            {actions}
+            {showAskAiButton && aiAssistantPanelControl ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 shrink-0 gap-2"
+                    aria-pressed={aiAssistantPanelControl.isOpen}
+                    onClick={aiAssistantPanelControl.togglePanel}
+                  >
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    <span>Ask AI</span>
+                    <span className="sr-only">
+                      {aiAssistantPanelControl.isOpen ? "Close AI assistant" : "Open AI assistant"}
+                    </span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  {aiAssistantPanelControl.isOpen ? "AI assistant open" : "AI assistant closed"}
+                </TooltipContent>
+              </Tooltip>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+      {tabs ? <div className="mt-4">{tabs}</div> : null}
+    </div>
+  );
+}
+
 /** Page title bar: full-bleed background; same shell + column as `PageContent`. */
 export function PageHeader({
   children,
@@ -85,46 +178,10 @@ export function PageHeader({
   children: ReactNode;
   className?: string;
 }) {
-  const breadcrumbs = usePageBreadcrumbs();
-
   return (
     <header data-slot="page-header" className={pageHeaderClassName}>
-      <div className={cn("w-full min-w-0 px-8 pt-8 pb-8", className)}>
-        <div className={cn(pageMainColumnClassName, "space-y-3")}>
-          {breadcrumbs.length > 0 ? (
-            <Breadcrumb>
-              <BreadcrumbList className="min-w-0 flex-nowrap overflow-hidden whitespace-nowrap">
-                {breadcrumbs.flatMap((crumb, index) => {
-                  const isLast = index === breadcrumbs.length - 1;
-                  const item = (
-                    <BreadcrumbItem key={`item-${crumb.label}-${index}`} className="min-w-0">
-                      {isLast ? (
-                        <BreadcrumbPage className="truncate text-[color:var(--lyra-primary-p500)]">
-                          {crumb.label}
-                        </BreadcrumbPage>
-                      ) : crumb.href ? (
-                        <BreadcrumbLink asChild className="truncate text-[color:var(--lyra-primary-p500)]">
-                          <Link to={crumb.href} className="truncate">
-                            {crumb.label}
-                          </Link>
-                        </BreadcrumbLink>
-                      ) : (
-                        <BreadcrumbPage className="truncate text-[color:var(--lyra-primary-p500)]">
-                          {crumb.label}
-                        </BreadcrumbPage>
-                      )}
-                    </BreadcrumbItem>
-                  );
-
-                  return isLast
-                    ? [item]
-                    : [item, <BreadcrumbSeparator key={`sep-${crumb.label}-${index}`} className="text-[color:var(--lyra-neutral-n500)]" />];
-                })}
-              </BreadcrumbList>
-            </Breadcrumb>
-          ) : null}
-          {children}
-        </div>
+      <div className={cn("w-full min-w-0 px-8 pt-6 pb-6", className)}>
+        <div className={cn(pageMainColumnClassName, "space-y-3")}>{children}</div>
       </div>
     </header>
   );

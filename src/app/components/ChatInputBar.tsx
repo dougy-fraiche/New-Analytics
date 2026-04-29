@@ -1,5 +1,5 @@
 import { type LegacyRef, type RefObject } from "react";
-import { ArrowRight } from "lucide-react";
+import { SendHorizontal } from "lucide-react";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { TypeaheadSuggestions } from "./TypeaheadSuggestions";
@@ -99,17 +99,17 @@ export function ChatInputBar({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  size="icon"
+                  size="icon-xs"
                   aria-label="Send message"
                   variant={canSend ? "default" : "outline"}
                   disabled={!canSend}
-                  className={`${isHero ? "h-9 w-9" : "h-8 w-8"} rounded-lg`}
+                  className="rounded-lg"
                   onClick={() => {
                     if (!canSend) return;
                     handleSend();
                   }}
                 >
-                  <ArrowRight className="h-4 w-4" />
+                  <SendHorizontal className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side={isHero ? "bottom" : "top"}>

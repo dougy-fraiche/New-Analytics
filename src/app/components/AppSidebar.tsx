@@ -453,7 +453,7 @@ export function AppSidebar() {
         className="group-data-[side=left]:border-r-0 group-data-[side=right]:border-l-0 [&_[data-slot=sidebar-inner]]:bg-transparent"
       >
         <SidebarContent
-          className="gap-1 pt-4 group-data-[collapsible=icon]:pt-4"
+          className="gap-1 px-3 py-2 group-data-[collapsible=icon]:pt-2"
           onClickCapture={handleSidebarContentClickCapture}
         >
           {/* Explore — collapsible conversation threads (`E` still navigates to Explore via RootLayout) */}

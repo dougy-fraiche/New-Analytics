@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import {
   ChevronDown,
   CircleGauge,
@@ -128,9 +128,11 @@ function KpiCard({
 export function CopilotAutoSummaryTab({
   isCompactDashboard,
   showWidgetOverflowMenu = true,
+  copilotFilters,
 }: {
   isCompactDashboard: boolean;
   showWidgetOverflowMenu?: boolean;
+  copilotFilters?: ReactNode;
 }) {
   const [agentSortMode, setAgentSortMode] = useState<"acceptance" | "volume">("acceptance");
   const [outcomeSeriesMode, setOutcomeSeriesMode] = useState<OutcomeSeriesMode>("count");
@@ -192,6 +194,7 @@ export function CopilotAutoSummaryTab({
   return (
     <div className="space-y-4">
       <HeaderAIInsightsRow dashboardId={copilotAiInsightsIds.autoSummary} />
+      {copilotFilters}
 
       <h3 className="mt-8 flex items-center gap-2 tracking-tight">
         <CircleGauge className="h-4 w-4 shrink-0 text-primary" aria-hidden />

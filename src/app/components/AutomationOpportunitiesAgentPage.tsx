@@ -30,7 +30,7 @@ import { Skeleton } from "./ui/skeleton";
 import { PageTransition } from "./PageTransition";
 import {
   PageHeader,
-  pageHeaderTitleRowClassName,
+  PageHeaderPrimaryRow,
   pageMainColumnClassName,
   pageRootListScrollGutterClassName,
 } from "./PageChrome";
@@ -367,41 +367,38 @@ export function AutomationOpportunitiesAgentPage() {
     >
       <div className="flex flex-1 min-h-0 flex-col">
       <PageHeader className="pb-6">
-        <section className={cn(pageHeaderTitleRowClassName, "space-y-5")}>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h1 className="text-3xl tracking-tight text-primary-900">
-                Intent: {draft.intentTitle}
-              </h1>
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              {hasUnsavedChanges ? (
-                <>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleCancel}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSave}
-                  >
-                    Save
-                  </Button>
-                </>
-              ) : (
-                <Button type="button" variant="default" size="sm" onClick={handlePublish}>
-                  Publish to Cognigy AI
-                </Button>
-              )}
-            </div>
-          </div>
-
+        <PageHeaderPrimaryRow
+          title={(
+            <h1 className="text-3xl tracking-tight text-primary-900">
+              Intent: {draft.intentTitle}
+            </h1>
+          )}
+          actions={hasUnsavedChanges ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleCancel}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleSave}
+              >
+                Save
+              </Button>
+            </>
+          ) : (
+            <Button type="button" variant="default" size="sm" onClick={handlePublish}>
+              Publish to Cognigy AI
+            </Button>
+          )}
+        />
+        <section className="space-y-5">
           <div className="flex flex-wrap items-end gap-4">
             <div className="w-[20rem] max-w-full space-y-2">
               <Label htmlFor="agent-name">AI Agent Name:</Label>

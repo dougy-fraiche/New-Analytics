@@ -2,6 +2,7 @@ import { useMemo, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router";
 import {
   PageHeader,
+  PageHeaderPrimaryRow,
   pageHeaderTabsFooterClassName,
   pageMainColumnClassName,
   pageRootListScrollGutterClassName,
@@ -138,32 +139,30 @@ export function KnowledgePerformanceShell({ activeTab, children }: KnowledgePerf
       <Tabs value={activeTab} onValueChange={handleTabChange} className="flex flex-col h-full min-h-0">
         <div className="flex flex-col h-full min-h-0">
           <PageHeader className={pageHeaderTabsFooterClassName}>
-            <section>
-              <section className="flex items-center gap-2">
-                <h1 className="text-3xl tracking-tight">Knowledge Performance</h1>
-              </section>
-              <p className="text-muted-foreground mt-1">
-                Monitor knowledge effectiveness, evaluation quality, and improvement opportunities across your AI
-                support experience.
-              </p>
-            </section>
-            <TabsList variant="line" className="mt-4">
-              {KNOWLEDGE_PERFORMANCE_TAB_META.map((tab) => (
-                <TabsTrigger key={tab.value} value={tab.value}>
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-            <div className="sr-only">
-              {KNOWLEDGE_PERFORMANCE_TAB_META.map((tab) => (
-                <TabsContent
-                  key={`panel-${tab.value}`}
-                  value={tab.value}
-                  forceMount
-                  className="hidden"
-                />
-              ))}
-            </div>
+            <PageHeaderPrimaryRow
+              title={<h1 className="text-3xl tracking-tight">Knowledge Performance</h1>}
+              tabs={(
+                <>
+                  <TabsList variant="line">
+                    {KNOWLEDGE_PERFORMANCE_TAB_META.map((tab) => (
+                      <TabsTrigger key={tab.value} value={tab.value}>
+                        {tab.label}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                  <div className="sr-only">
+                    {KNOWLEDGE_PERFORMANCE_TAB_META.map((tab) => (
+                      <TabsContent
+                        key={`panel-${tab.value}`}
+                        value={tab.value}
+                        forceMount
+                        className="hidden"
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            />
           </PageHeader>
 
           <div className="flex-1 min-h-0 overflow-auto">

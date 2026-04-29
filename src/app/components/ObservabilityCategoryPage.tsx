@@ -39,6 +39,7 @@ import { WidgetAskAIAndOverflow } from "./WidgetAskAIAndOverflow";
 import { useContainerBreakpoint } from "../hooks/useContainerBreakpoint";
 import {
   PageHeader,
+  PageHeaderPrimaryRow,
   pageHeaderTabsFooterClassName,
   pageMainColumnClassName,
   pageRootListScrollGutterClassName,
@@ -196,8 +197,6 @@ export function ObservabilityCategoryPage() {
     : defaultDashboard.id;
 
   const activeDashboard = visibleDashboards.find((d) => d.id === activeDashboardId) || defaultDashboard;
-  const headerSubtitle = category.pageDescription ?? activeDashboard.description;
-
   const handleTabChange = (tabValue: string) => {
     navigate(ROUTES.AI_AGENTS_DASHBOARD(tabValue), { replace: true });
   };
@@ -207,10 +206,10 @@ export function ObservabilityCategoryPage() {
       <Tabs value={activeDashboardId} onValueChange={handleTabChange} className="flex flex-col h-full min-h-0">
         <div className="flex flex-col h-full min-h-0">
           <PageHeader className={pageHeaderTabsFooterClassName}>
-            <section>
-              <section className="flex items-center gap-2">
-                <h1 className="text-3xl tracking-tight">{category.name}</h1>
-                <div className="ml-auto flex items-center gap-2">
+            <PageHeaderPrimaryRow
+              title={<h1 className="text-3xl tracking-tight">{category.name}</h1>}
+              actions={(
+                <>
                   <Button
                     type="button"
                     variant="outline"
@@ -244,13 +243,32 @@ export function ObservabilityCategoryPage() {
                   >
                     <Settings className="h-4 w-4" />
                   </Button>
-                </div>
-              </section>
-              <p className="text-muted-foreground mt-1">
-                {headerSubtitle}
-              </p>
-            </section>
-            <div className="mt-4 flex flex-wrap items-center gap-2">
+                </>
+              )}
+              tabs={(
+                <TabsList variant="line">
+                  {visibleDashboards.map((dashboard) => (
+                    <TabsTrigger key={dashboard.id} value={dashboard.id}>
+                      {dashboard.name}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              )}
+            />
+          </PageHeader>
+          <div className="flex-1 min-h-0 overflow-auto">
+            <div className={cn(pageRootListScrollGutterClassName, "pb-4 md:pb-8")}>
+            <PageTransition className={pageMainColumnClassName}>
+            <div ref={dashboardContentRef} className="space-y-4">
+            <HeaderAIInsightsRow
+              dashboardId={activeDashboard.id}
+              dashboardData={{
+                id: activeDashboard.id,
+                title: activeDashboard.name,
+                description: activeDashboard.description,
+              }}
+            />
+            <div className="flex flex-wrap items-center gap-2">
               <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRangeOption)}>
                 <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by date range">
                   <LabeledFilterInline label="Date range">{DATE_RANGE_LABELS[dateRange]}</LabeledFilterInline>
@@ -314,26 +332,6 @@ export function ObservabilityCategoryPage() {
                 </Button>
               )}
             </div>
-            <TabsList variant="line" className="mt-4">
-              {visibleDashboards.map((dashboard) => (
-                  <TabsTrigger key={dashboard.id} value={dashboard.id}>
-                    {dashboard.name}
-                  </TabsTrigger>
-                ))}
-            </TabsList>
-          </PageHeader>
-          <div className="flex-1 min-h-0 overflow-auto">
-            <div className={cn(pageRootListScrollGutterClassName, "pb-4 md:pb-8")}>
-            <PageTransition className={pageMainColumnClassName}>
-            <div ref={dashboardContentRef} className="space-y-4">
-            <HeaderAIInsightsRow
-              dashboardId={activeDashboard.id}
-              dashboardData={{
-                id: activeDashboard.id,
-                title: activeDashboard.name,
-                description: activeDashboard.description,
-              }}
-            />
             {visibleDashboards.map((dashboard) => (
               <TabsContent key={dashboard.id} value={dashboard.id} className="space-y-4 mt-2">
                 {dashboard.id === "ai-agents-overview" || dashboard.id === "ai-agents-copilot" ? (

@@ -47,6 +47,7 @@ import {
 } from "../data/action-activity";
 import {
   PageHeader,
+  PageHeaderPrimaryRow,
   pageMainColumnClassName,
   pageRootListScrollGutterClassName,
 } from "./PageChrome";
@@ -217,75 +218,19 @@ export function RecommendedActionsPage() {
     <WidgetAIProvider persistKey={GLOBAL_AI_ASSISTANT_KEY} ootbTypeId="recommended-actions">
       <div className="flex flex-col flex-1 min-h-0">
       <PageHeader>
-          <section className="flex items-center gap-3">
-            <h1 className="text-3xl tracking-tight">Recommended Actions</h1>
-            <Badge variant="secondary" className="text-xs px-2 py-0.5">
-              {pendingCount} pending actions
-            </Badge>
-            <Badge variant="secondary" className="text-xs px-2 py-0.5">
-              {highPriorityCount} high priority
-            </Badge>
-          </section>
-          <p className="text-muted-foreground mt-2">
-            AI-generated recommendations to improve your customer experience
-          </p>
-          {pendingCount > 0 && (
-            <div className="mt-4 flex w-full flex-wrap items-center gap-3">
-              <div className="relative flex-1 min-w-[200px] max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  aria-label="Search actions"
-                  placeholder="Search actions..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by priority">
-                  <LabeledSelectValue label="Priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Priorities</SelectItem>
-                  <SelectItem value="High">High</SelectItem>
-                  <SelectItem value="Medium">Medium</SelectItem>
-                  <SelectItem value="Low">Low</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by type">
-                  <LabeledSelectValue label="Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="Tool Build">Tool Build</SelectItem>
-                  <SelectItem value="AI Agent">AI Agent</SelectItem>
-                  <SelectItem value="Process Change">Process Change</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by category">
-                  <LabeledSelectValue label="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="containment">Containment</SelectItem>
-                  <SelectItem value="efficiency">Efficiency</SelectItem>
-                </SelectContent>
-              </Select>
-              {hasActiveFilters && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearFilters}
-                  className="shrink-0"
-                >
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  Reset Filters
-                </Button>
-              )}
-            </div>
+        <PageHeaderPrimaryRow
+          title={(
+            <section className="flex items-center gap-3">
+              <h1 className="text-3xl tracking-tight">Recommended Actions</h1>
+              <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                {pendingCount} pending actions
+              </Badge>
+              <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                {highPriorityCount} high priority
+              </Badge>
+            </section>
           )}
+        />
       </PageHeader>
       <div className="flex-1 min-h-0 overflow-auto">
         <div className={cn(pageRootListScrollGutterClassName, "pb-8")}>
@@ -330,6 +275,63 @@ export function RecommendedActionsPage() {
           </div>
         }
       />
+      {pendingCount > 0 && (
+        <div className="flex w-full flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[200px] max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              aria-label="Search actions"
+              placeholder="Search actions..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+            <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by priority">
+              <LabeledSelectValue label="Priority" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Priorities</SelectItem>
+              <SelectItem value="High">High</SelectItem>
+              <SelectItem value="Medium">Medium</SelectItem>
+              <SelectItem value="Low">Low</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by type">
+              <LabeledSelectValue label="Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="Tool Build">Tool Build</SelectItem>
+              <SelectItem value="AI Agent">AI Agent</SelectItem>
+              <SelectItem value="Process Change">Process Change</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by category">
+              <LabeledSelectValue label="Category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              <SelectItem value="containment">Containment</SelectItem>
+              <SelectItem value="efficiency">Efficiency</SelectItem>
+            </SelectContent>
+          </Select>
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearFilters}
+              className="shrink-0"
+            >
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Reset Filters
+            </Button>
+          )}
+        </div>
+      )}
       {pendingCount > 0 ? (
         <>
       {/* Actions Table */}

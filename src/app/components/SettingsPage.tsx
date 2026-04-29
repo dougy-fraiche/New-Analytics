@@ -23,6 +23,7 @@ import { toast } from "sonner";
 
 import {
   PageHeader,
+  PageHeaderPrimaryRow,
   pageMainColumnClassName,
   pageRootListScrollGutterClassName,
 } from "./PageChrome";
@@ -64,10 +65,7 @@ export function SettingsPage() {
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <PageHeader>
-        <h1 className="text-3xl tracking-tight">Settings</h1>
-        <p className="text-muted-foreground mt-2">
-          Manage your account preferences and application configuration
-        </p>
+        <PageHeaderPrimaryRow title={<h1 className="text-3xl tracking-tight">Settings</h1>} />
       </PageHeader>
       <div className="flex-1 min-h-0 overflow-auto">
         <div className={cn(pageRootListScrollGutterClassName, "pb-8")}>

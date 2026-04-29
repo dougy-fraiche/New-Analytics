@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import {
   PageHeader,
+  PageHeaderPrimaryRow,
   pageMainColumnClassName,
   pageRootListScrollGutterClassName,
 } from "./PageChrome";
@@ -181,70 +182,16 @@ export function ActionsHistoryPage() {
     <WidgetAIProvider persistKey={GLOBAL_AI_ASSISTANT_KEY} ootbTypeId="actions-history">
       <div className="flex flex-col flex-1 min-h-0">
       <PageHeader>
-          <section className="flex items-center gap-2">
-            <h1 className="text-3xl tracking-tight">History</h1>
-            <Badge variant="secondary" className="text-xs px-2 py-0.5 shrink-0">
-              {counts.total} total actions
-            </Badge>
-          </section>
-            <p className="text-muted-foreground mt-2">
-              Audit log of all automated and manual actions across the platform
-            </p>
-            {actions.length > 0 && (
-              <div className="mt-4 flex w-full flex-wrap items-center gap-3">
-                <div className="relative flex-1 min-w-[200px] max-w-sm">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    aria-label="Search history"
-                    placeholder="Search history..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by status">
-                    <LabeledSelectValue label="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-      <SelectItem value="completed">Published</SelectItem>
-      <SelectItem value="created">Created</SelectItem>
-                    <SelectItem value="failed">Failed</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-      <SelectItem value="pending">Queued</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by type">
-                    <LabeledSelectValue label="Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    {allTypes.map((t) => (
-                      <SelectItem key={t} value={t}>
-                        {t}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {(statusFilter !== "all" || typeFilter !== "all" || searchQuery) && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="shrink-0"
-                    onClick={() => {
-                      setSearchQuery("");
-                      setStatusFilter("all");
-                      setTypeFilter("all");
-                    }}
-                  >
-                    <RotateCcw className="mr-2 h-4 w-4" />
-                    Reset Filters
-                  </Button>
-                )}
-              </div>
-            )}
+        <PageHeaderPrimaryRow
+          title={(
+            <section className="flex items-center gap-2">
+              <h1 className="text-3xl tracking-tight">History</h1>
+              <Badge variant="secondary" className="text-xs px-2 py-0.5 shrink-0">
+                {counts.total} total actions
+              </Badge>
+            </section>
+          )}
+        />
       </PageHeader>
       <div className="flex-1 min-h-0 overflow-auto">
         <div className={cn(pageRootListScrollGutterClassName, "pb-8")}>
@@ -291,6 +238,61 @@ export function ActionsHistoryPage() {
           </div>
         }
       />
+      {actions.length > 0 && (
+        <div className="flex w-full flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[200px] max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              aria-label="Search history"
+              placeholder="Search history..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by status">
+              <LabeledSelectValue label="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="completed">Published</SelectItem>
+              <SelectItem value="created">Created</SelectItem>
+              <SelectItem value="failed">Failed</SelectItem>
+              <SelectItem value="in_progress">In Progress</SelectItem>
+              <SelectItem value="pending">Queued</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by type">
+              <LabeledSelectValue label="Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              {allTypes.map((t) => (
+                <SelectItem key={t} value={t}>
+                  {t}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {(statusFilter !== "all" || typeFilter !== "all" || searchQuery) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="shrink-0"
+              onClick={() => {
+                setSearchQuery("");
+                setStatusFilter("all");
+                setTypeFilter("all");
+              }}
+            >
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Reset Filters
+            </Button>
+          )}
+        </div>
+      )}
       {actions.length > 0 ? (
         <>
       {/* Actions Table */}

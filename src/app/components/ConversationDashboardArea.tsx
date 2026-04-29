@@ -56,6 +56,7 @@ import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
 import type { DashboardSuggestedAction } from "./DashboardAISummary";
 import {
   PageHeader,
+  PageHeaderPrimaryRow,
   pageMainColumnClassName,
   pageRootListScrollGutterClassName,
 } from "./PageChrome";
@@ -343,47 +344,42 @@ function AnomalyPrimaryFindingContent({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <PageHeader>
-        <section className="flex items-start gap-2">
-          <div className="min-w-0 flex-1">
-            <h1 className="text-3xl tracking-tight">{conversationTitle || "Primary Finding"}</h1>
-            <p className="mt-1 text-muted-foreground">{model.headingSubtitle}</p>
-          </div>
-          <div className="ml-auto flex shrink-0 items-center gap-2">
-            {showConversationMenu ? (
-              <DropdownMenu>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
-                        aria-label="Conversation options"
-                      >
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">Conversation options</TooltipContent>
-                </Tooltip>
-                <DropdownMenuContent align="end">
-                  {onRename ? (
-                    <DropdownMenuItem onClick={onRename}>
-                      <Pencil className="mr-2 h-4 w-4" />
-                      Rename
-                    </DropdownMenuItem>
-                  ) : null}
-                  {onDelete ? (
-                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={onDelete}>
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </DropdownMenuItem>
-                  ) : null}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : null}
-          </div>
-        </section>
+        <PageHeaderPrimaryRow
+          title={<h1 className="text-3xl tracking-tight">{conversationTitle || "Primary Finding"}</h1>}
+          actions={showConversationMenu ? (
+            <DropdownMenu>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8"
+                      aria-label="Conversation options"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Conversation options</TooltipContent>
+              </Tooltip>
+              <DropdownMenuContent align="end">
+                {onRename ? (
+                  <DropdownMenuItem onClick={onRename}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Rename
+                  </DropdownMenuItem>
+                ) : null}
+                {onDelete ? (
+                  <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={onDelete}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                ) : null}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : undefined}
+        />
       </PageHeader>
 
       <div className="min-h-0 flex-1 overflow-auto">
@@ -653,9 +649,10 @@ function DashboardContent({
   return (
     <div ref={dashboardContentRef} key="dashboard-content" className="flex h-full min-h-0 flex-col">
       <PageHeader>
-          <section className="flex items-center gap-2">
-            <h1 className="text-3xl tracking-tight">{conversationTitle || dashboard.title}</h1>
-            <div className="ml-auto flex items-center gap-2 shrink-0">
+        <PageHeaderPrimaryRow
+          title={<h1 className="text-3xl tracking-tight">{conversationTitle || dashboard.title}</h1>}
+          actions={(
+            <>
               {isSaved ? (
                 <Badge variant="secondary" className="h-8 gap-1.5 px-3">
                   <Check className="h-3 w-3" />
@@ -694,81 +691,79 @@ function DashboardContent({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </div>
-          </section>
-          {dashboard.description && (
-            <p className="text-muted-foreground mt-1">{dashboard.description}</p>
+            </>
           )}
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRangeOption)}>
-              <SelectTrigger className="h-8 w-auto shrink-0">
-                <LabeledFilterInline label="Date range">{DATE_RANGE_LABELS[dateRange]}</LabeledFilterInline>
-              </SelectTrigger>
-              <SelectContent>
-                {DATE_RANGE_PRIMARY_OPTIONS.map((opt) => (
-                  <SelectItem key={opt} value={opt}>
-                    {DATE_RANGE_LABELS[opt]}
-                  </SelectItem>
-                ))}
-                <SelectSeparator />
-                {DATE_RANGE_SECONDARY_OPTIONS.map((opt) => (
-                  <SelectItem key={opt} value={opt}>
-                    {DATE_RANGE_LABELS[opt]}
-                  </SelectItem>
-                ))}
-                <SelectSeparator />
-                <SelectItem value={DATE_RANGE_CUSTOM_OPTION}>
-                  {DATE_RANGE_LABELS[DATE_RANGE_CUSTOM_OPTION]}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={team} onValueChange={(v) => setTeam(v as DashboardTeamFilter)}>
-              <SelectTrigger className="h-8 w-auto shrink-0">
-                <LabeledSelectValue label="Team" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all-teams">All Teams</SelectItem>
-                <SelectItem value="tier-1">Tier 1 Support</SelectItem>
-                <SelectItem value="tier-2">Tier 2 Support</SelectItem>
-                <SelectItem value="technical">Technical Team</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={product} onValueChange={(v) => setProduct(v as DashboardProductFilter)}>
-              <SelectTrigger className="h-8 w-auto shrink-0">
-                <LabeledSelectValue label="Product" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all-products">All Products</SelectItem>
-                <SelectItem value="product-a">Product A</SelectItem>
-                <SelectItem value="product-b">Product B</SelectItem>
-                <SelectItem value="product-c">Product C</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {hasFilterChanges && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 shrink-0"
-                onClick={() => {
-                  setDateRange(DEFAULT_FILTERS.dateRange);
-                  setTeam(DEFAULT_FILTERS.team);
-                  setProduct(DEFAULT_FILTERS.product);
-                }}
-              >
-                <RotateCcw className="mr-2 h-4 w-4" />
-                Reset Filters
-              </Button>
-            )}
-          </div>
+        />
       </PageHeader>
 
       <div className="min-h-0 flex-1 overflow-auto">
         <div className={cn(pageRootListScrollGutterClassName, "pb-8")}>
         <div className={cn(pageMainColumnClassName, "space-y-4")}>
         <HeaderAIInsightsRow dashboardId={dashboard.id} dashboardData={dashboard} />
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRangeOption)}>
+            <SelectTrigger className="h-8 w-auto shrink-0">
+              <LabeledFilterInline label="Date range">{DATE_RANGE_LABELS[dateRange]}</LabeledFilterInline>
+            </SelectTrigger>
+            <SelectContent>
+              {DATE_RANGE_PRIMARY_OPTIONS.map((opt) => (
+                <SelectItem key={opt} value={opt}>
+                  {DATE_RANGE_LABELS[opt]}
+                </SelectItem>
+              ))}
+              <SelectSeparator />
+              {DATE_RANGE_SECONDARY_OPTIONS.map((opt) => (
+                <SelectItem key={opt} value={opt}>
+                  {DATE_RANGE_LABELS[opt]}
+                </SelectItem>
+              ))}
+              <SelectSeparator />
+              <SelectItem value={DATE_RANGE_CUSTOM_OPTION}>
+                {DATE_RANGE_LABELS[DATE_RANGE_CUSTOM_OPTION]}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={team} onValueChange={(v) => setTeam(v as DashboardTeamFilter)}>
+            <SelectTrigger className="h-8 w-auto shrink-0">
+              <LabeledSelectValue label="Team" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all-teams">All Teams</SelectItem>
+              <SelectItem value="tier-1">Tier 1 Support</SelectItem>
+              <SelectItem value="tier-2">Tier 2 Support</SelectItem>
+              <SelectItem value="technical">Technical Team</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={product} onValueChange={(v) => setProduct(v as DashboardProductFilter)}>
+            <SelectTrigger className="h-8 w-auto shrink-0">
+              <LabeledSelectValue label="Product" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all-products">All Products</SelectItem>
+              <SelectItem value="product-a">Product A</SelectItem>
+              <SelectItem value="product-b">Product B</SelectItem>
+              <SelectItem value="product-c">Product C</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {hasFilterChanges && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 shrink-0"
+              onClick={() => {
+                setDateRange(DEFAULT_FILTERS.dateRange);
+                setTeam(DEFAULT_FILTERS.team);
+                setProduct(DEFAULT_FILTERS.product);
+              }}
+            >
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Reset Filters
+            </Button>
+          )}
+        </div>
 
         <div className="flex flex-wrap items-center gap-4 !mt-8">
           <h3 className="flex items-center gap-2 tracking-tight">

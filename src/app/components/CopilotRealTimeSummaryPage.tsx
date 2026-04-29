@@ -4,8 +4,12 @@ import { CopilotShell } from "./CopilotShell";
 export function CopilotRealTimeSummaryPage() {
   return (
     <CopilotShell activeTab="real-time-summary">
-      {({ isCompactDashboard }) => (
-        <CopilotRealTimeSummaryTab isCompactDashboard={isCompactDashboard} showWidgetOverflowMenu={false} />
+      {({ isCompactDashboard, copilotFilters }) => (
+        <CopilotRealTimeSummaryTab
+          isCompactDashboard={isCompactDashboard}
+          showWidgetOverflowMenu={false}
+          copilotFilters={copilotFilters}
+        />
       )}
     </CopilotShell>
   );

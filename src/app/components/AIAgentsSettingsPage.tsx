@@ -60,6 +60,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import {
   PageHeader,
+  PageHeaderPrimaryRow,
   pageHeaderTabsFooterClassName,
   pageMainColumnClassName,
   pageRootListScrollGutterClassName,
@@ -1780,54 +1781,51 @@ export function AIAgentsSettingsPage() {
     >
       <div className="flex flex-1 min-h-0 flex-col">
         <PageHeader className={pageHeaderTabsFooterClassName}>
-          <section className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <h1 className="text-3xl tracking-tight text-primary-900">Settings</h1>
-              <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-                Control how the AI Conversation Analyzer evaluates your agent sessions. Changes here
-                determine which quality criteria are scored, how conversations are categorized, and
-                when analysis runs.
-              </p>
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-8"
-                onClick={handleReset}
-              >
-                <RotateCcw className="size-3.5" />
-                Reset
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-8"
-                onClick={handleCancel}
-                disabled={!hasUnsavedChanges}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                className="h-8"
-                onClick={handleSave}
-                disabled={!hasUnsavedChanges}
-              >
-                Save &amp; Re-Analyze
-              </Button>
-            </div>
-          </section>
-          <TabsList variant="line" className="mt-4">
-            {AI_AGENT_SETTINGS_TABS.map((tab) => (
-              <TabsTrigger key={tab.value} value={tab.value}>
-                {tab.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <PageHeaderPrimaryRow
+            title={<h1 className="text-3xl tracking-tight text-primary-900">Settings</h1>}
+            actions={(
+              <>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8"
+                  onClick={handleReset}
+                >
+                  <RotateCcw className="size-3.5" />
+                  Reset
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8"
+                  onClick={handleCancel}
+                  disabled={!hasUnsavedChanges}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-8"
+                  onClick={handleSave}
+                  disabled={!hasUnsavedChanges}
+                >
+                  Save &amp; Re-Analyze
+                </Button>
+              </>
+            )}
+            tabs={(
+              <TabsList variant="line">
+                {AI_AGENT_SETTINGS_TABS.map((tab) => (
+                  <TabsTrigger key={tab.value} value={tab.value}>
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            )}
+          />
         </PageHeader>
 
         <div className="flex-1 min-h-0 overflow-hidden">

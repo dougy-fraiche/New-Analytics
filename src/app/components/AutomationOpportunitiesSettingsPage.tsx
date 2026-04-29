@@ -8,7 +8,12 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { PageHeader, pageMainColumnClassName, pageRootListScrollGutterClassName } from "./PageChrome";
+import {
+  PageHeader,
+  PageHeaderPrimaryRow,
+  pageMainColumnClassName,
+  pageRootListScrollGutterClassName,
+} from "./PageChrome";
 import { PageTransition } from "./PageTransition";
 import { cn } from "./ui/utils";
 
@@ -167,23 +172,25 @@ export function AutomationOpportunitiesSettingsPage() {
   return (
     <div className="flex flex-1 min-h-0 flex-col">
       <PageHeader>
-        <section className="flex items-start justify-between gap-3">
-          <h1 className="text-3xl tracking-tight">Settings</h1>
-          <div className="flex shrink-0 items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleCancel}
-              disabled={!hasUnsavedChanges}
-            >
-              Cancel
-            </Button>
-            <Button type="button" size="sm" onClick={handleSave} disabled={!hasUnsavedChanges}>
-              Save
-            </Button>
-          </div>
-        </section>
+        <PageHeaderPrimaryRow
+          title={<h1 className="text-3xl tracking-tight">Settings</h1>}
+          actions={(
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleCancel}
+                disabled={!hasUnsavedChanges}
+              >
+                Cancel
+              </Button>
+              <Button type="button" size="sm" onClick={handleSave} disabled={!hasUnsavedChanges}>
+                Save
+              </Button>
+            </>
+          )}
+        />
       </PageHeader>
 
       <div className="flex-1 min-h-0 overflow-auto">

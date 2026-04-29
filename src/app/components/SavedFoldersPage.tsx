@@ -40,6 +40,7 @@ import { useDrag, useDrop } from "react-dnd";
 
 import {
   PageHeader,
+  PageHeaderPrimaryRow,
   pageMainColumnClassName,
   pageRootListScrollGutterClassName,
 } from "./PageChrome";
@@ -544,60 +545,41 @@ export function SavedFoldersPage({ resolvedFolderId }: { resolvedFolderId?: stri
     return (
       <div className="flex flex-col flex-1 min-h-0">
         <PageHeader>
-          <section className="flex items-center gap-2">
-            <h1 className="text-3xl tracking-tight">{selectedFolder.name}</h1>
-            <Badge variant="secondary" className="text-xs px-2 py-0.5">
-              {selectedFolder.dashboards.length} {selectedFolder.dashboards.length === 1 ? "dashboard" : "dashboards"}
-            </Badge>
-            <DropdownMenu>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon" className="ml-auto h-8 w-8 shrink-0">
-                      <MoreVertical className="h-4 w-4" />
-                      <span className="sr-only">More options</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">More options</TooltipContent>
-              </Tooltip>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setRenameDialog({ projectId: selectedFolder.id, name: selectedFolder.name })}>
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Rename
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleDeleteFolder(selectedFolder.id)} className="text-destructive">
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </section>
-          {selectedFolder.dashboards.length > 0 && (
-            <div className="mt-4 flex w-full flex-wrap items-center gap-3">
-              <div className="relative flex-1 min-w-[200px] max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  aria-label="Search dashboards"
-                  placeholder="Search dashboards..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              {searchQuery && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="shrink-0"
-                  onClick={() => setSearchQuery("")}
-                >
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  Reset Filters
-                </Button>
-              )}
-            </div>
-          )}
+          <PageHeaderPrimaryRow
+            title={(
+              <section className="flex items-center gap-2">
+                <h1 className="text-3xl tracking-tight">{selectedFolder.name}</h1>
+                <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                  {selectedFolder.dashboards.length} {selectedFolder.dashboards.length === 1 ? "dashboard" : "dashboards"}
+                </Badge>
+              </section>
+            )}
+            actions={(
+              <DropdownMenu>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="icon" className="h-8 w-8 shrink-0">
+                        <MoreVertical className="h-4 w-4" />
+                        <span className="sr-only">More options</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">More options</TooltipContent>
+                </Tooltip>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setRenameDialog({ projectId: selectedFolder.id, name: selectedFolder.name })}>
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Rename
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleDeleteFolder(selectedFolder.id)} className="text-destructive">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          />
         </PageHeader>
         <div className="flex-1 min-h-0 overflow-auto">
           <div className={cn(pageRootListScrollGutterClassName, "pb-8")}>
@@ -610,6 +592,31 @@ export function SavedFoldersPage({ resolvedFolderId }: { resolvedFolderId?: stri
             description: `${selectedFolder.dashboards.length} ${selectedFolder.dashboards.length === 1 ? "dashboard" : "dashboards"}`,
           }}
         />
+        {selectedFolder.dashboards.length > 0 && (
+          <div className="flex w-full flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-[200px] max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                aria-label="Search dashboards"
+                placeholder="Search dashboards..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            {searchQuery && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="shrink-0"
+                onClick={() => setSearchQuery("")}
+              >
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Reset Filters
+              </Button>
+            )}
+          </div>
+        )}
         {/* Dashboards in Folder */}
         {selectedFolder.dashboards.length > 0 ? (
           <>
@@ -1009,67 +1016,33 @@ export function SavedFoldersPage({ resolvedFolderId }: { resolvedFolderId?: stri
         <PageHeader>
           <div
             ref={standaloneDropRef as unknown as React.Ref<HTMLDivElement>}
-            className={`flex items-center justify-between rounded-lg p-2 -m-2 transition-[box-shadow,background-color] ${isOverStandalone ? "ring-2 ring-primary ring-offset-2 bg-primary/5" : ""}`}
+            className={`rounded-lg p-2 -m-2 transition-[box-shadow,background-color] ${isOverStandalone ? "ring-2 ring-primary ring-offset-2 bg-primary/5" : ""}`}
           >
-            <section>
-              <section className="flex items-center gap-2">
-                <h1 className="text-3xl tracking-tight">Saved</h1>
-                <Badge variant="secondary" className="text-xs px-2 py-0.5">
-                  {projects.length} folders
-                </Badge>
-                <Badge variant="secondary" className="text-xs px-2 py-0.5">
-                  {projects.reduce((sum, p) => sum + p.dashboards.length, 0) + standaloneDashboards.length} total dashboards
-                </Badge>
-              </section>
-              <p className="text-muted-foreground mt-2">
-                Organize and manage your saved dashboards in folders
-              </p>
-              {isOverStandalone && (
-                <p className="text-sm text-primary mt-1">Drop here to move to standalone</p>
+            <PageHeaderPrimaryRow
+              title={(
+                <section>
+                  <section className="flex items-center gap-2">
+                    <h1 className="text-3xl tracking-tight">Saved</h1>
+                    <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                      {projects.length} folders
+                    </Badge>
+                    <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                      {projects.reduce((sum, p) => sum + p.dashboards.length, 0) + standaloneDashboards.length} total dashboards
+                    </Badge>
+                  </section>
+                  {isOverStandalone && (
+                    <p className="mt-1 text-sm text-primary">Drop here to move to standalone</p>
+                  )}
+                </section>
               )}
-            </section>
-            <Button onClick={() => setNewFolderDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Folder
-            </Button>
-          </div>
-          {allCustomDashboards.length > 0 && (
-            <div className="mt-4 flex w-full flex-wrap items-center gap-3">
-              <div className="relative flex-1 min-w-[200px] max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  aria-label="Search dashboards"
-                  placeholder="Search dashboards..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              <Select value={folderFilter} onValueChange={(val) => { setFolderFilter(val); clearDashboardSelection(); }}>
-                <SelectTrigger className="h-8 w-auto shrink-0">
-                  <LabeledSelectValue label="Folder" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Folders</SelectItem>
-                  <SelectItem value="standalone">Standalone</SelectItem>
-                  {projects.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {(searchQuery || folderFilter !== "all") && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="shrink-0"
-                  onClick={() => { setSearchQuery(""); setFolderFilter("all"); }}
-                >
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  Reset Filters
+              actions={(
+                <Button onClick={() => setNewFolderDialog(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Folder
                 </Button>
               )}
-            </div>
-          )}
+            />
+          </div>
         </PageHeader>
         <div className="flex-1 min-h-0 overflow-auto">
           <div className={cn(pageRootListScrollGutterClassName, "pb-8")}>
@@ -1082,6 +1055,43 @@ export function SavedFoldersPage({ resolvedFolderId }: { resolvedFolderId?: stri
             description: "Organize and manage your saved dashboards in folders",
           }}
         />
+        {allCustomDashboards.length > 0 && (
+          <div className="flex w-full flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-[200px] max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                aria-label="Search dashboards"
+                placeholder="Search dashboards..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Select value={folderFilter} onValueChange={(val) => { setFolderFilter(val); clearDashboardSelection(); }}>
+              <SelectTrigger className="h-8 w-auto shrink-0">
+                <LabeledSelectValue label="Folder" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Folders</SelectItem>
+                <SelectItem value="standalone">Standalone</SelectItem>
+                {projects.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {(searchQuery || folderFilter !== "all") && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="shrink-0"
+                onClick={() => { setSearchQuery(""); setFolderFilter("all"); }}
+              >
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Reset Filters
+              </Button>
+            )}
+          </div>
+        )}
         {/* Folder Cards Overview — each is a drop target */}
         {projects.length > 0 && (
           <section className="space-y-4">

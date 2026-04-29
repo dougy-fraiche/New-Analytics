@@ -29,6 +29,27 @@ for (const routeCheck of routeChecks) {
     await expect(page.locator('[data-sidebar="footer"]')).toHaveCount(0);
     await expect(page.locator('[data-slot="breadcrumb"]')).toHaveCount(0);
     await expect(page.locator('[data-slot="top-nav"] [data-slot="breadcrumb"]')).toHaveCount(0);
+    await expect(topNav.getByRole("button", { name: /Ask AI/i })).toHaveCount(0);
+    if (routeCheck.path === ROUTES.EXPLORE) {
+      await expect(page.locator('[data-slot="page-header"]').getByRole("button", { name: /Ask AI/i })).toHaveCount(0);
+    }
+    if (routeCheck.path === ROUTES.OBSERVABILITY) {
+      const header = page.locator('[data-slot="page-header"]');
+      await expect(header.getByRole("textbox", { name: /Search dashboards/i })).toHaveCount(0);
+      await expect(page.getByRole("textbox", { name: /Search dashboards/i }).first()).toBeVisible();
+      await expect(header.getByRole("combobox", { name: /Filter by category/i })).toHaveCount(0);
+      await expect(page.getByRole("combobox", { name: /Filter by category/i }).first()).toBeVisible();
+    }
+    if (routeCheck.path === ROUTES.AUTOMATION_OPPORTUNITIES) {
+      const header = page.locator('[data-slot="page-header"]');
+      await expect(header.getByRole("combobox", { name: /Filter by date range/i })).toHaveCount(0);
+      await expect(page.getByRole("combobox", { name: /Filter by date range/i }).first()).toBeVisible();
+    }
+    if (routeCheck.path === ROUTES.RECOMMENDED_ACTIONS) {
+      const header = page.locator('[data-slot="page-header"]');
+      await expect(header.getByRole("textbox", { name: /Search actions/i })).toHaveCount(0);
+      await expect(page.getByRole("textbox", { name: /Search actions/i }).first()).toBeVisible();
+    }
     const topNavBox = await topNav.boundingBox();
     const appBodyBox = await appBodyRow.boundingBox();
     expect(topNavBox).not.toBeNull();
@@ -42,7 +63,7 @@ for (const routeCheck of routeChecks) {
 test("route smoke: conversation route fallback loads app shell", async ({ page }) => {
   await page.goto(ROUTES.CONVERSATION("mock-thread"));
   const assistantHeading = page.getByRole("heading", { name: /AI Assistant/i }).first();
-  const askAiButton = page.getByRole("button", { name: /Ask AI/i }).first();
+  const askAiButton = page.locator('[data-slot="page-header"]').getByRole("button", { name: /Ask AI/i }).first();
 
   if (await assistantHeading.isVisible()) {
     await expect(assistantHeading).toBeVisible();
@@ -79,9 +100,11 @@ test("route smoke: top nav remains global width when AI assistant opens", async 
   await page.goto(ROUTES.AUTOMATION_OPPORTUNITIES);
   const topNav = page.locator('[data-slot="top-nav"]');
   const mainAppCardShell = page.locator('[data-slot="main-app-card-shell"]');
+  const askAiButton = page.getByRole("button", { name: /Ask AI/i }).first();
   await expect(topNav).toBeVisible();
   await expect(mainAppCardShell).toBeVisible();
-  await page.getByRole("button", { name: /Ask AI/i }).first().click();
+  await expect(topNav.getByRole("button", { name: /Ask AI/i })).toHaveCount(0);
+  await askAiButton.click();
   await expect(page.getByRole("heading", { name: /AI Assistant/i }).first()).toBeVisible();
   await expect(page.locator('[data-slot="assistant-card-shell"]')).toBeVisible();
 

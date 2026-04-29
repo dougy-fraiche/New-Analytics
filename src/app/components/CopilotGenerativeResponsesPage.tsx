@@ -4,10 +4,11 @@ import { CopilotShell } from "./CopilotShell";
 export function CopilotGenerativeResponsesPage() {
   return (
     <CopilotShell activeTab="generative-responses">
-      {({ isCompactDashboard }) => (
+      {({ isCompactDashboard, copilotFilters }) => (
         <CopilotGenerativeResponsesTab
           isCompactDashboard={isCompactDashboard}
           showWidgetOverflowMenu={false}
+          copilotFilters={copilotFilters}
         />
       )}
     </CopilotShell>

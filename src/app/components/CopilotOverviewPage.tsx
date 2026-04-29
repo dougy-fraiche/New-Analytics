@@ -4,8 +4,12 @@ import { CopilotShell } from "./CopilotShell";
 export function CopilotOverviewPage() {
   return (
     <CopilotShell activeTab="overview">
-      {({ isCompactDashboard }) => (
-        <CopilotOverviewTab isCompactDashboard={isCompactDashboard} showWidgetOverflowMenu={false} />
+      {({ isCompactDashboard, copilotFilters }) => (
+        <CopilotOverviewTab
+          isCompactDashboard={isCompactDashboard}
+          showWidgetOverflowMenu={false}
+          copilotFilters={copilotFilters}
+        />
       )}
     </CopilotShell>
   );

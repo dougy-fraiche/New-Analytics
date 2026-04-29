@@ -4,8 +4,12 @@ import { CopilotShell } from "./CopilotShell";
 export function CopilotRulesEnginePage() {
   return (
     <CopilotShell activeTab="rules-engine">
-      {({ isCompactDashboard }) => (
-        <CopilotRulesEngineTab isCompactDashboard={isCompactDashboard} showWidgetOverflowMenu={false} />
+      {({ isCompactDashboard, copilotFilters }) => (
+        <CopilotRulesEngineTab
+          isCompactDashboard={isCompactDashboard}
+          showWidgetOverflowMenu={false}
+          copilotFilters={copilotFilters}
+        />
       )}
     </CopilotShell>
   );

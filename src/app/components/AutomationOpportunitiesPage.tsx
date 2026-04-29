@@ -37,6 +37,7 @@ import {
 import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
 import {
   PageHeader,
+  PageHeaderPrimaryRow,
   pageHeaderTabsFooterClassName,
   pageMainColumnClassName,
   pageRootListScrollGutterClassName,
@@ -845,152 +846,33 @@ export function AutomationOpportunitiesPage() {
       >
         <div className="flex flex-col flex-1 min-h-0">
           <PageHeader className={pageHeaderTabsFooterClassName}>
-            <section className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h1 className="text-3xl tracking-tight">Automation Opportunities</h1>
-                <p className="text-muted-foreground mt-1">
-                  Dashboard view of high-impact opportunities to improve efficiency and customer outcomes.
-                </p>
-              </div>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-8 w-8 shrink-0 p-0"
-                    onClick={() => navigate("settings")}
-                    aria-label="Open automation settings"
-                  >
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">Settings</TooltipContent>
-              </Tooltip>
-            </section>
-
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <Select
-                value={dateRange}
-                onValueChange={(v) => {
-                  const next = v as DateRangeOption;
-                  setDateRange(next);
-                  if (next === DATE_RANGE_CUSTOM_OPTION) {
-                    setCustomRangeOpen(true);
-                  }
-                }}
-              >
-                <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by date range">
-                  <LabeledFilterInline label="Date range">
-                    {dateRange === DATE_RANGE_CUSTOM_OPTION && customRange?.from && customRange?.to
-                      ? formatShortDateRange(customRange)
-                      : DATE_RANGE_LABELS[dateRange]}
-                  </LabeledFilterInline>
-                </SelectTrigger>
-                <SelectContent>
-                  {DATE_RANGE_PRIMARY_OPTIONS.map((opt) => (
-                    <SelectItem key={opt} value={opt}>
-                      {DATE_RANGE_LABELS[opt]}
-                    </SelectItem>
-                  ))}
-                  <SelectSeparator />
-                  {DATE_RANGE_SECONDARY_OPTIONS.map((opt) => (
-                    <SelectItem key={opt} value={opt}>
-                      {DATE_RANGE_LABELS[opt]}
-                    </SelectItem>
-                  ))}
-                  <SelectSeparator />
-                  <SelectItem value={DATE_RANGE_CUSTOM_OPTION}>
-                    {DATE_RANGE_LABELS[DATE_RANGE_CUSTOM_OPTION]}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={team} onValueChange={(v) => setTeam(v as typeof team)}>
-                <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by team">
-                  <LabeledSelectValue label="Team" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="t1">Tier 1</SelectItem>
-                  <SelectItem value="t2">Tier 2</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={skill} onValueChange={(v) => setSkill(v as typeof skill)}>
-                <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by skill">
-                  <LabeledSelectValue label="Skill" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="billing">Billing</SelectItem>
-                  <SelectItem value="account">Account</SelectItem>
-                  <SelectItem value="card">Card services</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={channel} onValueChange={(v) => setChannel(v as typeof channel)}>
-                <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by channel">
-                  <LabeledSelectValue label="Channel" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="chat">Chat</SelectItem>
-                  <SelectItem value="voice">Voice</SelectItem>
-                  <SelectItem value="email">Email</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={category} onValueChange={(v) => setCategory(v as typeof category)}>
-                <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by category">
-                  <LabeledSelectValue label="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="billing-payments">Billing &amp; Payment</SelectItem>
-                  <SelectItem value="card-services">Card Services</SelectItem>
-                  <SelectItem value="account-management">Account Management</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={direction} onValueChange={(v) => setDirection(v as typeof direction)}>
-                <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by direction">
-                  <LabeledSelectValue label="Direction" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="inbound">Inbound</SelectItem>
-                  <SelectItem value="outbound">Outbound</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {hasFilterChanges ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="shrink-0"
-                  onClick={() => {
-                    setDateRange(DEFAULT_FILTERS.dateRange);
-                    setCustomRange(undefined);
-                    setTeam(DEFAULT_FILTERS.team);
-                    setSkill(DEFAULT_FILTERS.skill);
-                    setChannel(DEFAULT_FILTERS.channel);
-                    setCategory(DEFAULT_FILTERS.category);
-                    setDirection(DEFAULT_FILTERS.direction);
-                  }}
-                >
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  Reset Filters
-                </Button>
-              ) : null}
-            </div>
-
-            <TabsList variant="line" className="mt-4">
-              <TabsTrigger value="categories">Categories</TabsTrigger>
-              <TabsTrigger value="topics">Topics</TabsTrigger>
-              <TabsTrigger value="subtopics">Sub-topics</TabsTrigger>
-            </TabsList>
+            <PageHeaderPrimaryRow
+              title={<h1 className="text-3xl tracking-tight">Automation Opportunities</h1>}
+              actions={(
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8 w-8 shrink-0 p-0"
+                      onClick={() => navigate("settings")}
+                      aria-label="Open automation settings"
+                    >
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">Settings</TooltipContent>
+                </Tooltip>
+              )}
+              tabs={(
+                <TabsList variant="line">
+                  <TabsTrigger value="categories">Categories</TabsTrigger>
+                  <TabsTrigger value="topics">Topics</TabsTrigger>
+                  <TabsTrigger value="subtopics">Sub-topics</TabsTrigger>
+                </TabsList>
+              )}
+            />
           </PageHeader>
 
           <Dialog open={customRangeOpen} onOpenChange={setCustomRangeOpen}>
@@ -1038,6 +920,122 @@ export function AutomationOpportunitiesPage() {
                       "High-impact automation opportunities across categories, topics, and sub-topics.",
                   }}
                 />
+                <div className="flex flex-wrap items-center gap-2">
+                  <Select
+                    value={dateRange}
+                    onValueChange={(v) => {
+                      const next = v as DateRangeOption;
+                      setDateRange(next);
+                      if (next === DATE_RANGE_CUSTOM_OPTION) {
+                        setCustomRangeOpen(true);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by date range">
+                      <LabeledFilterInline label="Date range">
+                        {dateRange === DATE_RANGE_CUSTOM_OPTION && customRange?.from && customRange?.to
+                          ? formatShortDateRange(customRange)
+                          : DATE_RANGE_LABELS[dateRange]}
+                      </LabeledFilterInline>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DATE_RANGE_PRIMARY_OPTIONS.map((opt) => (
+                        <SelectItem key={opt} value={opt}>
+                          {DATE_RANGE_LABELS[opt]}
+                        </SelectItem>
+                      ))}
+                      <SelectSeparator />
+                      {DATE_RANGE_SECONDARY_OPTIONS.map((opt) => (
+                        <SelectItem key={opt} value={opt}>
+                          {DATE_RANGE_LABELS[opt]}
+                        </SelectItem>
+                      ))}
+                      <SelectSeparator />
+                      <SelectItem value={DATE_RANGE_CUSTOM_OPTION}>
+                        {DATE_RANGE_LABELS[DATE_RANGE_CUSTOM_OPTION]}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={team} onValueChange={(v) => setTeam(v as typeof team)}>
+                    <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by team">
+                      <LabeledSelectValue label="Team" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="t1">Tier 1</SelectItem>
+                      <SelectItem value="t2">Tier 2</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={skill} onValueChange={(v) => setSkill(v as typeof skill)}>
+                    <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by skill">
+                      <LabeledSelectValue label="Skill" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="billing">Billing</SelectItem>
+                      <SelectItem value="account">Account</SelectItem>
+                      <SelectItem value="card">Card services</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={channel} onValueChange={(v) => setChannel(v as typeof channel)}>
+                    <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by channel">
+                      <LabeledSelectValue label="Channel" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="chat">Chat</SelectItem>
+                      <SelectItem value="voice">Voice</SelectItem>
+                      <SelectItem value="email">Email</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={category} onValueChange={(v) => setCategory(v as typeof category)}>
+                    <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by category">
+                      <LabeledSelectValue label="Category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="billing-payments">Billing &amp; Payment</SelectItem>
+                      <SelectItem value="card-services">Card Services</SelectItem>
+                      <SelectItem value="account-management">Account Management</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={direction} onValueChange={(v) => setDirection(v as typeof direction)}>
+                    <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by direction">
+                      <LabeledSelectValue label="Direction" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="inbound">Inbound</SelectItem>
+                      <SelectItem value="outbound">Outbound</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {hasFilterChanges ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="shrink-0"
+                      onClick={() => {
+                        setDateRange(DEFAULT_FILTERS.dateRange);
+                        setCustomRange(undefined);
+                        setTeam(DEFAULT_FILTERS.team);
+                        setSkill(DEFAULT_FILTERS.skill);
+                        setChannel(DEFAULT_FILTERS.channel);
+                        setCategory(DEFAULT_FILTERS.category);
+                        setDirection(DEFAULT_FILTERS.direction);
+                      }}
+                    >
+                      <RotateCcw className="mr-2 h-4 w-4" />
+                      Reset Filters
+                    </Button>
+                  ) : null}
+                </div>
                 <TabsContent value="categories" className="mt-0 space-y-8 outline-none">
                   <AnalyzedPeriodSection stats={automationAnalyzedPeriodStats} />
                   <section
