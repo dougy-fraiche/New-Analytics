@@ -50,6 +50,11 @@ import { PageTransition } from "./PageTransition";
 import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
 import { showDeletedObjectToast, showObjectDeletionToast } from "../lib/object-deletion-toast";
 import { ROUTES } from "../routes";
+import {
+  responsiveFilterActionButtonClassName,
+  responsiveFilterRowClassName,
+  responsiveFilterSearchWrapClassName,
+} from "./HeaderFilters";
 // @tanstack/react-virtual is installed and ready for virtualization
 // when conversation lists grow beyond ~50 items. Import useVirtualizer
 // from "@tanstack/react-virtual" and wrap the TableBody accordingly.
@@ -138,8 +143,8 @@ export function AllConversationsPage() {
             Browse and manage your conversations
           </p>
           {currentList.length > 0 && (
-            <div className="mt-4 flex w-full flex-wrap items-center gap-3">
-              <div className="relative flex-1 min-w-[200px] max-w-sm">
+            <div className={responsiveFilterRowClassName}>
+              <div className={responsiveFilterSearchWrapClassName}>
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   aria-label="Search conversations"
@@ -153,7 +158,7 @@ export function AllConversationsPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="shrink-0"
+                  className={responsiveFilterActionButtonClassName}
                   onClick={() => setSearchQuery("")}
                 >
                   <RotateCcw className="mr-2 h-4 w-4" />

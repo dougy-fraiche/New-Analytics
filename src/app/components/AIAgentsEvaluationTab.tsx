@@ -58,7 +58,7 @@ type TrendLegendItem = { label: string; color: string };
 
 /**
  * Legend swatches from Figma (AI Agent — For development): alpha-70 / alpha-100 tokens,
- * label typography Geist Regular text-xs, P900 #2a1b66.
+ * label typography Geist Regular text-xs, P900 #0B233D.
  */
 const COMBO_TREND_LEGENDS = {
   Sentiment: [
@@ -520,11 +520,11 @@ const handoverReasonOption: EChartsCoreOption = {
     axisLabel: { color: "hsl(var(--muted-foreground))", fontSize: 10 },
   },
   series: [
-    { name: "W1", type: "bar", stack: "h", barWidth: 14, data: [98, 82, 44, 22, 12], itemStyle: { color: "#6E56CF" } },
-    { name: "W2", type: "bar", stack: "h", barWidth: 14, data: [92, 78, 40, 18, 10], itemStyle: { color: "#7960D9" } },
-    { name: "W3", type: "bar", stack: "h", barWidth: 14, data: [88, 74, 42, 16, 9], itemStyle: { color: "#8670E0" } },
-    { name: "W4", type: "bar", stack: "h", barWidth: 14, data: [86, 70, 38, 14, 8], itemStyle: { color: "#9583E6" } },
-    { name: "W5", type: "bar", stack: "h", barWidth: 14, data: [92, 80, 36, 12, 6], itemStyle: { color: "#C8BFF0" } },
+    { name: "W1", type: "bar", stack: "h", barWidth: 14, data: [98, 82, 44, 22, 12], itemStyle: { color: "#126BCE" } },
+    { name: "W2", type: "bar", stack: "h", barWidth: 14, data: [92, 78, 40, 18, 10], itemStyle: { color: "#308FF8" } },
+    { name: "W3", type: "bar", stack: "h", barWidth: 14, data: [88, 74, 42, 16, 9], itemStyle: { color: "#5EA9FD" } },
+    { name: "W4", type: "bar", stack: "h", barWidth: 14, data: [86, 70, 38, 14, 8], itemStyle: { color: "#A7D0FE" } },
+    { name: "W5", type: "bar", stack: "h", barWidth: 14, data: [92, 80, 36, 12, 6], itemStyle: { color: "#D2E7FE" } },
   ],
 };
 
@@ -719,7 +719,7 @@ function EvaluationTrendLegend({ items }: { items: readonly TrendLegendItem[] })
             style={{ backgroundColor: item.color }}
             aria-hidden
           />
-          <span className="whitespace-nowrap text-xs font-normal leading-4 tracking-[0.06px] text-[#2a1b66] dark:text-foreground">
+          <span className="whitespace-nowrap text-xs font-normal leading-4 tracking-[0.06px] text-[#0B233D] dark:text-foreground">
             {item.label}
           </span>
         </li>
@@ -734,7 +734,7 @@ function TopicSuccessBadge({ pct, tone }: { pct: number; tone: TopicSuccessTone 
       ? "bg-[#bff4ec] text-[#008070]"
       : tone === "risk"
         ? "bg-[#fbe6f2] text-[#b7337a]"
-        : "bg-[#ffedbf] text-[#a37a00]";
+        : "bg-[#FFFAE0] text-[#8E6800]";
   return (
     <span
       className={`inline-flex items-center justify-center rounded-md px-2 py-0.5 text-xs tracking-[0.06px] ${cls}`}
@@ -748,9 +748,9 @@ function TopicShareBar({ pct }: { pct: number }) {
   return (
     <div className="flex min-w-0 items-center gap-1">
       <div className="h-2 min-w-0 flex-1 rounded-full bg-[#f2f0fa]">
-        <div className="h-2 max-w-full rounded-l-full bg-[#6e56cf]" style={{ width: `${pct}%` }} />
+        <div className="h-2 max-w-full rounded-l-full bg-[#126BCE]" style={{ width: `${pct}%` }} />
       </div>
-      <span className="w-9 shrink-0 text-right text-[10px] tabular-nums tracking-[0.1px] text-[#1f2937]">
+      <span className="w-9 shrink-0 text-right text-[10px] tabular-nums tracking-[0.1px] text-[#4A4A4A]">
         {pct}%
       </span>
     </div>
@@ -1075,7 +1075,7 @@ export function AIAgentsEvaluationTab({
         <Card className="group/widget min-w-0 overflow-hidden transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
           <CardHeader className="space-y-1 pb-2">
             <div className="flex items-center gap-2">
-              <CardTitle className="min-w-0 flex-1 text-base text-[#2a1b66] dark:text-foreground">
+              <CardTitle className="min-w-0 flex-1 text-base text-[#0B233D] dark:text-foreground">
                 Topic
               </CardTitle>
               <WidgetAskAIAndOverflow
@@ -1093,30 +1093,30 @@ export function AIAgentsEvaluationTab({
           <CardContent className="flex flex-col gap-3 pt-0">
             <div className="max-h-[252px] min-h-0 overflow-auto overscroll-contain">
               <Table>
-                <TableHeader className="sticky top-0 z-10 border-b border-[#e5e7eb] bg-[#f3f4f6] dark:border-border dark:bg-muted/40 [&_tr]:border-0 [&_tr]:bg-transparent">
+                <TableHeader className="sticky top-0 z-10 border-b border-[#EDEDED] bg-[#F5F5F5] dark:border-border dark:bg-muted/40 [&_tr]:border-0 [&_tr]:bg-transparent">
                   <TableRow className="border-0 hover:bg-transparent">
-                    <TableHead className="h-10 bg-[#f3f4f6] font-normal text-sm dark:bg-muted/40">Topic</TableHead>
-                    <TableHead className="h-10 w-[88px] bg-[#f3f4f6] text-right font-normal text-sm dark:bg-muted/40">
+                    <TableHead className="h-10 bg-[#F5F5F5] font-normal text-sm dark:bg-muted/40">Topic</TableHead>
+                    <TableHead className="h-10 w-[88px] bg-[#F5F5F5] text-right font-normal text-sm dark:bg-muted/40">
                       Convos
                     </TableHead>
-                    <TableHead className="h-10 w-[104px] bg-[#f3f4f6] text-right font-normal text-sm dark:bg-muted/40">
+                    <TableHead className="h-10 w-[104px] bg-[#F5F5F5] text-right font-normal text-sm dark:bg-muted/40">
                       Success
                     </TableHead>
-                    <TableHead className="h-10 min-w-[160px] bg-[#f3f4f6] font-normal text-sm dark:bg-muted/40">
+                    <TableHead className="h-10 min-w-[160px] bg-[#F5F5F5] font-normal text-sm dark:bg-muted/40">
                       Share
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {evaluationTopicRows.map((row) => (
-                    <TableRow key={row.topic} className="border-b border-[#e5e7eb] dark:border-border">
+                    <TableRow key={row.topic} className="border-b border-[#EDEDED] dark:border-border">
                       <TableCell className="min-w-[180px] whitespace-normal py-2 align-middle">
                         <div className="flex flex-col gap-0 text-sm leading-5">
-                          <span className="text-[#1f2937] dark:text-foreground">{row.topic}</span>
-                          <span className="text-[#6b7280] dark:text-muted-foreground">{row.subtopic}</span>
+                          <span className="text-[#4A4A4A] dark:text-foreground">{row.topic}</span>
+                          <span className="text-[#A8A8A8] dark:text-muted-foreground">{row.subtopic}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="py-2 text-right text-sm tabular-nums text-[#1f2937] dark:text-foreground">
+                      <TableCell className="py-2 text-right text-sm tabular-nums text-[#4A4A4A] dark:text-foreground">
                         {row.convos}
                       </TableCell>
                       <TableCell className="py-2 text-right align-middle">
@@ -1139,7 +1139,7 @@ export function AIAgentsEvaluationTab({
         <Card className="group/widget min-w-0 transition-[box-shadow,border-color] hover:shadow-md hover:border-primary/30">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <CardTitle className="flex-1 text-base text-[#2a1b66] dark:text-foreground">
+              <CardTitle className="flex-1 text-base text-[#0B233D] dark:text-foreground">
                 {"Knowledge & Tool Gap"}
               </CardTitle>
               <WidgetAskAIAndOverflow
@@ -1162,7 +1162,7 @@ export function AIAgentsEvaluationTab({
                 />
               </div>
               <div className="min-w-0 flex-1 space-y-2">
-                <p className="text-base text-[#1f2937] dark:text-foreground">Gap to Escalation Correlation</p>
+                <p className="text-base text-[#4A4A4A] dark:text-foreground">Gap to Escalation Correlation</p>
                 <div className="flex flex-col">
                   {knowledgeGapCorrelationRows.map((r) => (
                     <div key={r.label} className="flex min-h-8 items-center py-2 first:pt-0">
@@ -1173,7 +1173,7 @@ export function AIAgentsEvaluationTab({
                             style={{ width: `${r.fillPct}%`, backgroundColor: r.barColor }}
                           />
                         </div>
-                        <span className="w-[86px] shrink-0 text-xs tracking-[0.06px] text-[#6b7280] dark:text-muted-foreground">
+                        <span className="w-[86px] shrink-0 text-xs tracking-[0.06px] text-[#A8A8A8] dark:text-muted-foreground">
                           {r.label}
                         </span>
                       </div>

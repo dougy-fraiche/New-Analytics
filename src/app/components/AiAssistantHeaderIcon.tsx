@@ -28,7 +28,7 @@ export function AiAssistantHeaderIcon({ className }: { className?: string }) {
         height="40"
         rx="20"
         fill="none"
-        stroke="#6e56cf"
+        stroke="#126BCE"
         strokeWidth="2"
         opacity="0.49"
       />

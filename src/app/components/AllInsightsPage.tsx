@@ -24,7 +24,13 @@ import {
   SelectItem,
   SelectTrigger,
 } from "./ui/select";
-import { LabeledSelectValue } from "./HeaderFilters";
+import {
+  LabeledSelectValue,
+  responsiveFilterActionButtonClassName,
+  responsiveFilterRowClassName,
+  responsiveFilterSearchWrapClassName,
+  responsiveFilterSelectTriggerClassName,
+} from "./HeaderFilters";
 import { Button } from "./ui/button";
 import {
   Tooltip,
@@ -315,8 +321,8 @@ export function AllInsightsPage() {
             {allWidgets.length > 0 ? (
               <>
                 {/* Search + Filters */}
-                <div className="flex w-full flex-wrap items-center gap-3">
-                  <div className="relative flex-1 min-w-[200px] max-w-sm">
+                <div className={responsiveFilterRowClassName}>
+                  <div className={responsiveFilterSearchWrapClassName}>
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       aria-label="Search widgets"
@@ -327,7 +333,10 @@ export function AllInsightsPage() {
                     />
                   </div>
                   <Select value={chartTypeFilter} onValueChange={setChartTypeFilter}>
-                    <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by chart type">
+                    <SelectTrigger
+                      className={responsiveFilterSelectTriggerClassName}
+                      aria-label="Filter by chart type"
+                    >
                       <LabeledSelectValue label="Chart type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -343,7 +352,7 @@ export function AllInsightsPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="shrink-0"
+                      className={responsiveFilterActionButtonClassName}
                       onClick={() => {
                         setSearchQuery("");
                         setChartTypeFilter("all");
@@ -353,7 +362,7 @@ export function AllInsightsPage() {
                       Reset Filters
                     </Button>
                   )}
-                  <span className="text-sm text-muted-foreground ml-auto shrink-0">
+                  <span className="w-full text-sm text-muted-foreground sm:ml-auto sm:w-auto sm:shrink-0">
                     {filteredWidgets.length} of {allWidgets.length} widgets
                   </span>
                 </div>

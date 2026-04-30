@@ -620,7 +620,7 @@ function FlowCanvas({
         zoomOnDoubleClick={false}
         proOptions={{ hideAttribution: true }}
       >
-        <Background color="#E5E7EB" gap={24} size={1} />
+        <Background color="#EDEDED" gap={24} size={1} />
       </ReactFlow>
 
       <div className="pointer-events-none absolute top-4 right-4 z-10">

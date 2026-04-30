@@ -18,7 +18,13 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { LabeledSelectValue } from "./HeaderFilters";
+import {
+  LabeledSelectValue,
+  responsiveFilterActionButtonClassName,
+  responsiveFilterRowClassName,
+  responsiveFilterSearchWrapClassName,
+  responsiveFilterSelectTriggerClassName,
+} from "./HeaderFilters";
 import {
   Table,
   TableBody,
@@ -574,8 +580,8 @@ export function SavedFoldersPage({ resolvedFolderId }: { resolvedFolderId?: stri
             </DropdownMenu>
           </section>
           {selectedFolder.dashboards.length > 0 && (
-            <div className="mt-4 flex w-full flex-wrap items-center gap-3">
-              <div className="relative flex-1 min-w-[200px] max-w-sm">
+            <div className={responsiveFilterRowClassName}>
+              <div className={responsiveFilterSearchWrapClassName}>
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   aria-label="Search dashboards"
@@ -589,7 +595,7 @@ export function SavedFoldersPage({ resolvedFolderId }: { resolvedFolderId?: stri
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="shrink-0"
+                  className={responsiveFilterActionButtonClassName}
                   onClick={() => setSearchQuery("")}
                 >
                   <RotateCcw className="mr-2 h-4 w-4" />
@@ -1034,8 +1040,8 @@ export function SavedFoldersPage({ resolvedFolderId }: { resolvedFolderId?: stri
             </Button>
           </div>
           {allCustomDashboards.length > 0 && (
-            <div className="mt-4 flex w-full flex-wrap items-center gap-3">
-              <div className="relative flex-1 min-w-[200px] max-w-sm">
+            <div className={responsiveFilterRowClassName}>
+              <div className={responsiveFilterSearchWrapClassName}>
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   aria-label="Search dashboards"
@@ -1046,7 +1052,7 @@ export function SavedFoldersPage({ resolvedFolderId }: { resolvedFolderId?: stri
                 />
               </div>
               <Select value={folderFilter} onValueChange={(val) => { setFolderFilter(val); clearDashboardSelection(); }}>
-                <SelectTrigger className="h-8 w-auto shrink-0">
+                <SelectTrigger className={responsiveFilterSelectTriggerClassName}>
                   <LabeledSelectValue label="Folder" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1061,7 +1067,7 @@ export function SavedFoldersPage({ resolvedFolderId }: { resolvedFolderId?: stri
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="shrink-0"
+                  className={responsiveFilterActionButtonClassName}
                   onClick={() => { setSearchQuery(""); setFolderFilter("all"); }}
                 >
                   <RotateCcw className="mr-2 h-4 w-4" />

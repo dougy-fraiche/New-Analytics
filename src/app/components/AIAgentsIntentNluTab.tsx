@@ -42,7 +42,7 @@ import type { CopilotTranscriptSessionContext } from "../data/copilot-session-tr
 const weekLabels = ["W1", "W2", "W3", "W4", "W5", "W6", "W7"];
 
 const localeNames = ["en-US", "de-DE", "fr-FR", "es-ES", "ja-JP", "Other"];
-const localeColors = ["#6E56CF", "#7960D9", "#8670E0", "#9583E6", "#62C554", "#94A3B8"];
+const localeColors = ["#126BCE", "#308FF8", "#5EA9FD", "#A7D0FE", "#62C554", "#94A3B8"];
 
 const CONF = {
   excellent: "#00BFA6",
@@ -75,7 +75,7 @@ const intentScoreTrend: EChartsCoreOption = {
       type: "line",
       smooth: 0.35,
       symbol: "none",
-      lineStyle: { width: 2.5, color: "#6E56CF" },
+      lineStyle: { width: 2.5, color: "#126BCE" },
       areaStyle: {
         color: {
           type: "linear",
@@ -84,8 +84,8 @@ const intentScoreTrend: EChartsCoreOption = {
           x2: 0,
           y2: 1,
           colorStops: [
-            { offset: 0, color: "rgba(110, 86, 207, 0.24)" },
-            { offset: 1, color: "rgba(110, 86, 207, 0.02)" },
+            { offset: 0, color: "rgba(18, 107, 206, 0.24)" },
+            { offset: 1, color: "rgba(18, 107, 206, 0.02)" },
           ],
         },
       },
@@ -260,7 +260,7 @@ const nluExecutionTimeTrend: EChartsCoreOption = {
       type: "line",
       smooth: 0.35,
       symbol: "none",
-      lineStyle: { width: 2.5, color: "#6E56CF" },
+      lineStyle: { width: 2.5, color: "#126BCE" },
       areaStyle: {
         color: {
           type: "linear",
@@ -269,8 +269,8 @@ const nluExecutionTimeTrend: EChartsCoreOption = {
           x2: 0,
           y2: 1,
           colorStops: [
-            { offset: 0, color: "rgba(110, 86, 207, 0.22)" },
-            { offset: 1, color: "rgba(110, 86, 207, 0.02)" },
+            { offset: 0, color: "rgba(18, 107, 206, 0.22)" },
+            { offset: 1, color: "rgba(18, 107, 206, 0.02)" },
           ],
         },
       },
@@ -388,7 +388,7 @@ const topSlotsBarOption: EChartsCoreOption = {
       type: "bar",
       barWidth: 14,
       data: [1545, 1738, 1825, 2003, 2116, 2381, 2660, 2870, 3406, 3949].reverse(),
-      itemStyle: { color: "#6E56CF", borderRadius: [0, 6, 6, 0] },
+      itemStyle: { color: "#126BCE", borderRadius: [0, 6, 6, 0] },
     },
   ],
 };
@@ -702,7 +702,7 @@ function NluEscalatedBadge({ escalated }: { escalated: boolean }) {
   ) : (
     <TableBadge
       variant="outline"
-      className="rounded-md border-transparent bg-[#e0dbf5] font-normal text-[#2a1b66] dark:bg-primary/20 dark:text-foreground"
+      className="rounded-md border-transparent bg-[#E5F2FF] font-normal text-[#0B233D] dark:bg-primary/20 dark:text-foreground"
     >
       No
     </TableBadge>
@@ -960,7 +960,7 @@ export function AIAgentsIntentNluTab({
           <CardHeader className="pb-3">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-wrap items-center gap-2">
-                <CardTitle className="text-base font-normal text-[#2a1b66] dark:text-foreground">
+                <CardTitle className="text-base font-normal text-[#0B233D] dark:text-foreground">
                   Top Intents
                 </CardTitle>
                 <Select defaultValue="10">
@@ -1049,7 +1049,7 @@ export function AIAgentsIntentNluTab({
                         style={{ backgroundColor: item.color }}
                         aria-hidden
                       />
-                      <span className="whitespace-nowrap text-xs leading-4 tracking-[0.06px] text-[#2a1b66] dark:text-foreground">
+                      <span className="whitespace-nowrap text-xs leading-4 tracking-[0.06px] text-[#0B233D] dark:text-foreground">
                         {item.label}
                       </span>
                     </li>
@@ -1067,7 +1067,7 @@ export function AIAgentsIntentNluTab({
           <CardHeader className="pb-3">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-wrap items-center gap-2">
-                <CardTitle className="text-base font-normal text-[#2a1b66] dark:text-foreground">Top Slots</CardTitle>
+                <CardTitle className="text-base font-normal text-[#0B233D] dark:text-foreground">Top Slots</CardTitle>
                 <Select defaultValue="10">
                   <SelectTrigger size="sm" className="h-8 w-[100px]">
                     <SelectValue placeholder="Top N" />
@@ -1223,7 +1223,7 @@ export function AIAgentsIntentNluTab({
           <CardHeader className="pb-3">
             <div className="flex items-start gap-2">
               <div className="min-w-0 flex-1 space-y-1">
-                <CardTitle className="text-base font-normal text-[#2a1b66] dark:text-foreground">
+                <CardTitle className="text-base font-normal text-[#0B233D] dark:text-foreground">
                   Exec Time by Endpoint
                 </CardTitle>
                 <CardDescription>Median ms per endpoint</CardDescription>
@@ -1257,7 +1257,7 @@ export function AIAgentsIntentNluTab({
                     style={{ backgroundColor: item.color }}
                     aria-hidden
                   />
-                  <span className="whitespace-nowrap text-xs leading-4 tracking-[0.06px] text-[#2a1b66] dark:text-foreground">
+                  <span className="whitespace-nowrap text-xs leading-4 tracking-[0.06px] text-[#0B233D] dark:text-foreground">
                     {item.label}
                   </span>
                 </li>

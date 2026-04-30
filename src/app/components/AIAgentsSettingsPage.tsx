@@ -192,32 +192,32 @@ const CUSTOM_WIDGET_TYPES: CustomWidgetType[] = [
 ];
 
 const DEFAULT_CUSTOM_OUTCOME_CLASSES = [
-  { id: "pass", label: "Pass", score: 3, color: "#208337", previewShare: 62.3 },
-  { id: "partial", label: "Partial", score: 2, color: "#ffb800", previewShare: 23.4 },
-  { id: "fail", label: "Fail", score: 1, color: "#e32926", previewShare: 14.3 },
+  { id: "pass", label: "Pass", score: 3, color: "#21742C", previewShare: 62.3 },
+  { id: "partial", label: "Partial", score: 2, color: "#FFE680", previewShare: 23.4 },
+  { id: "fail", label: "Fail", score: 1, color: "#BF2323", previewShare: 14.3 },
 ] as const;
 
 const FIVE_POINT_OUTCOME_CLASSES = [
-  { id: "excellent", label: "Excellent", score: 5, color: "#208337", previewShare: 24.1 },
+  { id: "excellent", label: "Excellent", score: 5, color: "#21742C", previewShare: 24.1 },
   { id: "good", label: "Good", score: 4, color: "#57a942", previewShare: 27.8 },
-  { id: "adequate", label: "Adequate", score: 3, color: "#ffb800", previewShare: 26.4 },
+  { id: "adequate", label: "Adequate", score: 3, color: "#FFE680", previewShare: 26.4 },
   { id: "poor", label: "Poor", score: 2, color: "#f97316", previewShare: 13.3 },
-  { id: "very-poor", label: "Very Poor", score: 1, color: "#e32926", previewShare: 8.4 },
+  { id: "very-poor", label: "Very Poor", score: 1, color: "#BF2323", previewShare: 8.4 },
 ] as const;
 
 const OUTCOME_CLASS_COLOR_PALETTE = [
-  "#208337",
+  "#21742C",
   "#57a942",
   "#22c55e",
   "#14b8a6",
   "#06b6d4",
   "#3b82f6",
-  "#6e56cf",
+  "#126BCE",
   "#8b5cf6",
   "#ec4899",
-  "#e32926",
+  "#BF2323",
   "#f97316",
-  "#ffb800",
+  "#FFE680",
   "#84cc16",
   "#64748b",
   "#94a3b8",
@@ -589,7 +589,7 @@ function buildCustomCriteriaDonutOption(outcomeClasses: OutcomeClass[]): ECharts
           name: outcome.label,
           itemStyle: { color: outcome.color },
         }))
-      : [{ value: 100, name: "No Data", itemStyle: { color: "#d1d5db" } }];
+      : [{ value: 100, name: "No Data", itemStyle: { color: "#E0E0E0" } }];
 
   return {
     animation: true,
@@ -645,7 +645,7 @@ function buildCustomCriteriaTrendOption(series: number[]): EChartsCoreOption {
         symbol: "none",
         lineStyle: {
           width: 4,
-          color: "#6e56cf",
+          color: "#126BCE",
           cap: "round",
           join: "round",
         },
@@ -771,10 +771,10 @@ const SENTIMENT_DISTRIBUTION_OPTION: EChartsCoreOption = {
         show: true,
         position: "inside",
         formatter: "{c}%",
-        color: "#ffffff",
+        color: "#FFFFFF",
         fontSize: 11,
       },
-      itemStyle: { color: "#208337", borderRadius: [999, 0, 0, 999] },
+      itemStyle: { color: "#21742C", borderRadius: [999, 0, 0, 999] },
       emphasis: { disabled: true },
     },
     {
@@ -787,10 +787,10 @@ const SENTIMENT_DISTRIBUTION_OPTION: EChartsCoreOption = {
         show: true,
         position: "inside",
         formatter: "{c}%",
-        color: "#ffffff",
+        color: "#FFFFFF",
         fontSize: 11,
       },
-      itemStyle: { color: "#9ca3af" },
+      itemStyle: { color: "#C7C7C7" },
       emphasis: { disabled: true },
     },
     {
@@ -803,10 +803,10 @@ const SENTIMENT_DISTRIBUTION_OPTION: EChartsCoreOption = {
         show: true,
         position: "inside",
         formatter: (params: { value?: number }) => `${(params.value ?? 0).toFixed(1)}%`,
-        color: "#ffffff",
+        color: "#FFFFFF",
         fontSize: 11,
       },
-      itemStyle: { color: "#e32926", borderRadius: [0, 999, 999, 0] },
+      itemStyle: { color: "#BF2323", borderRadius: [0, 999, 999, 0] },
       emphasis: { disabled: true },
     },
   ],
@@ -823,7 +823,7 @@ function buildSentimentKpiCalloutOption({
   deltaText: string;
   isPositive: boolean;
 }): EChartsCoreOption {
-  const accentColor = isPositive ? "#208337" : "#e32926";
+  const accentColor = isPositive ? "#21742C" : "#BF2323";
   const badgeBackground = isPositive ? "rgba(32,131,55,0.08)" : "rgba(227,41,38,0.08)";
   const deltaArrow = isPositive ? "\u2191" : "\u2193";
 
@@ -929,9 +929,9 @@ const SENTIMENT_OUTCOME_BREAKDOWN_OPTION: EChartsCoreOption = {
       itemStyle: {
         borderRadius: 999,
         color: (params: { dataIndex?: number }) => {
-          if (params.dataIndex === 0) return "#208337";
-          if (params.dataIndex === 1) return "#9ca3af";
-          return "#e32926";
+          if (params.dataIndex === 0) return "#21742C";
+          if (params.dataIndex === 1) return "#C7C7C7";
+          return "#BF2323";
         },
       },
       emphasis: { disabled: true },
@@ -962,7 +962,7 @@ const SENTIMENT_POSITIVE_TREND_OPTION: EChartsCoreOption = {
       smooth: 0.35,
       symbol: "none",
       data: [52, 54, 53, 56, 55, 57, 55.3],
-      lineStyle: { width: 2, color: "#208337" },
+      lineStyle: { width: 2, color: "#21742C" },
       areaStyle: {
         color: {
           type: "linear",
@@ -1017,9 +1017,9 @@ const SENTIMENT_INTENSITY_OPTION: EChartsCoreOption = {
           x2: 1,
           y2: 0,
           colorStops: [
-            { offset: 0, color: "#208337" },
-            { offset: 0.65, color: "#ffb800" },
-            { offset: 1, color: "#e32926" },
+            { offset: 0, color: "#21742C" },
+            { offset: 0.65, color: "#FFE680" },
+            { offset: 1, color: "#BF2323" },
           ],
         },
       },
@@ -1033,8 +1033,8 @@ const SENTIMENT_STATE_PROGRESS = [
     id: "improving",
     label: "Improving",
     value: 45,
-    bgClassName: "bg-[#208337]/10",
-    textClassName: "text-[#208337]",
+    bgClassName: "bg-[#21742C]/10",
+    textClassName: "text-[#21742C]",
     Icon: ArrowUp,
   },
   {
@@ -1042,15 +1042,15 @@ const SENTIMENT_STATE_PROGRESS = [
     label: "Stable",
     value: 30,
     bgClassName: "bg-muted",
-    textClassName: "text-[#6b7280]",
+    textClassName: "text-[#A8A8A8]",
     Icon: ArrowRight,
   },
   {
     id: "declining",
     label: "Declining",
     value: 25,
-    bgClassName: "bg-[#e32926]/10",
-    textClassName: "text-[#e32926]",
+    bgClassName: "bg-[#BF2323]/10",
+    textClassName: "text-[#BF2323]",
     Icon: ArrowDown,
   },
 ] as const;
@@ -1068,8 +1068,8 @@ const CONTAINMENT_ESCALATION_RISK_OPTION: EChartsCoreOption = {
       stack: "risk",
       data: [55.3],
       barWidth: 20,
-      label: { show: true, position: "inside", formatter: "{c}%", color: "#ffffff", fontSize: 11 },
-      itemStyle: { color: "#208337", borderRadius: [999, 0, 0, 999] },
+      label: { show: true, position: "inside", formatter: "{c}%", color: "#FFFFFF", fontSize: 11 },
+      itemStyle: { color: "#21742C", borderRadius: [999, 0, 0, 999] },
       emphasis: { disabled: true },
     },
     {
@@ -1077,8 +1077,8 @@ const CONTAINMENT_ESCALATION_RISK_OPTION: EChartsCoreOption = {
       stack: "risk",
       data: [24.7],
       barWidth: 20,
-      label: { show: true, position: "inside", formatter: "{c}%", color: "#ffffff", fontSize: 11 },
-      itemStyle: { color: "#9ca3af" },
+      label: { show: true, position: "inside", formatter: "{c}%", color: "#FFFFFF", fontSize: 11 },
+      itemStyle: { color: "#C7C7C7" },
       emphasis: { disabled: true },
     },
     {
@@ -1090,10 +1090,10 @@ const CONTAINMENT_ESCALATION_RISK_OPTION: EChartsCoreOption = {
         show: true,
         position: "inside",
         formatter: (params: { value?: number }) => `${(params.value ?? 0).toFixed(1)}%`,
-        color: "#ffffff",
+        color: "#FFFFFF",
         fontSize: 11,
       },
-      itemStyle: { color: "#e32926", borderRadius: [0, 999, 999, 0] },
+      itemStyle: { color: "#BF2323", borderRadius: [0, 999, 999, 0] },
       emphasis: { disabled: true },
     },
   ],
@@ -1119,9 +1119,9 @@ const AI_BEHAVIOR_RADAR_OPTION: EChartsCoreOption = {
       type: "radar",
       symbol: "circle",
       symbolSize: 5,
-      lineStyle: { color: "#6e56cf", width: 2 },
-      itemStyle: { color: "#6e56cf", borderColor: "#ffffff", borderWidth: 1 },
-      areaStyle: { color: "rgba(110,86,207,0.2)" },
+      lineStyle: { color: "#126BCE", width: 2 },
+      itemStyle: { color: "#126BCE", borderColor: "#FFFFFF", borderWidth: 1 },
+      areaStyle: { color: "rgba(18, 107, 206, 0.2)" },
       data: [{ value: AI_BEHAVIOR_SCORES }],
     },
   ],
@@ -2325,7 +2325,7 @@ export function AIAgentsSettingsPage() {
                                   Low
                                 </span>
                                 <span className="inline-flex items-center gap-1.5">
-                                  <span className="h-2.5 w-2.5 rounded-[3px] bg-[#9ca3af]" />
+                                  <span className="h-2.5 w-2.5 rounded-[3px] bg-[#C7C7C7]" />
                                   Medium
                                 </span>
                                 <span className="inline-flex items-center gap-1.5">
@@ -2454,9 +2454,9 @@ export function AIAgentsSettingsPage() {
                                             className="h-2 bg-muted"
                                             indicatorClassName={cn(
                                               "rounded-full",
-                                              state.id === "improving" && "bg-[#208337]",
-                                              state.id === "stable" && "bg-[#9ca3af]",
-                                              state.id === "declining" && "bg-[#e32926]",
+                                              state.id === "improving" && "bg-[#21742C]",
+                                              state.id === "stable" && "bg-[#C7C7C7]",
+                                              state.id === "declining" && "bg-[#BF2323]",
                                             )}
                                           />
                                         </div>

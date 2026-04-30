@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { cn } from "./ui/utils";
 
 /**
- * Layout patterns aligned with C26 / token-based UI (see `src/styles/tailwind.css`).
+ * Layout patterns aligned with Lyra / token-based UI (see `src/styles/tailwind.css`).
  *
  * - **Header + primary CTA:** wrap title and actions in a flex row, e.g.
  *   `className={cn("flex flex-wrap items-center justify-between gap-4", pageHeaderTitleRowClassName)}`

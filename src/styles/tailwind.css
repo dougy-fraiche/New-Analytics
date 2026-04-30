@@ -8,7 +8,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /**
- * C26 / Tali Figma palette (node 893:392) — hex → OKLCH. Semantic shadcn tokens below alias these.
+ * Lyra / Tali Figma palette (node 893:392) — hex → OKLCH. Semantic shadcn tokens below alias these.
  * Utilities: bg-primary-500, text-neutral-700, bg-success, border-warning, bg-accent-teal-300, etc.
  */
 
@@ -208,60 +208,60 @@
     --rounded-xl: 1rem;
     --rounded-full: 9999px;
 
-    /* —— C26 Figma: Primary —— */
-    --primary-0: oklch(1 0 0);
-    --primary-25: oklch(0.9531 0.0269 295.32);
-    --primary-50: oklch(0.8878 0.0712 294.5);
-    --primary-100: oklch(0.8008 0.1372 293.26);
-    --primary-200: oklch(0.6864 0.2332 293.5);
-    --primary-300: oklch(0.5744 0.3272 292.62);
-    --primary-400: oklch(0.5076 0.3634 289.46);
-    --primary-500: oklch(0.4683 0.3581 288.03);
-    --primary-600: oklch(0.3994 0.3437 286.95);
-    --primary-700: oklch(0.3271 0.3236 285.85);
-    --primary-800: oklch(0.2514 0.2893 285.42);
-    --primary-900: oklch(0.1815 0.248 285.03);
-    --primary-default: #6E56CF;
-    --primary-secondary: #E0DBF5;
-    --primary-disabled: rgba(110, 86, 207, 0.5);
-    --primary-secondary-disabled: rgba(242, 240, 250, 0.5);
-    --primary-0-disabled: rgba(255, 255, 255, 0.5);
-    --primary-900-disabled: rgba(42, 27, 102, 0.5);
+    /* —— Lyra Figma: Primary —— */
+    --primary-0: #FFFFFF;
+    --primary-25: #ECF5FE;
+    --primary-50: #E5F2FF;
+    --primary-100: #D2E7FE;
+    --primary-200: #A7D0FE;
+    --primary-300: #5EA9FD;
+    --primary-400: #308FF8;
+    --primary-500: #126BCE;
+    --primary-600: #17569B;
+    --primary-700: #164479;
+    --primary-800: #0E2D4E;
+    --primary-900: #0B233D;
+    --primary-default: var(--primary-500);
+    --primary-secondary: var(--primary-50);
+    --primary-disabled: color-mix(in srgb, var(--primary-500) 50%, transparent);
+    --primary-secondary-disabled: color-mix(in srgb, var(--primary-50) 50%, transparent);
+    --primary-0-disabled: color-mix(in srgb, var(--primary-0) 50%, transparent);
+    --primary-900-disabled: color-mix(in srgb, var(--primary-900) 50%, transparent);
 
-    /* —— C26 Figma: Neutrals —— */
-    --neutral-0: oklch(1 0 0);
-    --neutral-25: oklch(0.9822 0.0034 247.84);
-    --neutral-50: oklch(0.9617 0.0057 264.54);
-    --neutral-100: oklch(0.916 0.0116 264.53);
-    --neutral-200: oklch(0.8512 0.0187 258.34);
-    --neutral-300: oklch(0.6678 0.0384 261.32);
-    --neutral-400: oklch(0.4792 0.0467 264.36);
-    --neutral-500: oklch(0.3575 0.0526 256.8);
-    --neutral-600: oklch(0.2726 0.0612 259.73);
-    --neutral-700: oklch(0.1626 0.0592 256.85);
-    --neutral-800: oklch(0.0837 0.0635 264.66);
-    --neutral-900: oklch(0 0 0);
+    /* —— Lyra Figma: Neutrals —— */
+    --neutral-0: #FFFFFF;
+    --neutral-25: #FAFAFA;
+    --neutral-50: #F5F5F5;
+    --neutral-100: #EDEDED;
+    --neutral-200: #E0E0E0;
+    --neutral-300: #C7C7C7;
+    --neutral-400: #A8A8A8;
+    --neutral-500: #868686;
+    --neutral-600: #626262;
+    --neutral-700: #4A4A4A;
+    --neutral-800: #383838;
+    --neutral-900: #222222;
 
-    /* —— C26 Figma: Success / Warning / Error —— */
-    --success-bg: oklch(0.9726 0.0365 150.56);
-    --success-border: oklch(0.5202 0.3165 146.95);
-    --success: oklch(0.4629 0.2872 147.05);
-    --success-hover: oklch(0.4077 0.2597 147.08);
+    /* —— Lyra Figma: Success / Warning / Error —— */
+    --success-bg: #EBFAED;
+    --success-border: #24943E;
+    --success: #21742C;
+    --success-hover: #1C7330;
     --success-disabled: rgba(40, 167, 69, 0.5);
 
-    --warning-bg: oklch(0.9703 0.0608 88.37);
-    --warning-border: oklch(0.5401 0.2474 84.92);
-    --warning: oklch(0.7995 0.3421 80.53);
-    --warning-hover: oklch(0.7673 0.3315 79.65);
+    --warning-bg: #FFFAE0;
+    --warning-border: #8E6800;
+    --warning: #FFE680;
+    --warning-hover: #F5AF00;
     --warning-disabled: rgba(255, 184, 0, 0.5);
 
-    --error-bg: oklch(0.9445 0.0414 17.52);
-    --error-border: oklch(0.5456 0.418 27.03);
-    --error: oklch(0.5263 0.4392 27.81);
-    --error-hover: oklch(0.4573 0.4053 28.25);
+    --error-bg: #FFF0F0;
+    --error-border: #E53935;
+    --error: #BF2323;
+    --error-hover: #C71D1A;
     --error-disabled: rgba(227, 41, 38, 0.5);
 
-    /* —— C26 Figma: Accent ramps —— */
+    /* —— Lyra Figma: Accent ramps —— */
     --accent-yellow-25: oklch(0.9765 0.0496 89.21);
     --accent-yellow-50: oklch(0.9411 0.1249 89.19);
     --accent-yellow-100: oklch(0.9078 0.1935 88.72);
@@ -298,7 +298,7 @@
     --primary-soft: var(--primary-50);
     --primary-soft-foreground: var(--primary-900);
 
-    /* —— shadcn bridge (C26 roles) —— */
+    /* —— shadcn bridge (Lyra roles) —— */
     --background: var(--neutral-0);
     --foreground: var(--neutral-800);
     --card: var(--neutral-0);
@@ -329,7 +329,7 @@
     /**
      * KPI mini line / area charts — Figma AI Agent (node 1:8029), Color/Primary/P500.
      */
-    --kpi-line: #6e56cf;
+    --kpi-line: var(--primary-500);
     --radius: 0.5rem;
     --sidebar: var(--neutral-0);
     --sidebar-foreground: var(--neutral-800);
@@ -369,7 +369,7 @@
     --chart-3: var(--accent-yellow-400);
     --chart-4: var(--accent-magenta-300);
     --chart-5: var(--primary-400);
-    --kpi-line: #6e56cf;
+    --kpi-line: var(--primary-500);
     --sidebar: oklch(0.205 0 0);
     --sidebar-foreground: oklch(0.985 0 0);
     --sidebar-primary: var(--primary-400);
@@ -437,15 +437,15 @@
   }
 
   /**
-   * Chat input (hero) — Figma 15:20: vivid purple stroke + layered indigo/purple glow.
+   * Chat input (hero) — token-driven primary glow.
    */
   .explore-chat-input-elevated {
     box-shadow:
-      0 0 0 0 rgb(121 0 255 / 0.2),
+      0 0 0 0 color-mix(in oklch, var(--primary-500) 20%, transparent),
       0 1px 3px 0 rgb(0 0 0 / 0.1),
       0 1px 2px 0 rgb(0 0 0 / 0.1),
-      0 2px 8px 0 rgb(143 115 227 / 0.2),
-      0 8px 32px 0 rgb(143 115 227 / 0.3);
+      0 2px 8px 0 color-mix(in oklch, var(--primary-300) 20%, transparent),
+      0 8px 32px 0 color-mix(in oklch, var(--primary-300) 30%, transparent);
   }
 
   /**
@@ -454,11 +454,11 @@
   .explore-chat-input-elevated:focus-within {
     box-shadow:
       0 0 0 3px color-mix(in oklch, var(--ring) 20%, transparent),
-      0 0 0 0 rgb(121 0 255 / 0.2),
+      0 0 0 0 color-mix(in oklch, var(--primary-500) 20%, transparent),
       0 1px 3px 0 rgb(0 0 0 / 0.1),
       0 1px 2px 0 rgb(0 0 0 / 0.1),
-      0 2px 8px 0 rgb(143 115 227 / 0.2),
-      0 8px 32px 0 rgb(143 115 227 / 0.3);
+      0 2px 8px 0 color-mix(in oklch, var(--primary-300) 20%, transparent),
+      0 8px 32px 0 color-mix(in oklch, var(--primary-300) 30%, transparent);
   }
 
   .dark .explore-chat-input-elevated {

@@ -25,7 +25,13 @@ import {
   SelectItem,
   SelectTrigger,
 } from "./ui/select";
-import { LabeledSelectValue } from "./HeaderFilters";
+import {
+  LabeledSelectValue,
+  responsiveFilterActionButtonClassName,
+  responsiveFilterRowClassName,
+  responsiveFilterSearchWrapClassName,
+  responsiveFilterSelectTriggerClassName,
+} from "./HeaderFilters";
 import { PageTransition } from "./PageTransition";
 import { ootbCategories } from "../data/ootb-dashboards";
 import { ROUTES } from "../routes";
@@ -102,8 +108,8 @@ export function ObservabilityPage() {
           <p className="text-muted-foreground mt-2">
             Out-of-the-box dashboards providing comprehensive insights into your conversational analytics platform
           </p>
-          <div className="mt-4 flex w-full flex-wrap items-center gap-3">
-            <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <div className={responsiveFilterRowClassName}>
+            <div className={responsiveFilterSearchWrapClassName}>
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 aria-label="Search dashboards"
@@ -114,7 +120,10 @@ export function ObservabilityPage() {
               />
             </div>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by category">
+              <SelectTrigger
+                className={responsiveFilterSelectTriggerClassName}
+                aria-label="Filter by category"
+              >
                 <LabeledSelectValue label="Category" />
               </SelectTrigger>
               <SelectContent>
@@ -130,7 +139,7 @@ export function ObservabilityPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="shrink-0"
+                className={responsiveFilterActionButtonClassName}
                 onClick={() => {
                   setSearchQuery("");
                   setCategoryFilter("all");

@@ -7,6 +7,11 @@ type VisualRoute = {
   readyHeading: RegExp;
 };
 
+type OverflowRoute = {
+  path: string;
+  readyHeading: RegExp;
+};
+
 const visualRoutes: VisualRoute[] = [
   {
     name: "automation-opportunities",
@@ -38,5 +43,31 @@ for (const route of visualRoutes) {
       caret: "hide",
       maxDiffPixelRatio: 0.02,
     });
+  });
+}
+
+const overflowRoutes: OverflowRoute[] = [
+  { path: ROUTES.ACTIONS_HISTORY, readyHeading: /^History$/i },
+  { path: ROUTES.RECOMMENDED_ACTIONS, readyHeading: /Recommended Actions/i },
+  { path: ROUTES.CONVERSATIONS, readyHeading: /Conversations/i },
+  { path: ROUTES.OBSERVABILITY, readyHeading: /Observability/i },
+  { path: ROUTES.INSIGHTS, readyHeading: /All Insights/i },
+  { path: ROUTES.SAVED, readyHeading: /^Saved$/i },
+];
+
+for (const route of overflowRoutes) {
+  test(`mobile root does not horizontally overflow: ${route.path}`, async ({ page }, testInfo) => {
+    test.skip(!/mobile/i.test(testInfo.project.name), "Mobile viewport only");
+
+    await page.goto(route.path);
+    await expect(page.getByRole("heading", { name: route.readyHeading }).first()).toBeVisible();
+    await page.waitForLoadState("networkidle");
+
+    const { scrollWidth, innerWidth } = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      innerWidth: window.innerWidth,
+    }));
+
+    expect(scrollWidth).toBeLessThanOrEqual(innerWidth + 1);
   });
 }

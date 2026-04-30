@@ -68,7 +68,7 @@ const sessionsOverTimeOption: EChartsCoreOption = {
       type: "line",
       smooth: 0.35,
       symbol: "none",
-      lineStyle: { width: 2.5, color: "#6E56CF" },
+      lineStyle: { width: 2.5, color: "#126BCE" },
       areaStyle: {
         color: {
           type: "linear",
@@ -77,8 +77,8 @@ const sessionsOverTimeOption: EChartsCoreOption = {
           x2: 0,
           y2: 1,
           colorStops: [
-            { offset: 0, color: "rgba(110, 86, 207, 0.24)" },
-            { offset: 1, color: "rgba(110, 86, 207, 0.02)" },
+            { offset: 0, color: "rgba(18, 107, 206, 0.24)" },
+            { offset: 1, color: "rgba(18, 107, 206, 0.02)" },
           ],
         },
       },
@@ -136,7 +136,7 @@ const ratingsDistributionOption: EChartsCoreOption = {
     splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))" },
   },
-  series: [{ type: "bar", barMaxWidth: 34, data: [380, 520, 760, 2600, 8400], itemStyle: { color: "#6E56CF", borderRadius: [6, 6, 0, 0] } }],
+  series: [{ type: "bar", barMaxWidth: 34, data: [380, 520, 760, 2600, 8400], itemStyle: { color: "#126BCE", borderRadius: [6, 6, 0, 0] } }],
 };
 
 const positiveByChannelOption: EChartsCoreOption = {
@@ -189,7 +189,7 @@ const sessionDurationOption: EChartsCoreOption = {
     splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))" },
   },
-  series: [{ type: "bar", barMaxWidth: 30, data: [4200, 5400, 1800, 420, 160], itemStyle: { color: "#6E56CF", borderRadius: [6, 6, 0, 0] } }],
+  series: [{ type: "bar", barMaxWidth: 30, data: [4200, 5400, 1800, 420, 160], itemStyle: { color: "#126BCE", borderRadius: [6, 6, 0, 0] } }],
 };
 
 const stepFunnelOption: EChartsCoreOption = {
@@ -215,11 +215,11 @@ const stepFunnelOption: EChartsCoreOption = {
       type: "bar",
       barWidth: 12,
       data: [
-        { value: 13400, itemStyle: { color: "#6E56CF", borderRadius: 6 } },
-        { value: 12100, itemStyle: { color: "#7960D9", borderRadius: 6 } },
-        { value: 10900, itemStyle: { color: "#8670E0", borderRadius: 6 } },
-        { value: 9600, itemStyle: { color: "#9583E6", borderRadius: 6 } },
-        { value: 8700, itemStyle: { color: "#C8BFF0", borderRadius: 6 } },
+        { value: 13400, itemStyle: { color: "#126BCE", borderRadius: 6 } },
+        { value: 12100, itemStyle: { color: "#308FF8", borderRadius: 6 } },
+        { value: 10900, itemStyle: { color: "#5EA9FD", borderRadius: 6 } },
+        { value: 9600, itemStyle: { color: "#A7D0FE", borderRadius: 6 } },
+        { value: 8700, itemStyle: { color: "#D2E7FE", borderRadius: 6 } },
       ],
     },
   ],
@@ -245,7 +245,7 @@ const escalationsByDurationOption: EChartsCoreOption = {
   },
   series: [
     { name: "Non-Escalated", type: "bar", stack: "total", data: [3000, 4000, 1200, 500, 240], itemStyle: { color: "#1F9D48" } },
-    { name: "Escalated", type: "bar", stack: "total", data: [180, 280, 110, 72, 32], itemStyle: { color: "#E32926" } },
+    { name: "Escalated", type: "bar", stack: "total", data: [180, 280, 110, 72, 32], itemStyle: { color: "#BF2323" } },
   ],
 };
 
@@ -266,7 +266,7 @@ const escalationsOverTimeCountOption: EChartsCoreOption = {
     splitLine: { lineStyle: { type: "dashed", color: "hsl(var(--muted-foreground))" } },
     axisLabel: { color: "hsl(var(--muted-foreground))" },
   },
-  series: [{ type: "bar", barMaxWidth: 34, data: [58, 53, 56, 50, 52, 55, 51], itemStyle: { color: "#6E56CF", borderRadius: [6, 6, 0, 0] } }],
+  series: [{ type: "bar", barMaxWidth: 34, data: [58, 53, 56, 50, 52, 55, 51], itemStyle: { color: "#126BCE", borderRadius: [6, 6, 0, 0] } }],
 };
 
 const escalationsOverTimeRateOption: EChartsCoreOption = {
@@ -302,7 +302,7 @@ const escalationsOverTimeRateOption: EChartsCoreOption = {
       type: "bar",
       barMaxWidth: 34,
       data: [3.0, 2.55, 2.7, 2.1, 2.45, 2.4, 2.3],
-      itemStyle: { color: "#6E56CF", borderRadius: [6, 6, 0, 0] },
+      itemStyle: { color: "#126BCE", borderRadius: [6, 6, 0, 0] },
     },
   ],
 };

@@ -94,10 +94,10 @@ const taskAssistKpis: Array<{
 ];
 
 const triggerRateBySkillRows = [
-  { skill: "Billing", fires: 272, rate: 26.7, barClassName: "bg-[#6E56CF]" },
-  { skill: "Sales", fires: 262, rate: 25.7, barClassName: "bg-[#6E56CF]" },
-  { skill: "Tech Support", fires: 191, rate: 18.7, barClassName: "bg-[#208337]" },
-  { skill: "General", fires: 148, rate: 14.5, barClassName: "bg-[#FFB800]" },
+  { skill: "Billing", fires: 272, rate: 26.7, barClassName: "bg-[#126BCE]" },
+  { skill: "Sales", fires: 262, rate: 25.7, barClassName: "bg-[#126BCE]" },
+  { skill: "Tech Support", fires: 191, rate: 18.7, barClassName: "bg-[#21742C]" },
+  { skill: "General", fires: 148, rate: 14.5, barClassName: "bg-[#FFE680]" },
   { skill: "Retention", fires: 147, rate: 14.4, barClassName: "bg-[#434BA3]" },
 ] as const;
 
@@ -141,7 +141,7 @@ const taskDurationDistributionOption: EChartsCoreOption = {
       data: [52, 87, 132, 365, 332, 33],
       itemStyle: {
         color: (params: { dataIndex: number }) =>
-          ["#208337", "#434BA3", "#6E56CF", "#FFB800", "#E32926", "#208337"][params.dataIndex] ?? "#6E56CF",
+          ["#21742C", "#434BA3", "#126BCE", "#FFE680", "#BF2323", "#21742C"][params.dataIndex] ?? "#126BCE",
         borderRadius: [6, 6, 0, 0],
       },
     },
@@ -173,7 +173,7 @@ const taskConfidenceDistributionOption: EChartsCoreOption = {
       type: "bar",
       barMaxWidth: 34,
       data: [2, 21, 124, 368, 328, 156],
-      itemStyle: { color: "#6E56CF", borderRadius: [6, 6, 0, 0] },
+      itemStyle: { color: "#126BCE", borderRadius: [6, 6, 0, 0] },
     },
   ],
 };
@@ -198,12 +198,12 @@ const topErrorCodes = [
 ] as const;
 
 const triggerEventBreakdownRows = [
-  { event: "Policy Trigger", count: 186, rate: 18.2, barClassName: "bg-[#6E56CF]" },
-  { event: "Customer Request", count: 172, rate: 16.9, barClassName: "bg-[#6E56CF]" },
-  { event: "Time Based", count: 171, rate: 16.8, barClassName: "bg-[#208337]" },
-  { event: "System Detection", count: 168, rate: 16.5, barClassName: "bg-[#FFB800]" },
+  { event: "Policy Trigger", count: 186, rate: 18.2, barClassName: "bg-[#126BCE]" },
+  { event: "Customer Request", count: 172, rate: 16.9, barClassName: "bg-[#126BCE]" },
+  { event: "Time Based", count: 171, rate: 16.8, barClassName: "bg-[#21742C]" },
+  { event: "System Detection", count: 168, rate: 16.5, barClassName: "bg-[#FFE680]" },
   { event: "Escalation Rule", count: 163, rate: 16.0, barClassName: "bg-[#434BA3]" },
-  { event: "Sentiment Change", count: 160, rate: 15.7, barClassName: "bg-[#E32926]" },
+  { event: "Sentiment Change", count: 160, rate: 15.7, barClassName: "bg-[#BF2323]" },
 ] as const;
 
 const actionComplexityDistributionRows = [

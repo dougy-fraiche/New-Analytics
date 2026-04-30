@@ -65,7 +65,7 @@ const goalsPerformanceOption: EChartsCoreOption = {
       type: "bar",
       stack: "goals",
       barMaxWidth: 60,
-      itemStyle: { color: "#E32926", borderRadius: [0, 0, 0, 0] },
+      itemStyle: { color: "#BF2323", borderRadius: [0, 0, 0, 0] },
       data: [12, 14, 20, 12, 18, 15],
     },
     {
@@ -73,7 +73,7 @@ const goalsPerformanceOption: EChartsCoreOption = {
       type: "bar",
       stack: "goals",
       barMaxWidth: 60,
-      itemStyle: { color: "#FFB800", borderRadius: [0, 0, 0, 0] },
+      itemStyle: { color: "#FFE680", borderRadius: [0, 0, 0, 0] },
       data: [40, 35, 52, 35, 75, 42],
     },
     {
@@ -81,7 +81,7 @@ const goalsPerformanceOption: EChartsCoreOption = {
       type: "bar",
       stack: "goals",
       barMaxWidth: 60,
-      itemStyle: { color: "#208337", borderRadius: [4, 4, 0, 0] },
+      itemStyle: { color: "#21742C", borderRadius: [4, 4, 0, 0] },
       data: [510, 430, 360, 300, 240, 255],
     },
   ],
@@ -407,7 +407,7 @@ function EscalatedBadge({ escalated }: { escalated: boolean }) {
   ) : (
     <TableBadge
       variant="outline"
-      className="rounded-md border-transparent bg-[#e0dbf5] font-normal text-[#2a1b66] dark:bg-primary/20 dark:text-foreground"
+      className="rounded-md border-transparent bg-[#E5F2FF] font-normal text-[#0B233D] dark:bg-primary/20 dark:text-foreground"
     >
       No
     </TableBadge>
@@ -521,7 +521,7 @@ export function AIAgentsGoalsOutcomesTab({
           <CardContent>
             <div className="grid grid-cols-3 gap-3 pb-4">
               <div className="flex items-center justify-center gap-2">
-                <span className="text-4xl font-normal leading-none text-[#c71d1a]">98</span>
+                <span className="text-4xl font-normal leading-none text-[#C71D1A]">98</span>
                 <GoalsMetricPill
                   label="Incomplete"
                   tone="negative"
@@ -529,7 +529,7 @@ export function AIAgentsGoalsOutcomesTab({
                 />
               </div>
               <div className="flex items-center justify-center gap-2 border-x border-border">
-                <span className="text-4xl font-normal leading-none text-[#a37a00]">225</span>
+                <span className="text-4xl font-normal leading-none text-[#8E6800]">225</span>
                 <GoalsMetricPill
                   label="Partial"
                   tone="warning"
@@ -537,7 +537,7 @@ export function AIAgentsGoalsOutcomesTab({
                 />
               </div>
               <div className="flex items-center justify-center gap-2">
-                <span className="text-4xl font-normal leading-none text-[#1c7330]">1779</span>
+                <span className="text-4xl font-normal leading-none text-[#1C7330]">1779</span>
                 <GoalsMetricPill
                   label="Complete"
                   tone="positive"
@@ -550,9 +550,9 @@ export function AIAgentsGoalsOutcomesTab({
               <p className="text-xs text-muted-foreground">Grand Total: 2,102 attempts</p>
               <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
                 <div className="flex h-full w-full">
-                  <span className="h-full bg-[#E32926]" style={{ width: "4.7%" }} />
-                  <span className="h-full bg-[#FFB800]" style={{ width: "10.7%" }} />
-                  <span className="h-full bg-[#208337]" style={{ width: "84.6%" }} />
+                  <span className="h-full bg-[#BF2323]" style={{ width: "4.7%" }} />
+                  <span className="h-full bg-[#FFE680]" style={{ width: "10.7%" }} />
+                  <span className="h-full bg-[#21742C]" style={{ width: "84.6%" }} />
                 </div>
               </div>
               <p className="text-sm font-medium text-[#007a55]">84.6% completion rate</p>
@@ -655,7 +655,7 @@ export function AIAgentsGoalsOutcomesTab({
                   ) : null}
                 </div>
                 <div className="h-3 overflow-hidden rounded-full bg-muted">
-                  <div className="h-full rounded-full bg-[#6E56CF]" style={{ width: `${row.percent}%` }} />
+                  <div className="h-full rounded-full bg-[#126BCE]" style={{ width: `${row.percent}%` }} />
                 </div>
                 <div className="flex items-center justify-end gap-2 text-right text-sm tabular-nums">
                   <span className="text-muted-foreground">{row.value.toLocaleString()}</span>
@@ -751,7 +751,7 @@ export function AIAgentsGoalsOutcomesTab({
                       <Badge
                         key={chip}
                         variant="outline"
-                        className="h-5 border-[#6E56CF]/30 bg-[#6E56CF]/10 px-2 text-xs font-normal text-[#6E56CF]"
+                        className="h-5 border-[#126BCE]/30 bg-[#126BCE]/10 px-2 text-xs font-normal text-[#126BCE]"
                       >
                         {chip}
                       </Badge>
@@ -763,7 +763,7 @@ export function AIAgentsGoalsOutcomesTab({
                   </div>
                 </div>
                 <div className="h-3 overflow-hidden rounded-full bg-muted">
-                  <div className="h-full rounded-full bg-[#6E56CF]" style={{ width: `${row.widthPct}%` }} />
+                  <div className="h-full rounded-full bg-[#126BCE]" style={{ width: `${row.widthPct}%` }} />
                 </div>
               </div>
             ))}
@@ -796,7 +796,7 @@ export function AIAgentsGoalsOutcomesTab({
                   Time Saved
                 </p>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-3xl font-normal leading-none text-[#2a1b66]">529h</h3>
+                  <h3 className="text-3xl font-normal leading-none text-[#0B233D]">529h</h3>
                   <Badge variant="outline" className="h-5 border-[#8630e8]/35 bg-[#8630e8]/10 text-xs font-normal text-[#3a0e74]">
                     <TrendingUp className="size-3" aria-hidden />
                     +15.2%
@@ -810,7 +810,7 @@ export function AIAgentsGoalsOutcomesTab({
                   Cost Savings
                 </p>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-3xl font-normal leading-none text-[#2a1b66]">$74.3k</h3>
+                  <h3 className="text-3xl font-normal leading-none text-[#0B233D]">$74.3k</h3>
                   <Badge variant="outline" className="h-5 border-[#FF620A]/35 bg-[#FF620A]/10 text-xs font-normal text-[#b23b00]">
                     <TrendingUp className="size-3" aria-hidden />
                     +12.4%
@@ -824,7 +824,7 @@ export function AIAgentsGoalsOutcomesTab({
                   Revenue
                 </p>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-3xl font-normal leading-none text-[#2a1b66]">$27.9k</h3>
+                  <h3 className="text-3xl font-normal leading-none text-[#0B233D]">$27.9k</h3>
                   <Badge variant="outline" className="h-5 border-[#A8D61D]/35 bg-[#A8D61D]/10 text-xs font-normal text-[#68850f]">
                     <TrendingUp className="size-3" aria-hidden />
                     +8.7%

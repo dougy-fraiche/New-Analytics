@@ -261,12 +261,12 @@ export const copilotFeatureCooccurrenceOption: EChartsCoreOption = {
       type: "heatmap",
       data: copilotFeatureCooccurrenceData,
       itemStyle: {
-        borderColor: "#ffffff",
+        borderColor: "#FFFFFF",
         borderWidth: 2,
         borderRadius: 8,
       },
       emphasis: {
-        itemStyle: { borderColor: "#ffffff", borderRadius: 8, shadowBlur: 6, shadowColor: "rgba(67,56,202,0.25)" },
+        itemStyle: { borderColor: "#FFFFFF", borderRadius: 8, shadowBlur: 6, shadowColor: "rgba(67,56,202,0.25)" },
       },
       label: {
         show: true,

@@ -15,7 +15,6 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "./
 import { ChatInputBar } from "./ChatInputBar";
 import { KpiMetricValueTitle } from "./KpiMetricValueTitle";
 import { KpiSparkline } from "./KpiSparkline";
-import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { cn } from "./ui/utils";
 import {
   type TopInsightCard,
@@ -392,22 +391,17 @@ export function ExplorePhase({
     >
       {card.segment === "anomaly" ? (
         <DropdownMenu>
-          <Tooltip>
-            <DropdownMenuTrigger asChild>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-xs"
-                  aria-label={`Open actions for ${card.title}`}
-                  className="absolute right-2 top-2 z-20"
-                >
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-            </DropdownMenuTrigger>
-            <TooltipContent side="left">More options</TooltipContent>
-          </Tooltip>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              aria-label={`Open actions for ${card.title}`}
+              className="absolute right-2 top-2 z-20"
+            >
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem
               onSelect={(event) => {

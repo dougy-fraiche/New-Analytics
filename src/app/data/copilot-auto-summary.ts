@@ -470,7 +470,7 @@ export const outcomeBreakdownOption: EChartsCoreOption = {
       type: "pie",
       radius: ["50%", "78%"],
       center: ["50%", "50%"],
-      itemStyle: { borderRadius: 6, borderColor: "#fff", borderWidth: 2 },
+      itemStyle: { borderRadius: 6, borderColor: "#FFFFFF", borderWidth: 2 },
       label: { formatter: "{b}: {d}%", color: "hsl(var(--muted-foreground))" },
       data: [
         { value: 3432, name: "As Is", itemStyle: { color: "#3b82f6" } },
