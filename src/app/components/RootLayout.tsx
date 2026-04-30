@@ -1,7 +1,6 @@
 import { Outlet, useLocation, useParams, useNavigate } from "react-router";
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { SidebarProvider, useSidebar } from "./ui/sidebar";
+import { SidebarProvider } from "./ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { TopNavBar } from "./TopNavBar";
 import { SearchOverlay } from "./SearchOverlay";
@@ -28,8 +27,6 @@ import {
 import { AiAssistantPanelControlProvider } from "../contexts/AiAssistantPanelControlContext";
 import { ROUTES } from "../routes";
 import { cn } from "./ui/utils";
-import { Button } from "./ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { topInsightsCards } from "../data/explore-data";
 import {
   findProjectBySlug,
@@ -48,41 +45,6 @@ const CONVERSATION_PREFIX = ROUTES.CONVERSATION("");
 const ANOMALY_INVESTIGATION_PREFIX = ROUTES.ANOMALY_INVESTIGATION("");
 const DASHBOARD_PREFIX = ROUTES.DASHBOARD("");
 const SAVED_PREFIX = `${ROUTES.SAVED}/`;
-
-function SidebarSeamToggle() {
-  const { state: sidebarState, toggleSidebar, isMobile, openMobile } = useSidebar();
-  const isNavigationVisible = isMobile ? openMobile : sidebarState !== "collapsed";
-  const sidebarToggleLabel = isMobile
-    ? (isNavigationVisible ? "Hide navigation" : "Show navigation")
-    : (isNavigationVisible ? "Collapse sidebar" : "Expand sidebar");
-  const seamOffset = isMobile
-    ? "0px"
-    : sidebarState === "collapsed"
-      ? "var(--sidebar-width-icon)"
-      : "var(--sidebar-width)";
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon"
-          className="absolute top-3 z-30 size-5 -translate-x-1/2 rounded-full border-[color:var(--lyra-neutral-n200)] bg-[color:var(--lyra-neutral-n0)] text-[color:var(--lyra-neutral-n500)] shadow-sm transition-[left,background-color] duration-200 ease-linear hover:bg-[color:var(--lyra-neutral-n25)]"
-          style={{ left: seamOffset }}
-          onClick={toggleSidebar}
-        >
-          {isNavigationVisible ? (
-            <ChevronLeft className="size-3.5" />
-          ) : (
-            <ChevronRight className="size-3.5" />
-          )}
-          <span className="sr-only">{sidebarToggleLabel}</span>
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent side="right">{sidebarToggleLabel}</TooltipContent>
-    </Tooltip>
-  );
-}
 
 /** Inner layout — safely consumes all providers mounted by the outer RootLayout wrapper. */
 function RootLayoutInner() {
@@ -201,13 +163,12 @@ function RootLayoutInner() {
 
   // Generate breadcrumbs based on current route (memoized to avoid recomputation)
   const breadcrumbs = useMemo(() => {
-    // Root pages intentionally have no breadcrumbs.
     if (location.pathname === ROUTES.EXPLORE) {
-      return [];
+      return [{ label: "Explore" }];
     }
 
     if (location.pathname === ROUTES.AUTOMATION_OPPORTUNITIES) {
-      return [];
+      return [{ label: "Automation Opportunities" }];
     }
 
     if (location.pathname === ROUTES.AUTOMATION_OPPORTUNITIES_SETTINGS) {
@@ -218,7 +179,7 @@ function RootLayoutInner() {
     }
 
     if (location.pathname === ROUTES.OBSERVABILITY) {
-      return [];
+      return [{ label: "Observability" }];
     }
 
     if (
@@ -267,17 +228,17 @@ function RootLayoutInner() {
     }
 
     if (location.pathname === ROUTES.SAVED) {
-      return [];
+      return [{ label: "Saved" }];
     }
 
     // Recommended Actions
     if (location.pathname === ROUTES.RECOMMENDED_ACTIONS) {
-      return [];
+      return [{ label: "Recommended Actions" }];
     }
 
     // Actions history
     if (location.pathname === ROUTES.ACTIONS_HISTORY) {
-      return [];
+      return [{ label: "History" }];
     }
 
     // All Insights
@@ -287,7 +248,7 @@ function RootLayoutInner() {
 
     // Settings
     if (location.pathname === ROUTES.SETTINGS) {
-      return [];
+      return [{ label: "Settings" }];
     }
 
     // Conversations list (sub of Explore)
@@ -513,14 +474,15 @@ function RootLayoutInner() {
               data-slot="app-body-row"
               className="relative flex min-h-0 min-w-0 flex-1 bg-[color:var(--lyra-neutral-n50)]"
             >
-              <SidebarSeamToggle />
               <AppSidebar />
               <div className="flex min-h-0 min-w-0 flex-1 flex-row pr-3 pb-3">
                 <div
                   data-slot="main-app-card-shell"
                   className={cn(
                     "flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-[12px] border border-[color:var(--lyra-neutral-n200)] bg-background shadow-md",
-                    !assistantPanelResizing && "transition-[width] duration-200 ease-linear",
+                    !assistantPanelResizing &&
+                      aiAssistantOpen &&
+                      "transition-[width] duration-200 ease-linear",
                   )}
                   style={{
                     width: !aiAssistantOpen
@@ -550,10 +512,7 @@ function RootLayoutInner() {
                   <div
                     data-slot="assistant-card-shell"
                     ref={setChatPanelSlot}
-                    className={cn(
-                      "ml-2 flex h-full min-h-0 shrink-0 overflow-visible rounded-[12px] border border-[color:var(--lyra-neutral-n200)] bg-white shadow-md",
-                      !assistantPanelResizing && "transition-[opacity] duration-200 ease-linear",
-                    )}
+                    className="ml-2 flex h-full min-h-0 shrink-0 overflow-visible rounded-[12px] border border-[color:var(--lyra-neutral-n200)] bg-white shadow-md"
                   >
                     <DashboardChatPanel
                       dashboardId={aiRouteContext.dashboardId}

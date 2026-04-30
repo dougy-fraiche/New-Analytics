@@ -84,7 +84,7 @@ function isDashboardProductFilter(value: string | null): value is DashboardProdu
 
 type CopilotShellProps = {
   activeTab: CopilotTabRoute;
-  children: (params: { isCompactDashboard: boolean; copilotFilters: ReactNode }) => ReactNode;
+  children: (params: { isCompactDashboard: boolean }) => ReactNode;
 };
 
 export function CopilotShell({ activeTab, children }: CopilotShellProps) {
@@ -129,79 +129,6 @@ export function CopilotShell({ activeTab, children }: CopilotShellProps) {
     setSearchParams(next, { replace: true });
   };
 
-  const copilotFilters = (
-    <div className="flex flex-wrap items-center gap-2">
-      <Select
-        value={dateRange}
-        onValueChange={(value) =>
-          setFilterParam("dateRange", value as DateRangeOption, DEFAULT_FILTERS.dateRange)
-        }
-      >
-        <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by date range">
-          <LabeledFilterInline label="Date range">{DATE_RANGE_LABELS[dateRange]}</LabeledFilterInline>
-        </SelectTrigger>
-        <SelectContent>
-          {DATE_RANGE_PRIMARY_OPTIONS.map((option) => (
-            <SelectItem key={option} value={option}>
-              {DATE_RANGE_LABELS[option]}
-            </SelectItem>
-          ))}
-          <SelectSeparator />
-          {DATE_RANGE_SECONDARY_OPTIONS.map((option) => (
-            <SelectItem key={option} value={option}>
-              {DATE_RANGE_LABELS[option]}
-            </SelectItem>
-          ))}
-          <SelectSeparator />
-          <SelectItem value={DATE_RANGE_CUSTOM_OPTION}>
-            {DATE_RANGE_LABELS[DATE_RANGE_CUSTOM_OPTION]}
-          </SelectItem>
-        </SelectContent>
-      </Select>
-
-      <Select
-        value={team}
-        onValueChange={(value) =>
-          setFilterParam("team", value as DashboardTeamFilter, DEFAULT_FILTERS.team)
-        }
-      >
-        <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by team">
-          <LabeledSelectValue label="Team" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all-teams">All Teams</SelectItem>
-          <SelectItem value="tier-1">Tier 1 Support</SelectItem>
-          <SelectItem value="tier-2">Tier 2 Support</SelectItem>
-          <SelectItem value="technical">Technical Team</SelectItem>
-        </SelectContent>
-      </Select>
-
-      <Select
-        value={product}
-        onValueChange={(value) =>
-          setFilterParam("product", value as DashboardProductFilter, DEFAULT_FILTERS.product)
-        }
-      >
-        <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by product">
-          <LabeledSelectValue label="Product" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all-products">All Products</SelectItem>
-          <SelectItem value="product-a">Product A</SelectItem>
-          <SelectItem value="product-b">Product B</SelectItem>
-          <SelectItem value="product-c">Product C</SelectItem>
-        </SelectContent>
-      </Select>
-
-      {hasFilterChanges && (
-        <Button variant="ghost" size="sm" className="h-8 shrink-0" onClick={resetFilters}>
-          <RotateCcw className="mr-2 h-4 w-4" />
-          Reset Filters
-        </Button>
-      )}
-    </div>
-  );
-
   const handleTabChange = (value: string) => {
     const tab = value as CopilotTabRoute;
     if (tab === activeTab) return;
@@ -226,6 +153,79 @@ export function CopilotShell({ activeTab, children }: CopilotShellProps) {
           <PageHeader className={pageHeaderTabsFooterClassName}>
             <PageHeaderPrimaryRow
               title={<h1 className="text-3xl tracking-tight">Copilot</h1>}
+              description={copilotDashboard.description}
+              preTabs={(
+                <div className="flex flex-wrap items-center gap-2">
+                  <Select
+                    value={dateRange}
+                    onValueChange={(value) =>
+                      setFilterParam("dateRange", value as DateRangeOption, DEFAULT_FILTERS.dateRange)
+                    }
+                  >
+                    <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by date range">
+                      <LabeledFilterInline label="Date range">{DATE_RANGE_LABELS[dateRange]}</LabeledFilterInline>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DATE_RANGE_PRIMARY_OPTIONS.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {DATE_RANGE_LABELS[option]}
+                        </SelectItem>
+                      ))}
+                      <SelectSeparator />
+                      {DATE_RANGE_SECONDARY_OPTIONS.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {DATE_RANGE_LABELS[option]}
+                        </SelectItem>
+                      ))}
+                      <SelectSeparator />
+                      <SelectItem value={DATE_RANGE_CUSTOM_OPTION}>
+                        {DATE_RANGE_LABELS[DATE_RANGE_CUSTOM_OPTION]}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select
+                    value={team}
+                    onValueChange={(value) =>
+                      setFilterParam("team", value as DashboardTeamFilter, DEFAULT_FILTERS.team)
+                    }
+                  >
+                    <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by team">
+                      <LabeledSelectValue label="Team" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all-teams">All Teams</SelectItem>
+                      <SelectItem value="tier-1">Tier 1 Support</SelectItem>
+                      <SelectItem value="tier-2">Tier 2 Support</SelectItem>
+                      <SelectItem value="technical">Technical Team</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select
+                    value={product}
+                    onValueChange={(value) =>
+                      setFilterParam("product", value as DashboardProductFilter, DEFAULT_FILTERS.product)
+                    }
+                  >
+                    <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by product">
+                      <LabeledSelectValue label="Product" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all-products">All Products</SelectItem>
+                      <SelectItem value="product-a">Product A</SelectItem>
+                      <SelectItem value="product-b">Product B</SelectItem>
+                      <SelectItem value="product-c">Product C</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {hasFilterChanges && (
+                    <Button variant="ghost" size="sm" className="h-8 shrink-0" onClick={resetFilters}>
+                      <RotateCcw className="mr-2 h-4 w-4" />
+                      Reset Filters
+                    </Button>
+                  )}
+                </div>
+              )}
               tabs={(
                 <>
                   <div className="overflow-x-auto">
@@ -255,7 +255,7 @@ export function CopilotShell({ activeTab, children }: CopilotShellProps) {
           <div className="flex-1 min-h-0 overflow-auto">
             <div className={cn(pageRootListScrollGutterClassName, "pb-4 md:pb-8")}>
               <PageTransition className={pageMainColumnClassName}>
-                <div ref={dashboardContentRef}>{children({ isCompactDashboard, copilotFilters })}</div>
+                <div ref={dashboardContentRef}>{children({ isCompactDashboard })}</div>
               </PageTransition>
             </div>
           </div>

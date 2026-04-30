@@ -379,6 +379,13 @@
     --sidebar-accent-foreground: var(--primary-700);
     --sidebar-border: var(--neutral-200);
     --sidebar-ring: var(--primary-300);
+    --sidebar-state-hover-bg: var(--neutral-50);
+    --sidebar-state-pressed-bg: #ebebeb;
+    --sidebar-state-selected-bg: #e2eefc;
+    --sidebar-state-selected-fg: #185ba4;
+    --sidebar-state-indicator-interactive: #666666;
+    --sidebar-state-indicator-active: var(--sidebar-state-selected-fg);
+    --sidebar-subtree-indicator-default: var(--neutral-300);
     --page-background: var(--neutral-100);
 }
 
@@ -418,6 +425,13 @@
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
+    --sidebar-state-hover-bg: color-mix(in oklch, var(--sidebar-foreground) 8%, transparent);
+    --sidebar-state-pressed-bg: color-mix(in oklch, var(--sidebar-foreground) 14%, transparent);
+    --sidebar-state-selected-bg: var(--sidebar-accent);
+    --sidebar-state-selected-fg: var(--sidebar-primary);
+    --sidebar-state-indicator-interactive: color-mix(in oklch, var(--sidebar-foreground) 70%, transparent);
+    --sidebar-state-indicator-active: var(--sidebar-state-selected-fg);
+    --sidebar-subtree-indicator-default: color-mix(in oklch, var(--sidebar-foreground) 26%, transparent);
     --primary-soft: color-mix(in oklch, var(--primary-500) 18%, var(--background));
     --primary-soft-foreground: oklch(0.92 0.05 290);
     --page-background: color-mix(in oklch, var(--muted) 59.5%, var(--background));
@@ -445,24 +459,10 @@
 
 @layer components {
   /**
-   * Explore page surface — linear gradient top → bottom (P0 → P25).
+   * Explore page surface — solid background.
    */
   .explore-page-gradient {
     background-color: var(--primary-0);
-    background-image: linear-gradient(
-      to bottom,
-      var(--primary-0) 0%,
-      var(--primary-25) 100%
-    );
-    background-repeat: no-repeat;
-  }
-
-  .dark .explore-page-gradient {
-    background-image: linear-gradient(
-      to bottom,
-      var(--primary-0) 0%,
-      var(--primary-25) 100%
-    );
   }
 
   /**
@@ -472,7 +472,7 @@
     background-image: linear-gradient(
       to bottom,
       transparent 0%,
-      var(--primary-25) 100%
+      var(--neutral-0) 100%
     );
   }
 

@@ -631,7 +631,7 @@ export function ExplorePhase({
 
         <div
           className={`sticky bottom-0 z-30 shrink-0 border-t relative transition-colors ${
-            showFooterFade ? "border-border/60 bg-primary-25" : "border-transparent bg-transparent"
+            showFooterFade ? "border-border/60 bg-neutral-0" : "border-transparent bg-neutral-0"
           }`}
         >
           <div

@@ -65,7 +65,10 @@ export function SettingsPage() {
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <PageHeader>
-        <PageHeaderPrimaryRow title={<h1 className="text-3xl tracking-tight">Settings</h1>} />
+        <PageHeaderPrimaryRow
+          title={<h1 className="text-3xl tracking-tight">Settings</h1>}
+          description="Manage your account preferences and application configuration"
+        />
       </PageHeader>
       <div className="flex-1 min-h-0 overflow-auto">
         <div className={cn(pageRootListScrollGutterClassName, "pb-8")}>

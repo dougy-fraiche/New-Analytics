@@ -1,21 +1,22 @@
 import type { ReactNode } from "react";
-import { Link, useLocation } from "react-router";
-import { Sparkles } from "lucide-react";
+import { Link } from "react-router";
+import { PanelLeftClose, PanelLeftOpen, Sparkles } from "lucide-react";
 
 import { usePageBreadcrumbs } from "../contexts/PageBreadcrumbsContext";
 import { useOptionalAiAssistantPanelControl } from "../contexts/AiAssistantPanelControlContext";
+import { useSidebar } from "./ui/sidebar";
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
+  BreadcrumbPage,
   BreadcrumbSeparator,
 } from "./ui/breadcrumb";
 import { Button } from "./ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 import { cn } from "./ui/utils";
-import { ROUTES } from "../routes";
 
 /**
  * Layout patterns aligned with C26 / token-based UI (see `src/styles/tailwind.css`).
@@ -38,7 +39,7 @@ export const cardIconWellClassName =
  * Horizontal/top padding live on the inner shell (see `PageHeader`) to match `PageContent`.
  */
 export const pageHeaderClassName =
-  "shrink-0 sticky top-0 z-10 w-full border-b border-border/60 bg-background [&_h1]:text-primary-900";
+  "w-full border-b border-border/60 bg-background [&_h1]:text-primary-900";
 
 /**
  * Merge onto `<PageHeader className={pageHeaderTabsFooterClassName}>` when the last row
@@ -83,48 +84,104 @@ export function PageContent({
 
 export interface PageHeaderPrimaryRowProps {
   title: ReactNode;
+  description?: ReactNode;
   actions?: ReactNode;
+  preTabs?: ReactNode;
   tabs?: ReactNode;
   className?: string;
 }
 
 /**
  * Standardized page-header primary layout:
- * - Left: breadcrumb + title stacked (4px gap)
- * - Right: Ask AI + page actions
+ * - Title (left) + page actions (right)
  * - Optional tabs row below
  */
 export function PageHeaderPrimaryRow({
   title,
+  description,
   actions,
+  preTabs,
   tabs,
   className,
 }: PageHeaderPrimaryRowProps) {
-  const breadcrumbs = usePageBreadcrumbs();
-  const jumpableBreadcrumbs = breadcrumbs.slice(0, -1).filter((crumb) => Boolean(crumb.href));
-  const location = useLocation();
-  const aiAssistantPanelControl = useOptionalAiAssistantPanelControl();
-  const isExploreHome = location.pathname === ROUTES.EXPLORE;
-  const showAskAiButton = !isExploreHome && aiAssistantPanelControl !== undefined;
-  const showActions = showAskAiButton || actions !== undefined;
+  const showActions = actions !== undefined;
 
   return (
     <div className={cn("w-full", className)}>
       <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 flex-col gap-1">
-            {jumpableBreadcrumbs.length > 0 ? (
+        <div className="min-w-0 flex-1">{title}</div>
+        {showActions ? <div className="ml-auto flex shrink-0 items-center gap-2">{actions}</div> : null}
+      </div>
+      {description ? <div className="mt-1 text-sm text-muted-foreground">{description}</div> : null}
+      {preTabs ? <div className="mt-4">{preTabs}</div> : null}
+      {tabs ? <div className="mt-4">{tabs}</div> : null}
+    </div>
+  );
+}
+
+export function PageBreadcrumbBar({ className }: { className?: string } = {}) {
+  const breadcrumbs = usePageBreadcrumbs();
+  const { state: sidebarState, isMobile, openMobile, toggleSidebar } = useSidebar();
+  const aiAssistantPanelControl = useOptionalAiAssistantPanelControl();
+  const isNavigationVisible = isMobile ? openMobile : sidebarState !== "collapsed";
+  const sidebarToggleLabel = isMobile
+    ? (isNavigationVisible ? "Hide navigation" : "Show navigation")
+    : (isNavigationVisible ? "Collapse sidebar" : "Expand sidebar");
+  const showAskAiButton = aiAssistantPanelControl !== undefined;
+  const showBreadcrumbBar = breadcrumbs.length > 0 || showAskAiButton;
+
+  if (!showBreadcrumbBar) {
+    return null;
+  }
+
+  return (
+    <div
+      data-slot="page-breadcrumb-bar"
+      className={cn("w-full border-b border-[color:var(--lyra-neutral-n200)] bg-background", className)}
+    >
+      <div className="w-full min-w-0 p-3">
+        <div className="flex w-full min-w-0 items-center gap-3">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 shrink-0 text-[color:var(--lyra-neutral-n600)] hover:bg-[color:var(--lyra-neutral-n100)]"
+                onClick={toggleSidebar}
+              >
+                {isNavigationVisible ? (
+                  <PanelLeftClose className="size-4" />
+                ) : (
+                  <PanelLeftOpen className="size-4" />
+                )}
+                <span className="sr-only">{sidebarToggleLabel}</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">{sidebarToggleLabel}</TooltipContent>
+          </Tooltip>
+          <div className="min-w-0 flex-1">
+            {breadcrumbs.length > 0 ? (
               <Breadcrumb>
                 <BreadcrumbList className="min-w-0 flex-nowrap overflow-hidden whitespace-nowrap">
-                  {jumpableBreadcrumbs.flatMap((crumb, index) => {
-                    const isLast = index === jumpableBreadcrumbs.length - 1;
+                  {breadcrumbs.flatMap((crumb, index) => {
+                    const isLast = index === breadcrumbs.length - 1;
                     return [
                       <BreadcrumbItem key={`item-${crumb.label}-${crumb.href}-${index}`} className="min-w-0">
-                        <BreadcrumbLink asChild className="truncate text-[color:var(--lyra-primary-p500)]">
-                          <Link to={crumb.href!} className="truncate">
+                        {isLast ? (
+                          <BreadcrumbPage className="truncate text-[color:var(--lyra-neutral-n700)]">
                             {crumb.label}
-                          </Link>
-                        </BreadcrumbLink>
+                          </BreadcrumbPage>
+                        ) : crumb.href ? (
+                          <BreadcrumbLink asChild className="truncate text-[color:var(--lyra-primary-p500)]">
+                            <Link to={crumb.href} className="truncate">
+                              {crumb.label}
+                            </Link>
+                          </BreadcrumbLink>
+                        ) : (
+                          <span className="truncate text-[color:var(--lyra-neutral-n500)]">
+                            {crumb.label}
+                          </span>
+                        )}
                       </BreadcrumbItem>,
                       !isLast ? (
                         <BreadcrumbSeparator key={`sep-${crumb.label}-${crumb.href}-${index}`} className="text-[color:var(--lyra-neutral-n500)]" />
@@ -134,13 +191,9 @@ export function PageHeaderPrimaryRow({
                 </BreadcrumbList>
               </Breadcrumb>
             ) : null}
-            <div className="min-w-0">{title}</div>
           </div>
-        </div>
-        {showActions ? (
-          <div className="ml-auto flex shrink-0 items-center gap-2">
-            {actions}
-            {showAskAiButton && aiAssistantPanelControl ? (
+          {showAskAiButton && aiAssistantPanelControl ? (
+            <div className="ml-auto flex shrink-0 items-center">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -161,11 +214,10 @@ export function PageHeaderPrimaryRow({
                   {aiAssistantPanelControl.isOpen ? "AI assistant open" : "AI assistant closed"}
                 </TooltipContent>
               </Tooltip>
-            ) : null}
-          </div>
-        ) : null}
+            </div>
+          ) : null}
+        </div>
       </div>
-      {tabs ? <div className="mt-4">{tabs}</div> : null}
     </div>
   );
 }
@@ -179,10 +231,13 @@ export function PageHeader({
   className?: string;
 }) {
   return (
-    <header data-slot="page-header" className={pageHeaderClassName}>
-      <div className={cn("w-full min-w-0 px-8 pt-6 pb-6", className)}>
-        <div className={cn(pageMainColumnClassName, "space-y-3")}>{children}</div>
-      </div>
-    </header>
+    <div className="shrink-0 sticky top-0 z-10 w-full bg-background">
+      <PageBreadcrumbBar />
+      <header data-slot="page-header" className={pageHeaderClassName}>
+        <div className={cn("w-full min-w-0 px-8 pt-6 pb-6", className)}>
+          <div className={cn(pageMainColumnClassName, "space-y-3")}>{children}</div>
+        </div>
+      </header>
+    </div>
   );
 }

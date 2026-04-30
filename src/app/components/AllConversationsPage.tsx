@@ -137,7 +137,33 @@ export function AllConversationsPage() {
               </Badge>
             </section>
           )}
+          description="Browse and manage your conversations"
         />
+        {currentList.length > 0 && (
+          <div className="flex w-full flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-[200px] max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                aria-label="Search conversations"
+                placeholder="Search conversations..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            {searchQuery && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="shrink-0"
+                onClick={() => setSearchQuery("")}
+              >
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Reset Filters
+              </Button>
+            )}
+          </div>
+        )}
       </PageHeader>
       <div className="flex-1 min-h-0 overflow-auto">
         <div className={cn(pageRootListScrollGutterClassName, "pb-8")}>
@@ -150,31 +176,6 @@ export function AllConversationsPage() {
           description: "Browse and manage your conversations",
         }}
       />
-      {currentList.length > 0 && (
-        <div className="flex w-full flex-wrap items-center gap-3">
-          <div className="relative flex-1 min-w-[200px] max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              aria-label="Search conversations"
-              placeholder="Search conversations..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          {searchQuery && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="shrink-0"
-              onClick={() => setSearchQuery("")}
-            >
-              <RotateCcw className="mr-2 h-4 w-4" />
-              Reset Filters
-            </Button>
-          )}
-        </div>
-      )}
       {currentList.length === 0 ? (
         <Empty>
           <EmptyHeader>

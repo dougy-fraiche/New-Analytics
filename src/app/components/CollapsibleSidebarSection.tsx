@@ -82,7 +82,7 @@ export function CollapsibleSidebarSection({
                         type="button"
                         aria-expanded={open}
                         aria-label={chevronToggleLabel}
-                        className="absolute left-2 top-1/2 z-10 flex size-4 -translate-y-1/2 items-center justify-center rounded-sm text-sidebar-foreground outline-hidden ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-offset-0 opacity-0 pointer-events-none group-hover/section-row:pointer-events-auto group-hover/section-row:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100 group-data-[collapsible=icon]:hidden"
+                        className="absolute left-2 top-1/2 z-10 flex size-4 -translate-y-1/2 items-center justify-center rounded-sm text-sidebar-foreground outline-hidden ring-sidebar-ring hover:bg-[var(--sidebar-state-hover-bg)] active:bg-[var(--sidebar-state-pressed-bg)] focus-visible:ring-2 focus-visible:ring-offset-0 opacity-0 pointer-events-none group-hover/section-row:pointer-events-auto group-hover/section-row:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100 group-data-[collapsible=icon]:hidden"
                         onMouseDown={(e) => {
                           if (e.button === 0) e.preventDefault();
                         }}

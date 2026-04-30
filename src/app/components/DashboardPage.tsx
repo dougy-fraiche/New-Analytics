@@ -492,6 +492,7 @@ export function DashboardPage({ resolvedStandaloneDashboardId }: DashboardPagePr
         <PageHeader>
           <PageHeaderPrimaryRow
             title={<h1 className="text-3xl tracking-tight">{meta.title}</h1>}
+            description={meta.description}
             actions={(
               <DropdownMenu>
                 <Tooltip>
@@ -551,24 +552,7 @@ export function DashboardPage({ resolvedStandaloneDashboardId }: DashboardPagePr
               </DropdownMenu>
             )}
           />
-        </PageHeader>
-
-        {/* Scrollable content */}
-        <div className="flex-1 min-h-0 overflow-auto">
-          <div className={cn(pageRootListScrollGutterClassName, "pb-4 md:pb-8")}>
-          <PageTransition className={pageMainColumnClassName}>
-          <div ref={dashboardContentRef} className="space-y-4">
-          {activeDashboardId ? (
-            <HeaderAIInsightsRow
-              dashboardId={activeDashboardId}
-              dashboardData={{
-                id: activeDashboardId,
-                title: meta.title,
-                description: meta.description,
-              }}
-            />
-          ) : null}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="mt-4 flex flex-wrap items-center gap-2">
             <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRangeOption)}>
               <SelectTrigger className="h-8 w-auto shrink-0">
                 <LabeledFilterInline label="Date range">{DATE_RANGE_LABELS[dateRange]}</LabeledFilterInline>
@@ -632,6 +616,23 @@ export function DashboardPage({ resolvedStandaloneDashboardId }: DashboardPagePr
               </Button>
             )}
           </div>
+        </PageHeader>
+
+        {/* Scrollable content */}
+        <div className="flex-1 min-h-0 overflow-auto">
+          <div className={cn(pageRootListScrollGutterClassName, "pb-4 md:pb-8")}>
+          <PageTransition className={pageMainColumnClassName}>
+          <div ref={dashboardContentRef} className="space-y-4">
+          {activeDashboardId ? (
+            <HeaderAIInsightsRow
+              dashboardId={activeDashboardId}
+              dashboardData={{
+                id: activeDashboardId,
+                title: meta.title,
+                description: meta.description,
+              }}
+            />
+          ) : null}
           {/* Section heading — 2rem below AI insights only (avoid space-y-4 + mt-8 stacking) */}
           <div
             className={cn(

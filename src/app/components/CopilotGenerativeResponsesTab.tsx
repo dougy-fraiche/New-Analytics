@@ -1,4 +1,4 @@
-import { type ReactNode, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { EChartsCoreOption } from "echarts";
 import { CircleGauge, LineChart } from "lucide-react";
 import { HeaderAIInsightsRow } from "./HeaderAIInsightsRow";
@@ -297,11 +297,9 @@ function AdherenceSplitBar({
 export function CopilotGenerativeResponsesTab({
   isCompactDashboard,
   showWidgetOverflowMenu = true,
-  copilotFilters,
 }: {
   isCompactDashboard: boolean;
   showWidgetOverflowMenu?: boolean;
-  copilotFilters?: ReactNode;
 }) {
   const [categoryAnalysisLegendSelection, setCategoryAnalysisLegendSelection] = useState<CategoryAnalysisLegendSelection>({
     "As Is": true,
@@ -317,7 +315,6 @@ export function CopilotGenerativeResponsesTab({
   return (
     <div className="space-y-4">
       <HeaderAIInsightsRow dashboardId={copilotAiInsightsIds.generativeResponses} />
-      {copilotFilters}
 
       <h3 className="mt-8 flex items-center gap-2 tracking-tight">
         <CircleGauge className="h-4 w-4 shrink-0 text-primary" aria-hidden />

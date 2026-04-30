@@ -174,6 +174,7 @@ export function AutomationOpportunitiesSettingsPage() {
       <PageHeader>
         <PageHeaderPrimaryRow
           title={<h1 className="text-3xl tracking-tight">Settings</h1>}
+          description="Configure company details, automation defaults, and Cognigy integration settings."
           actions={(
             <>
               <Button

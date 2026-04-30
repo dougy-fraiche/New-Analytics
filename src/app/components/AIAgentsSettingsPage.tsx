@@ -1783,6 +1783,7 @@ export function AIAgentsSettingsPage() {
         <PageHeader className={pageHeaderTabsFooterClassName}>
           <PageHeaderPrimaryRow
             title={<h1 className="text-3xl tracking-tight text-primary-900">Settings</h1>}
+            description="Configure AI agent evaluation criteria, goals, and analysis behavior."
             actions={(
               <>
                 <Button

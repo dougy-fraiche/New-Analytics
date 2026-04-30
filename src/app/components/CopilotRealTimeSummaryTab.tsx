@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CircleGauge,
   Columns3,
@@ -63,11 +63,9 @@ function metricTileClassName(tone: "neutral" | "primary" | "warning") {
 export function CopilotRealTimeSummaryTab({
   isCompactDashboard,
   showWidgetOverflowMenu = true,
-  copilotFilters,
 }: {
   isCompactDashboard: boolean;
   showWidgetOverflowMenu?: boolean;
-  copilotFilters?: ReactNode;
 }) {
   const [sessionSearch, setSessionSearch] = useState("");
   const [sessionPage, setSessionPage] = useState(1);
@@ -108,7 +106,6 @@ export function CopilotRealTimeSummaryTab({
   return (
     <div className="space-y-4">
       <HeaderAIInsightsRow dashboardId={copilotAiInsightsIds.realTimeSummary} />
-      {copilotFilters}
 
       <h3 className="mt-8 flex items-center gap-2 tracking-tight">
         <CircleGauge className="h-4 w-4 shrink-0 text-primary" aria-hidden />

@@ -554,6 +554,7 @@ export function SavedFoldersPage({ resolvedFolderId }: { resolvedFolderId?: stri
                 </Badge>
               </section>
             )}
+            description={`${selectedFolder.dashboards.length} ${selectedFolder.dashboards.length === 1 ? "dashboard" : "dashboards"}`}
             actions={(
               <DropdownMenu>
                 <Tooltip>
@@ -580,6 +581,31 @@ export function SavedFoldersPage({ resolvedFolderId }: { resolvedFolderId?: stri
               </DropdownMenu>
             )}
           />
+          {selectedFolder.dashboards.length > 0 && (
+            <div className="flex w-full flex-wrap items-center gap-3">
+              <div className="relative flex-1 min-w-[200px] max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  aria-label="Search dashboards"
+                  placeholder="Search dashboards..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => setSearchQuery("")}
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Reset Filters
+                </Button>
+              )}
+            </div>
+          )}
         </PageHeader>
         <div className="flex-1 min-h-0 overflow-auto">
           <div className={cn(pageRootListScrollGutterClassName, "pb-8")}>
@@ -592,31 +618,6 @@ export function SavedFoldersPage({ resolvedFolderId }: { resolvedFolderId?: stri
             description: `${selectedFolder.dashboards.length} ${selectedFolder.dashboards.length === 1 ? "dashboard" : "dashboards"}`,
           }}
         />
-        {selectedFolder.dashboards.length > 0 && (
-          <div className="flex w-full flex-wrap items-center gap-3">
-            <div className="relative flex-1 min-w-[200px] max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                aria-label="Search dashboards"
-                placeholder="Search dashboards..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            {searchQuery && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="shrink-0"
-                onClick={() => setSearchQuery("")}
-              >
-                <RotateCcw className="mr-2 h-4 w-4" />
-                Reset Filters
-              </Button>
-            )}
-          </div>
-        )}
         {/* Dashboards in Folder */}
         {selectedFolder.dashboards.length > 0 ? (
           <>
@@ -1035,6 +1036,7 @@ export function SavedFoldersPage({ resolvedFolderId }: { resolvedFolderId?: stri
                   )}
                 </section>
               )}
+              description="Organize and manage your saved dashboards in folders"
               actions={(
                 <Button onClick={() => setNewFolderDialog(true)}>
                   <Plus className="h-4 w-4 mr-2" />
@@ -1043,6 +1045,43 @@ export function SavedFoldersPage({ resolvedFolderId }: { resolvedFolderId?: stri
               )}
             />
           </div>
+          {allCustomDashboards.length > 0 && (
+            <div className="flex w-full flex-wrap items-center gap-3">
+              <div className="relative flex-1 min-w-[200px] max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  aria-label="Search dashboards"
+                  placeholder="Search dashboards..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <Select value={folderFilter} onValueChange={(val) => { setFolderFilter(val); clearDashboardSelection(); }}>
+                <SelectTrigger className="h-8 w-auto shrink-0">
+                  <LabeledSelectValue label="Folder" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Folders</SelectItem>
+                  <SelectItem value="standalone">Standalone</SelectItem>
+                  {projects.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {(searchQuery || folderFilter !== "all") && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => { setSearchQuery(""); setFolderFilter("all"); }}
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Reset Filters
+                </Button>
+              )}
+            </div>
+          )}
         </PageHeader>
         <div className="flex-1 min-h-0 overflow-auto">
           <div className={cn(pageRootListScrollGutterClassName, "pb-8")}>
@@ -1055,43 +1094,6 @@ export function SavedFoldersPage({ resolvedFolderId }: { resolvedFolderId?: stri
             description: "Organize and manage your saved dashboards in folders",
           }}
         />
-        {allCustomDashboards.length > 0 && (
-          <div className="flex w-full flex-wrap items-center gap-3">
-            <div className="relative flex-1 min-w-[200px] max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                aria-label="Search dashboards"
-                placeholder="Search dashboards..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <Select value={folderFilter} onValueChange={(val) => { setFolderFilter(val); clearDashboardSelection(); }}>
-              <SelectTrigger className="h-8 w-auto shrink-0">
-                <LabeledSelectValue label="Folder" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Folders</SelectItem>
-                <SelectItem value="standalone">Standalone</SelectItem>
-                {projects.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {(searchQuery || folderFilter !== "all") && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="shrink-0"
-                onClick={() => { setSearchQuery(""); setFolderFilter("all"); }}
-              >
-                <RotateCcw className="mr-2 h-4 w-4" />
-                Reset Filters
-              </Button>
-            )}
-          </div>
-        )}
         {/* Folder Cards Overview — each is a drop target */}
         {projects.length > 0 && (
           <section className="space-y-4">

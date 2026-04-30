@@ -237,7 +237,7 @@ const SUB_ITEM_ROW_WRAPPER_CLASS =
 
 /** 20×20 control, rounded-sm — shared by submenu overflow triggers and Saved “New folder”. */
 const SUB_ITEM_ICON_BUTTON_BOX =
-  "flex h-5 w-5 shrink-0 items-center justify-center rounded-sm p-0 text-sidebar-foreground outline-hidden ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-offset-0";
+  "flex h-5 w-5 shrink-0 items-center justify-center rounded-sm p-0 text-sidebar-foreground outline-hidden ring-sidebar-ring hover:bg-[var(--sidebar-state-hover-bg)] active:bg-[var(--sidebar-state-pressed-bg)] focus-visible:ring-2 focus-visible:ring-offset-0";
 
 const SUB_ITEM_OVERFLOW_TRIGGER_CLASS = cn(
   SUB_ITEM_ICON_BUTTON_BOX,
@@ -726,7 +726,7 @@ export function AppSidebar() {
                                 type="button"
                                 aria-expanded={folderOpen}
                                 aria-label={folderOpen ? "Collapse" : "Expand"}
-                                className="absolute left-2 top-1/2 z-10 flex size-4 -translate-y-1/2 items-center justify-center rounded-sm text-sidebar-foreground outline-hidden ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-offset-0 opacity-0 pointer-events-none group-hover/folder-row:pointer-events-auto group-hover/folder-row:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100"
+                                className="absolute left-2 top-1/2 z-10 flex size-4 -translate-y-1/2 items-center justify-center rounded-sm text-sidebar-foreground outline-hidden ring-sidebar-ring hover:bg-[var(--sidebar-state-hover-bg)] active:bg-[var(--sidebar-state-pressed-bg)] focus-visible:ring-2 focus-visible:ring-offset-0 opacity-0 pointer-events-none group-hover/folder-row:pointer-events-auto group-hover/folder-row:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100"
                                 onMouseDown={(e) => {
                                   if (e.button === 0) e.preventDefault();
                                 }}

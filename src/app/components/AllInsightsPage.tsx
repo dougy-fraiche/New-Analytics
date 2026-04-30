@@ -286,7 +286,52 @@ export function AllInsightsPage() {
                 <h1 className="text-3xl tracking-tight">All Insights</h1>
               </div>
             )}
+            description="A catalog of every unique widget across all dashboards"
           />
+          {allWidgets.length > 0 && (
+            <div className="mt-4 flex w-full flex-wrap items-center gap-3">
+              <div className="relative flex-1 min-w-[200px] max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  aria-label="Search widgets"
+                  placeholder="Search widgets by name, type, or dashboard..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <Select value={chartTypeFilter} onValueChange={setChartTypeFilter}>
+                <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by chart type">
+                  <LabeledSelectValue label="Chart type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  {availableChartTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {CHART_TYPE_LABELS[type] || type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {(searchQuery || chartTypeFilter !== "all") && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setChartTypeFilter("all");
+                  }}
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Reset Filters
+                </Button>
+              )}
+              <span className="text-sm text-muted-foreground ml-auto shrink-0">
+                {filteredWidgets.length} of {allWidgets.length} widgets
+              </span>
+            </div>
+          )}
         </PageHeader>
         <div className="flex-1 overflow-auto min-h-0">
           <div className={cn(pageRootListScrollGutterClassName, "pb-8")}>
@@ -314,50 +359,6 @@ export function AllInsightsPage() {
 
             {allWidgets.length > 0 ? (
               <>
-                {/* Search + Filters */}
-                <div className="flex w-full flex-wrap items-center gap-3">
-                  <div className="relative flex-1 min-w-[200px] max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      aria-label="Search widgets"
-                      placeholder="Search widgets by name, type, or dashboard..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9"
-                    />
-                  </div>
-                  <Select value={chartTypeFilter} onValueChange={setChartTypeFilter}>
-                    <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by chart type">
-                      <LabeledSelectValue label="Chart type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
-                      {availableChartTypes.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {CHART_TYPE_LABELS[type] || type}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {(searchQuery || chartTypeFilter !== "all") && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="shrink-0"
-                      onClick={() => {
-                        setSearchQuery("");
-                        setChartTypeFilter("all");
-                      }}
-                    >
-                      <RotateCcw className="mr-2 h-4 w-4" />
-                      Reset Filters
-                    </Button>
-                  )}
-                  <span className="text-sm text-muted-foreground ml-auto shrink-0">
-                    {filteredWidgets.length} of {allWidgets.length} widgets
-                  </span>
-                </div>
-
                 {/* Widget Grid */}
                 {filteredWidgets.length === 0 ? (
                   <Empty>

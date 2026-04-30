@@ -272,11 +272,10 @@ export function TopNavBar({
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              size="lg"
               aria-label="User menu"
-              className="gap-2 rounded-full px-1.5 text-[color:var(--lyra-neutral-n700)] hover:bg-[color:var(--lyra-neutral-n100)]"
+              className="h-10 gap-2 rounded-md px-2 text-[color:var(--lyra-neutral-n700)] hover:bg-[color:var(--lyra-neutral-n100)]"
             >
-              <Avatar className="size-10 rounded-full">
+              <Avatar className="size-8 rounded-full">
                 <AvatarFallback
                   delayMs={0}
                   className="rounded-full bg-[color:var(--lyra-neutral-n500)] text-white text-xs"

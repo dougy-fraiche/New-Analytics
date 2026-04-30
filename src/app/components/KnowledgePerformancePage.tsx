@@ -141,6 +141,7 @@ export function KnowledgePerformancePage() {
           <PageHeader className={pageHeaderTabsFooterClassName}>
             <PageHeaderPrimaryRow
               title={<h1 className="text-3xl tracking-tight">Knowledge Performance</h1>}
+              description="Monitor knowledge quality, retrieval health, and improvement opportunities."
               tabs={(
                 <TabsList variant="line">
                   {KNOWLEDGE_PERFORMANCE_TABS.map((tab) => (

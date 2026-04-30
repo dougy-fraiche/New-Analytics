@@ -103,7 +103,47 @@ export function ObservabilityPage() {
                 </Badge>
               </section>
             )}
+            description="Out-of-the-box dashboards providing comprehensive insights into your conversational analytics platform"
           />
+          <div className="flex w-full flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-[200px] max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                aria-label="Search dashboards"
+                placeholder="Search dashboards..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by category">
+                <LabeledSelectValue label="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All categories</SelectItem>
+                {categoryOptions.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="shrink-0"
+                onClick={() => {
+                  setSearchQuery("");
+                  setCategoryFilter("all");
+                }}
+              >
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Reset Filters
+              </Button>
+            )}
+          </div>
       </PageHeader>
       <div className="flex-1 min-h-0 overflow-auto">
         <div className={cn(pageRootListScrollGutterClassName, "pb-8")}>
@@ -117,45 +157,6 @@ export function ObservabilityPage() {
             "Out-of-the-box dashboards providing comprehensive insights into your conversational analytics platform",
         }}
       />
-      <div className="flex w-full flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            aria-label="Search dashboards"
-            placeholder="Search dashboards..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by category">
-            <LabeledSelectValue label="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All categories</SelectItem>
-            {categoryOptions.map((category) => (
-              <SelectItem key={category.id} value={category.id}>
-                {category.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {hasActiveFilters && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="shrink-0"
-            onClick={() => {
-              setSearchQuery("");
-              setCategoryFilter("all");
-            }}
-          >
-            <RotateCcw className="mr-2 h-4 w-4" />
-            Reset Filters
-          </Button>
-        )}
-      </div>
       <div className="space-y-3">
           <Table>
             <TableHeader>

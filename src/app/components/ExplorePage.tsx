@@ -35,6 +35,7 @@ import { WidgetAIProvider } from "../contexts/WidgetAIContext";
 import { ExplorePhase } from "./ExplorePhase";
 import { ConversationPhase } from "./ConversationPhase";
 import { ConversationDashboardArea } from "./ConversationDashboardArea";
+import { PageBreadcrumbBar } from "./PageChrome";
 
 // Two UI phases:
 // "explore"      — hero + input centred + insights cards
@@ -488,6 +489,11 @@ export function ExplorePage() {
   // ── Render ────────────────────────────────────────────────────────
   return (
     <div ref={containerRef} className="h-full flex flex-col overflow-hidden relative">
+      {phase === "explore" && !currentConversationId ? (
+        <div className="shrink-0 sticky top-0 z-10 w-full bg-background">
+          <PageBreadcrumbBar />
+        </div>
+      ) : null}
       {/* ─── PHASE 1: EXPLORE ────────────────────────────── */}
       {phase === "explore" && !currentConversationId && (
         <WidgetAIProvider

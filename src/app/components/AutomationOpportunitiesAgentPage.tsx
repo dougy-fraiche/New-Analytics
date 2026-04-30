@@ -373,6 +373,7 @@ export function AutomationOpportunitiesAgentPage() {
               Intent: {draft.intentTitle}
             </h1>
           )}
+          description="Configure this automation intent, including jobs, instructions, and connected tools."
           actions={hasUnsavedChanges ? (
             <>
               <Button

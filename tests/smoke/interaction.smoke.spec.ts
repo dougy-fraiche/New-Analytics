@@ -46,4 +46,97 @@ test.describe("interaction smoke", () => {
     await expect(page.getByText("Charge Breakdown").first()).toBeVisible();
     await runtimeHealth.assertNoRuntimeIssues();
   });
+
+  test("sidebar menu and submenu state tokens apply in expanded and collapsed modes", async ({
+    page,
+  }) => {
+    test.skip(
+      test.info().project.name !== "desktop-chrome",
+      "Desktop interaction checks only.",
+    );
+
+    await page.goto(ROUTES.ACTIONS_HISTORY);
+
+    const selectedMenuButton = page.locator(
+      '[data-sidebar="menu-button"][data-active="true"]',
+    ).first();
+    const hoverMenuButton = page.locator(
+      '[data-sidebar="menu-button"][data-active="false"]',
+    ).first();
+    await expect(selectedMenuButton).toBeVisible();
+    await expect(hoverMenuButton).toBeVisible();
+
+    const selectedMenuStyles = await selectedMenuButton.evaluate((el) => {
+      const base = getComputedStyle(el);
+      const after = getComputedStyle(el, "::after");
+      return {
+        background: base.backgroundColor,
+        color: base.color,
+        indicatorOpacity: after.opacity,
+        indicatorColor: after.backgroundColor,
+      };
+    });
+    expect(selectedMenuStyles.background).toBe("rgb(226, 238, 252)");
+    expect(selectedMenuStyles.color).toBe("rgb(24, 91, 164)");
+    expect(selectedMenuStyles.indicatorOpacity).toBe("1");
+    expect(selectedMenuStyles.indicatorColor).toBe("rgb(24, 91, 164)");
+
+    const hoverMenuClassName = await hoverMenuButton.getAttribute("class");
+    expect(hoverMenuClassName ?? "").toContain(
+      "hover:bg-[var(--sidebar-state-hover-bg)]",
+    );
+    expect(hoverMenuClassName ?? "").toContain(
+      "active:bg-[var(--sidebar-state-pressed-bg)]",
+    );
+    expect(hoverMenuClassName ?? "").toContain(
+      "after:bg-[var(--sidebar-state-indicator-interactive)]",
+    );
+
+    await page.goto(ROUTES.COPILOT);
+    const selectedSubmenuButton = page
+      .locator('[data-sidebar="menu-sub-button"][data-active="true"]')
+      .first();
+    const hoverSubmenuButton = page
+      .locator('[data-sidebar="menu-sub-button"][data-active="false"]')
+      .first();
+    await expect(selectedSubmenuButton).toBeVisible();
+    await expect(hoverSubmenuButton).toBeVisible();
+
+    const hoverSubmenuClassName = await hoverSubmenuButton.getAttribute("class");
+    expect(hoverSubmenuClassName ?? "").toContain(
+      "hover:bg-[var(--sidebar-state-hover-bg)]",
+    );
+    expect(hoverSubmenuClassName ?? "").toContain(
+      "active:bg-[var(--sidebar-state-pressed-bg)]",
+    );
+
+    const selectedSubmenuStyles = await selectedSubmenuButton.evaluate((el) => {
+      const base = getComputedStyle(el);
+      return {
+        background: base.backgroundColor,
+        color: base.color,
+      };
+    });
+    expect(selectedSubmenuStyles.background).toBe("rgb(226, 238, 252)");
+    expect(selectedSubmenuStyles.color).toBe("rgb(24, 91, 164)");
+
+    await page.goto(ROUTES.ACTIONS_HISTORY);
+    await page.keyboard.press("Meta+b");
+    const collapsedSelected = page
+      .locator('[data-sidebar="menu-button"][data-active="true"]')
+      .first();
+    await expect(collapsedSelected).toBeVisible();
+    const collapsedSelectedStyles = await collapsedSelected.evaluate((el) => {
+      const base = getComputedStyle(el);
+      const after = getComputedStyle(el, "::after");
+      return {
+        background: base.backgroundColor,
+        indicatorOpacity: after.opacity,
+        indicatorColor: after.backgroundColor,
+      };
+    });
+    expect(collapsedSelectedStyles.background).toBe("rgb(226, 238, 252)");
+    expect(collapsedSelectedStyles.indicatorOpacity).toBe("1");
+    expect(collapsedSelectedStyles.indicatorColor).toBe("rgb(24, 91, 164)");
+  });
 });

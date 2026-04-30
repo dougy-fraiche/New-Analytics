@@ -848,6 +848,7 @@ export function AutomationOpportunitiesPage() {
           <PageHeader className={pageHeaderTabsFooterClassName}>
             <PageHeaderPrimaryRow
               title={<h1 className="text-3xl tracking-tight">Automation Opportunities</h1>}
+              description="High-impact automation opportunities across categories, topics, and sub-topics."
               actions={(
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -865,61 +866,7 @@ export function AutomationOpportunitiesPage() {
                   <TooltipContent side="bottom">Settings</TooltipContent>
                 </Tooltip>
               )}
-              tabs={(
-                <TabsList variant="line">
-                  <TabsTrigger value="categories">Categories</TabsTrigger>
-                  <TabsTrigger value="topics">Topics</TabsTrigger>
-                  <TabsTrigger value="subtopics">Sub-topics</TabsTrigger>
-                </TabsList>
-              )}
-            />
-          </PageHeader>
-
-          <Dialog open={customRangeOpen} onOpenChange={setCustomRangeOpen}>
-            <DialogContent className="sm:max-w-[720px]">
-              <DialogHeader>
-                <DialogTitle>Custom range</DialogTitle>
-                <DialogDescription>Select a start and end date.</DialogDescription>
-              </DialogHeader>
-              <div className="py-2">
-                <Calendar
-                  mode="range"
-                  selected={customRange}
-                  defaultMonth={customRange?.from}
-                  onSelect={(range) => {
-                    setCustomRange(range);
-                    setDateRange(DATE_RANGE_CUSTOM_OPTION);
-                  }}
-                  numberOfMonths={2}
-                  className="[--cell-size:2.25rem]"
-                />
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setCustomRangeOpen(false)}>
-                  Done
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          <SampleInteractionsDialog
-            open={sampleInteractionsOpen}
-            onOpenChange={setSampleInteractionsOpen}
-            categoryTitle={sampleInteractionsCategory}
-          />
-
-          <div ref={automationMainScrollRef} className="flex-1 min-h-0 overflow-auto">
-            <div className={cn(pageRootListScrollGutterClassName, "pb-4 md:pb-8")}>
-              <PageTransition className={cn(pageMainColumnClassName, "space-y-8")}>
-                <HeaderAIInsightsRow
-                  dashboardId={DASHBOARD_ID}
-                  dashboardData={{
-                    id: DASHBOARD_ID,
-                    title: "Automation Opportunities",
-                    description:
-                      "High-impact automation opportunities across categories, topics, and sub-topics.",
-                  }}
-                />
+              preTabs={(
                 <div className="flex flex-wrap items-center gap-2">
                   <Select
                     value={dateRange}
@@ -1036,6 +983,62 @@ export function AutomationOpportunitiesPage() {
                     </Button>
                   ) : null}
                 </div>
+              )}
+              tabs={(
+                <TabsList variant="line">
+                  <TabsTrigger value="categories">Categories</TabsTrigger>
+                  <TabsTrigger value="topics">Topics</TabsTrigger>
+                  <TabsTrigger value="subtopics">Sub-topics</TabsTrigger>
+                </TabsList>
+              )}
+            />
+          </PageHeader>
+
+          <Dialog open={customRangeOpen} onOpenChange={setCustomRangeOpen}>
+            <DialogContent className="sm:max-w-[720px]">
+              <DialogHeader>
+                <DialogTitle>Custom range</DialogTitle>
+                <DialogDescription>Select a start and end date.</DialogDescription>
+              </DialogHeader>
+              <div className="py-2">
+                <Calendar
+                  mode="range"
+                  selected={customRange}
+                  defaultMonth={customRange?.from}
+                  onSelect={(range) => {
+                    setCustomRange(range);
+                    setDateRange(DATE_RANGE_CUSTOM_OPTION);
+                  }}
+                  numberOfMonths={2}
+                  className="[--cell-size:2.25rem]"
+                />
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setCustomRangeOpen(false)}>
+                  Done
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <SampleInteractionsDialog
+            open={sampleInteractionsOpen}
+            onOpenChange={setSampleInteractionsOpen}
+            categoryTitle={sampleInteractionsCategory}
+          />
+
+          <div ref={automationMainScrollRef} className="flex-1 min-h-0 overflow-auto">
+            <div className={cn(pageRootListScrollGutterClassName, "pb-4 md:pb-8")}>
+              <PageTransition className={cn(pageMainColumnClassName, "space-y-8")}>
+                <HeaderAIInsightsRow
+                  dashboardId={DASHBOARD_ID}
+                  dashboardData={{
+                    id: DASHBOARD_ID,
+                    title: "Automation Opportunities",
+                    description:
+                      "High-impact automation opportunities across categories, topics, and sub-topics.",
+                  }}
+                />
                 <TabsContent value="categories" className="mt-0 space-y-8 outline-none">
                   <AnalyzedPeriodSection stats={automationAnalyzedPeriodStats} />
                   <section

@@ -208,6 +208,7 @@ export function ObservabilityCategoryPage() {
           <PageHeader className={pageHeaderTabsFooterClassName}>
             <PageHeaderPrimaryRow
               title={<h1 className="text-3xl tracking-tight">{category.name}</h1>}
+              description={category.description}
               actions={(
                 <>
                   <Button
@@ -245,6 +246,72 @@ export function ObservabilityCategoryPage() {
                   </Button>
                 </>
               )}
+              preTabs={(
+                <div className="flex flex-wrap items-center gap-2">
+                  <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRangeOption)}>
+                    <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by date range">
+                      <LabeledFilterInline label="Date range">{DATE_RANGE_LABELS[dateRange]}</LabeledFilterInline>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DATE_RANGE_PRIMARY_OPTIONS.map((opt) => (
+                        <SelectItem key={opt} value={opt}>
+                          {DATE_RANGE_LABELS[opt]}
+                        </SelectItem>
+                      ))}
+                      <SelectSeparator />
+                      {DATE_RANGE_SECONDARY_OPTIONS.map((opt) => (
+                        <SelectItem key={opt} value={opt}>
+                          {DATE_RANGE_LABELS[opt]}
+                        </SelectItem>
+                      ))}
+                      <SelectSeparator />
+                      <SelectItem value={DATE_RANGE_CUSTOM_OPTION}>
+                        {DATE_RANGE_LABELS[DATE_RANGE_CUSTOM_OPTION]}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={team} onValueChange={(v) => setTeam(v as DashboardTeamFilter)}>
+                    <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by team">
+                      <LabeledSelectValue label="Team" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all-teams">All Teams</SelectItem>
+                      <SelectItem value="tier-1">Tier 1 Support</SelectItem>
+                      <SelectItem value="tier-2">Tier 2 Support</SelectItem>
+                      <SelectItem value="technical">Technical Team</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={product} onValueChange={(v) => setProduct(v as DashboardProductFilter)}>
+                    <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by product">
+                      <LabeledSelectValue label="Product" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all-products">All Products</SelectItem>
+                      <SelectItem value="product-a">Product A</SelectItem>
+                      <SelectItem value="product-b">Product B</SelectItem>
+                      <SelectItem value="product-c">Product C</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {hasFilterChanges && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 shrink-0"
+                      onClick={() => {
+                        setDateRange(DEFAULT_FILTERS.dateRange);
+                        setTeam(DEFAULT_FILTERS.team);
+                        setProduct(DEFAULT_FILTERS.product);
+                      }}
+                    >
+                      <RotateCcw className="mr-2 h-4 w-4" />
+                      Reset Filters
+                    </Button>
+                  )}
+                </div>
+              )}
               tabs={(
                 <TabsList variant="line">
                   {visibleDashboards.map((dashboard) => (
@@ -268,70 +335,6 @@ export function ObservabilityCategoryPage() {
                 description: activeDashboard.description,
               }}
             />
-            <div className="flex flex-wrap items-center gap-2">
-              <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRangeOption)}>
-                <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by date range">
-                  <LabeledFilterInline label="Date range">{DATE_RANGE_LABELS[dateRange]}</LabeledFilterInline>
-                </SelectTrigger>
-                <SelectContent>
-                  {DATE_RANGE_PRIMARY_OPTIONS.map((opt) => (
-                    <SelectItem key={opt} value={opt}>
-                      {DATE_RANGE_LABELS[opt]}
-                    </SelectItem>
-                  ))}
-                  <SelectSeparator />
-                  {DATE_RANGE_SECONDARY_OPTIONS.map((opt) => (
-                    <SelectItem key={opt} value={opt}>
-                      {DATE_RANGE_LABELS[opt]}
-                    </SelectItem>
-                  ))}
-                  <SelectSeparator />
-                  <SelectItem value={DATE_RANGE_CUSTOM_OPTION}>
-                    {DATE_RANGE_LABELS[DATE_RANGE_CUSTOM_OPTION]}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={team} onValueChange={(v) => setTeam(v as DashboardTeamFilter)}>
-                <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by team">
-                  <LabeledSelectValue label="Team" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all-teams">All Teams</SelectItem>
-                  <SelectItem value="tier-1">Tier 1 Support</SelectItem>
-                  <SelectItem value="tier-2">Tier 2 Support</SelectItem>
-                  <SelectItem value="technical">Technical Team</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={product} onValueChange={(v) => setProduct(v as DashboardProductFilter)}>
-                <SelectTrigger className="h-8 w-auto shrink-0" aria-label="Filter by product">
-                  <LabeledSelectValue label="Product" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all-products">All Products</SelectItem>
-                  <SelectItem value="product-a">Product A</SelectItem>
-                  <SelectItem value="product-b">Product B</SelectItem>
-                  <SelectItem value="product-c">Product C</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {hasFilterChanges && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 shrink-0"
-                  onClick={() => {
-                    setDateRange(DEFAULT_FILTERS.dateRange);
-                    setTeam(DEFAULT_FILTERS.team);
-                    setProduct(DEFAULT_FILTERS.product);
-                  }}
-                >
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  Reset Filters
-                </Button>
-              )}
-            </div>
             {visibleDashboards.map((dashboard) => (
               <TabsContent key={dashboard.id} value={dashboard.id} className="space-y-4 mt-2">
                 {dashboard.id === "ai-agents-overview" || dashboard.id === "ai-agents-copilot" ? (

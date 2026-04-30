@@ -346,6 +346,7 @@ function AnomalyPrimaryFindingContent({
       <PageHeader>
         <PageHeaderPrimaryRow
           title={<h1 className="text-3xl tracking-tight">{conversationTitle || "Primary Finding"}</h1>}
+          description={model.headingSubtitle}
           actions={showConversationMenu ? (
             <DropdownMenu>
               <Tooltip>
@@ -651,6 +652,7 @@ function DashboardContent({
       <PageHeader>
         <PageHeaderPrimaryRow
           title={<h1 className="text-3xl tracking-tight">{conversationTitle || dashboard.title}</h1>}
+          description={dashboard.description}
           actions={(
             <>
               {isSaved ? (
@@ -694,13 +696,7 @@ function DashboardContent({
             </>
           )}
         />
-      </PageHeader>
-
-      <div className="min-h-0 flex-1 overflow-auto">
-        <div className={cn(pageRootListScrollGutterClassName, "pb-8")}>
-        <div className={cn(pageMainColumnClassName, "space-y-4")}>
-        <HeaderAIInsightsRow dashboardId={dashboard.id} dashboardData={dashboard} />
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRangeOption)}>
             <SelectTrigger className="h-8 w-auto shrink-0">
               <LabeledFilterInline label="Date range">{DATE_RANGE_LABELS[dateRange]}</LabeledFilterInline>
@@ -764,6 +760,12 @@ function DashboardContent({
             </Button>
           )}
         </div>
+      </PageHeader>
+
+      <div className="min-h-0 flex-1 overflow-auto">
+        <div className={cn(pageRootListScrollGutterClassName, "pb-8")}>
+        <div className={cn(pageMainColumnClassName, "space-y-4")}>
+        <HeaderAIInsightsRow dashboardId={dashboard.id} dashboardData={dashboard} />
 
         <div className="flex flex-wrap items-center gap-4 !mt-8">
           <h3 className="flex items-center gap-2 tracking-tight">

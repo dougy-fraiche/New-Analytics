@@ -4,11 +4,10 @@ import { CopilotShell } from "./CopilotShell";
 export function CopilotAutoSummaryPage() {
   return (
     <CopilotShell activeTab="auto-summary">
-      {({ isCompactDashboard, copilotFilters }) => (
+      {({ isCompactDashboard }) => (
         <CopilotAutoSummaryTab
           isCompactDashboard={isCompactDashboard}
           showWidgetOverflowMenu={false}
-          copilotFilters={copilotFilters}
         />
       )}
     </CopilotShell>
